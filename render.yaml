@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: clothing-scanner-server
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace=@clothing-scanner/shared-types && npm run build --workspace=server
+    startCommand: npm run start --workspace=server
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: EBAY_CLIENT_ID
+        sync: false
+      - key: EBAY_CLIENT_SECRET
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false
+    healthCheckPath: /health

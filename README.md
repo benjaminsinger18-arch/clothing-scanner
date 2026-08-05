@@ -116,6 +116,40 @@ Scan the QR code with **Expo Go** (App Store / Play Store) on your phone — pho
 must be on the same Wi-Fi network. The first launch will ask for camera and photo
 library permissions.
 
+## Letting a remote collaborator test the app
+
+The steps above only work if your friend's phone is on the *same Wi-Fi network* as
+this PC — Expo Go needs to reach both the Metro bundler and the backend. If they're
+somewhere else, two things need to be reachable over the internet instead:
+
+**1. Deploy the backend (one-time setup)** — a `render.yaml` blueprint is included:
+
+1. Push this repo to GitHub (already done if you're reading this from there).
+2. Go to https://dashboard.render.com/ → **New** → **Blueprint** → connect this repo.
+   Render reads `render.yaml` and creates the web service automatically.
+3. In the Render dashboard, set the `ANTHROPIC_API_KEY` / `EBAY_CLIENT_ID` /
+   `EBAY_CLIENT_SECRET` / `SERPAPI_KEY` env vars (they're marked `sync: false` in the
+   blueprint, so Render prompts for them rather than expecting them in the repo).
+4. Once deployed, Render gives you a stable URL like
+   `https://clothing-scanner-server.onrender.com`. Put that in **both** your and your
+   friend's `app/.env` as `EXPO_PUBLIC_API_URL` (instead of the LAN IP).
+
+   Free-tier Render web services spin down after ~15 min idle and take a few seconds
+   to wake back up on the next request — fine for testing, just expect the first
+   request after a lull to be slow.
+
+**2. Tunnel Expo itself** so the QR code works from anywhere, not just your LAN:
+
+```
+cd app
+npx expo start --tunnel
+```
+
+(First run installs `@expo/ngrok` if it's not already present — accept the prompt.)
+Your friend scans that QR code with Expo Go, same as normal. Your PC still needs to
+stay on and `expo start --tunnel` running for the whole session — this isn't a
+hosted app, it's your dev server, just reachable remotely.
+
 ### Troubleshooting
 
 - **"Could not reach the backend"** — confirm the server is running, your phone and PC
