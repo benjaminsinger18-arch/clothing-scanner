@@ -1,0 +1,13 @@
+{
+  "name": "clothing-scanner",
+  "private": true,
+  "workspaces": [
+    "app",
+    "server",
+    "packages/*"
+  ],
+  "scripts": {
+    "server:dev": "npm run dev --workspace=server",
+    "app:start": "npm run start --workspace=app"
+  }
+}

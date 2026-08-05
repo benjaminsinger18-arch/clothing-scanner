@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Clothing Scanner",
+    "slug": "clothing-scanner",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to photograph a piece of clothing to identify it.",
+        "NSPhotoLibraryUsageDescription": "Used to pick an existing photo of a piece of clothing."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    }
+  }
+}
