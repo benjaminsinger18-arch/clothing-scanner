@@ -13,6 +13,7 @@ import type { SupportedMediaType } from "../lib/imageUtils.js";
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const SONNET_MODEL = "claude-sonnet-5";
 const CLASSIFY_TOOL_NAME = "report_classification";
+const OUTFIT_TOOL_NAME = "report_outfit_suggestions";
 
 export class ClassificationError extends Error {}
 
@@ -148,5 +149,93 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   } catch (err) {
     console.error("[claudeClient] Sonnet escalation failed, falling back to Haiku result:", err);
     return { ...haikuResult, model: "claude-haiku-4-5" };
+  }
+}
+
+const outfitTool: Anthropic.Tool = {
+  name: OUTFIT_TOOL_NAME,
+  description: "Report 3-5 complementary clothing items that would pair well with the given item as an outfit.",
+  input_schema: {
+    type: "object",
+    properties: {
+      suggestions: {
+        type: "array",
+        minItems: 3,
+        maxItems: 5,
+        items: {
+          type: "object",
+          properties: {
+            keywords: {
+              type: "string",
+              description:
+                'Short, search-friendly keyword phrase for the complementary item, e.g. "navy chino pants" ' +
+                'or "white leather sneakers" — not a full sentence, and not a restatement of the item itself.',
+            },
+          },
+          required: ["keywords"],
+        },
+      },
+    },
+    required: ["suggestions"],
+  },
+};
+
+export interface OutfitPairingInput {
+  garmentType: string;
+  category: string;
+  color: string;
+  pattern: string;
+  style: string;
+  brandGuess: string | null;
+  brandConfidence: BrandConfidence;
+}
+
+function describeItem(input: OutfitPairingInput): string {
+  const brandPart =
+    input.brandGuess && (input.brandConfidence === "medium" || input.brandConfidence === "high")
+      ? ` (possibly ${input.brandGuess})`
+      : "";
+  const patternPart = input.pattern && input.pattern.toLowerCase() !== "none" ? `${input.pattern} ` : "";
+  return `${input.color} ${patternPart}${input.garmentType}${brandPart}, style: ${input.style}, category: ${input.category}`;
+}
+
+async function callOutfitSuggestions(input: OutfitPairingInput): Promise<string[]> {
+  const response = await getClient().messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 512,
+    tools: [outfitTool],
+    tool_choice: { type: "tool", name: OUTFIT_TOOL_NAME },
+    messages: [
+      {
+        role: "user",
+        content:
+          `Suggest 3-5 clothing items that would pair well as an outfit with this item: ${describeItem(input)}. ` +
+          "Call report_outfit_suggestions with short, search-friendly keyword phrases suitable for a product search.",
+      },
+    ],
+  });
+
+  const toolUse = response.content.find(
+    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === OUTFIT_TOOL_NAME
+  );
+  if (!toolUse) {
+    throw new ClassificationError("Claude did not return outfit suggestions");
+  }
+
+  const result = toolUse.input as { suggestions: { keywords: string }[] };
+  return result.suggestions.map((s) => s.keywords).filter(Boolean);
+}
+
+/** Suggests 3-5 search-ready keyword phrases for items that would complement the
+ * given garment. Text-only (no image), so it's cheap — always uses Haiku. Retries
+ * once on transient failure; throws on a second failure, since the outfit-suggestions
+ * endpoint has nothing useful to return without this. */
+export async function suggestOutfitPairings(input: OutfitPairingInput): Promise<string[]> {
+  try {
+    return await callOutfitSuggestions(input);
+  } catch (err) {
+    console.warn("[claudeClient] outfit suggestion call failed, retrying once:", err);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return await callOutfitSuggestions(input);
   }
 }

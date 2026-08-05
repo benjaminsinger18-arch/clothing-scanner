@@ -5,6 +5,8 @@ reviews, cheaper/pricier alternatives, and outfit-pairing suggestions.
 
 See `.claude/plans` (or the plan this repo was scaffolded from) for the full design.
 
+**All 5 tabs are now backed by real data — every planned phase (1-4) is built.**
+
 **Status:**
 - Phase 1 ✅ — image capture + Claude vision classification, end-to-end.
 - Phase 2 ✅ — real eBay Browse API listings power Similar Items / Price Comparison.
@@ -12,13 +14,27 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   review/rating snippets, merged alongside eBay's data. Two price ranges are shown:
   an **estimated new/retail price** (eBay new-condition listings + Google Shopping)
   and an **estimated resale value** (all eBay listings, which skew secondhand) — kept
-  separate rather than blended into one misleading number. The Reviews tab now shows
-  real rating data where Google Shopping provides it. Outfit Matches is still mocked
-  (Phase 4).
-- `/price-search` merges whichever providers are configured — **eBay and SerpApi work
-  independently**, so if you're waiting on eBay approval you can still set up
-  `SERPAPI_KEY` now and get real Google Shopping data while eBay shows as
-  unavailable.
+  separate rather than blended into one misleading number.
+- Phase 4 ✅ — Outfit Matches asks Claude (text-only, cheap) for 3-5 complementary
+  keyword phrases based on the identified item, then searches eBay for real
+  purchasable items per suggestion. This is a heuristic, not a trained
+  outfit-compatibility model (see plan's research notes — no accessible API for that
+  exists) — good for casual pairing ideas, not a styling authority.
+- `/price-search` and `/outfit-suggestions` merge/degrade per-provider — **eBay and
+  SerpApi work independently**, so if you're waiting on eBay approval you can still
+  set up `SERPAPI_KEY` now and get real Google Shopping data while eBay shows as
+  unavailable. Outfit Matches only needs `ANTHROPIC_API_KEY` + eBay (SerpApi is
+  intentionally skipped there — see "Required API keys" below).
+
+## What's left (not built)
+
+Everything in the original plan's 5 phases is done except **Phase 5 polish**:
+pricing and outfit data already fetch independently in parallel once the item is
+classified (each tab shows its own loading/error state), but there's no staged
+"Identifying item… → Finding prices… → Finding outfit matches…" progress text
+during the initial classify step, no image-compression tuning beyond the Phase 1
+baseline, and no production build (EAS Build) if you want a distributable binary
+instead of Expo Go. None of that blocks using the app today.
 
 ## Project layout
 
@@ -71,6 +87,15 @@ Test the price search directly (works with either or both of eBay/SerpApi config
 
 ```
 curl "http://localhost:3000/price-search?garmentType=denim%20jacket&category=outerwear&color=blue&brandGuess=Levi%27s&brandConfidence=medium"
+```
+
+Test outfit suggestions directly (requires `ANTHROPIC_API_KEY`; eBay optional — falls
+back to keyword-only suggestions with no purchasable items if eBay isn't configured):
+
+```
+curl -X POST http://localhost:3000/outfit-suggestions ^
+  -H "Content-Type: application/json" ^
+  -d "{\"garmentType\":\"denim jacket\",\"category\":\"outerwear\",\"color\":\"blue\",\"pattern\":\"solid\",\"style\":\"casual\",\"brandGuess\":null,\"brandConfidence\":\"none\"}"
 ```
 
 ### 2. Mobile app

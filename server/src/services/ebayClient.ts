@@ -67,13 +67,14 @@ interface SearchOptions {
   /** Restrict to new/unworn listings — used to derive a "brand new" price estimate
    * separate from the (mostly secondhand) unfiltered resale search. */
   conditionNew?: boolean;
+  limit?: number;
 }
 
 async function searchOnce(query: string, options: SearchOptions = {}, tokenRetried = false): Promise<PriceListing[]> {
   const token = await getAccessToken();
   const url = new URL(SEARCH_URL);
   url.searchParams.set("q", query);
-  url.searchParams.set("limit", "12");
+  url.searchParams.set("limit", String(options.limit ?? 12));
   if (options.conditionNew) {
     url.searchParams.set("filter", NEW_CONDITION_FILTER);
   }
@@ -178,5 +179,29 @@ export async function searchEbay(input: EbaySearchInput): Promise<EbaySearchResu
     }
     console.error("[ebayClient] search failed:", err);
     return { status: "unavailable", listings: [], newListings: [] };
+  }
+}
+
+export interface SimpleEbaySearchResult {
+  status: DataSourceStatus;
+  listings: PriceListing[];
+}
+
+/** Direct keyword search with no widen-retry or condition split — used for outfit-
+ * pairing follow-up queries, where the input is already a search-ready phrase
+ * (e.g. "navy chino pants") rather than structured classification fields. */
+export async function searchEbayByKeywords(query: string, limit = 6): Promise<SimpleEbaySearchResult> {
+  if (!canMakeEbayCall()) {
+    return { status: "rate_limited", listings: [] };
+  }
+  try {
+    const listings = await searchOnce(query, { limit });
+    return { status: listings.length > 0 ? "ok" : "no_results", listings };
+  } catch (err) {
+    if (err instanceof EbayRateLimitError) {
+      return { status: "rate_limited", listings: [] };
+    }
+    console.error("[ebayClient] keyword search failed:", err);
+    return { status: "unavailable", listings: [] };
   }
 }

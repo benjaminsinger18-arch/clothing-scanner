@@ -84,6 +84,18 @@ export interface PriceSearchQuery {
   brandConfidence: BrandConfidence;
 }
 
+/** Body shape for POST /outfit-suggestions — the classification fields needed to
+ * describe the item to Claude for complementary-item suggestions. */
+export interface OutfitSuggestionsRequestBody {
+  garmentType: string;
+  category: string;
+  color: string;
+  pattern: string;
+  style: string;
+  brandGuess: string | null;
+  brandConfidence: BrandConfidence;
+}
+
 export interface ApiErrorBody {
   error: string;
   reason?: string;

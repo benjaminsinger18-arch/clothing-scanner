@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { classifyRouter } from "./routes/classify.js";
+import { outfitSuggestionsRouter } from "./routes/outfitSuggestions.js";
 import { priceSearchRouter } from "./routes/priceSearch.js";
 
 const app = express();
@@ -15,6 +16,7 @@ app.get("/health", (_req, res) => {
 
 app.use(classifyRouter);
 app.use(priceSearchRouter);
+app.use(outfitSuggestionsRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[server] unhandled error:", err);

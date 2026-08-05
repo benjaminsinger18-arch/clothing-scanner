@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { DataSourceStatus, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
+import type { DataSourceStatus, OutfitSuggestionsResult, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { ItemCard } from "../components/ItemCard";
 import { ErrorState } from "../components/ErrorState";
-import { MOCK_OUTFIT_SUGGESTIONS } from "../lib/mockData";
-import { ApiError, searchPrices } from "../services/api";
+import { ApiError, getOutfitSuggestions, searchPrices } from "../services/api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Results">;
 
@@ -42,6 +41,31 @@ export function ResultsScreen({ route, navigation }: Props) {
     fetchPricing();
   }, [fetchPricing]);
 
+  const [outfits, setOutfits] = useState<OutfitSuggestionsResult | null>(null);
+  const [outfitsLoading, setOutfitsLoading] = useState(true);
+  const [outfitsError, setOutfitsError] = useState<{ title: string; detail?: string } | null>(null);
+
+  const fetchOutfits = useCallback(async () => {
+    setOutfitsLoading(true);
+    setOutfitsError(null);
+    try {
+      const result = await getOutfitSuggestions(classification);
+      setOutfits(result);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setOutfitsError({ title: err.message, detail: err.reason });
+      } else {
+        setOutfitsError({ title: "Failed to load outfit suggestions" });
+      }
+    } finally {
+      setOutfitsLoading(false);
+    }
+  }, [classification]);
+
+  useEffect(() => {
+    fetchOutfits();
+  }, [fetchOutfits]);
+
   return (
     <View style={styles.container}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
@@ -66,7 +90,6 @@ export function ResultsScreen({ route, navigation }: Props) {
               hint={`confidence: ${classification.brandConfidence}`}
             />
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
-            <Text style={styles.note}>Outfit matches below are still placeholder data — outfit pairing lands in a later phase.</Text>
           </View>
         )}
 
@@ -118,15 +141,11 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Outfit Matches" && (
           <View>
-            <MockBanner />
-            {MOCK_OUTFIT_SUGGESTIONS.map((suggestion, i) => (
-              <View key={i} style={{ marginBottom: 16 }}>
-                <Text style={styles.groupLabel}>Pairs well with: {suggestion.keywords}</Text>
-                {suggestion.items.map((item, j) => (
-                  <ItemCard key={j} item={item} />
-                ))}
-              </View>
-            ))}
+            <Text style={styles.note}>
+              AI-suggested pairings (Claude), matched against live eBay listings — a heuristic, not a
+              trained styling model.
+            </Text>
+            <OutfitBody outfits={outfits} loading={outfitsLoading} error={outfitsError} onRetry={fetchOutfits} />
           </View>
         )}
       </ScrollView>
@@ -222,6 +241,57 @@ function ProviderDataBody({
   );
 }
 
+/** Renders the Outfit Matches tab: Claude-suggested keyword groups, each with real
+ * eBay listings underneath. Groups with zero items still show (so the suggestion
+ * itself is visible) with a small inline note rather than being silently dropped. */
+function OutfitBody({
+  outfits,
+  loading,
+  error,
+  onRetry,
+}: {
+  outfits: OutfitSuggestionsResult | null;
+  loading: boolean;
+  error: { title: string; detail?: string } | null;
+  onRetry: () => void;
+}) {
+  if (loading) {
+    return <ActivityIndicator color="#fff" style={{ marginTop: 24 }} />;
+  }
+  if (error) {
+    return <ErrorState title={error.title} detail={error.detail} onRetry={onRetry} />;
+  }
+  if (!outfits || outfits.status === "unavailable") {
+    return <ErrorState title="Outfit suggestions temporarily unavailable" detail="Couldn't reach Claude — try again." onRetry={onRetry} />;
+  }
+  if (outfits.status === "rate_limited") {
+    return (
+      <ErrorState
+        title="Request limit reached"
+        detail="The app proactively throttles to stay under provider quotas — try again later."
+        onRetry={onRetry}
+      />
+    );
+  }
+  if (outfits.suggestions.length === 0) {
+    return <ErrorState title="No outfit suggestions found" detail="Try again, or check back later." onRetry={onRetry} />;
+  }
+  return (
+    <>
+      {outfits.suggestions.map((suggestion, i) => (
+        <View key={i} style={{ marginBottom: 16 }}>
+          <Text style={styles.groupLabel}>Pairs well with: {suggestion.keywords}</Text>
+          {suggestion.items.length === 0 ? (
+            <Text style={styles.note}>No purchasable items found for this suggestion right now.</Text>
+          ) : (
+            suggestion.items.map((item, j) => <ItemCard key={j} item={item} />)
+          )}
+        </View>
+      ))}
+    </>
+  );
+}
+
 function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <View style={styles.row}>
@@ -230,10 +300,6 @@ function Row({ label, value, hint }: { label: string; value: string; hint?: stri
       {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
     </View>
   );
-}
-
-function MockBanner() {
-  return <Text style={styles.note}>Placeholder data — this tab will use real live data starting a later phase.</Text>;
 }
 
 const styles = StyleSheet.create({
