@@ -37,7 +37,8 @@ priceSearchRouter.get("/price-search", async (req, res) => {
 
   const result: PriceSearchResult = {
     status: ebayResult.status,
-    estimatedPriceRange: computePriceRange(ebayResult.listings),
+    estimatedResaleRange: computePriceRange(ebayResult.listings),
+    estimatedNewRange: computePriceRange(ebayResult.newListings),
     similarItems: ebayResult.listings,
     reviews: [],
   };

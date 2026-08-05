@@ -59,11 +59,24 @@ interface RawEbayItem {
   condition?: string;
 }
 
-async function searchOnce(query: string, tokenRetried = false): Promise<PriceListing[]> {
+// eBay condition IDs: 1000 = New. See
+// https://developer.ebay.com/api-docs/buy/static/ref-condition-id.html
+const NEW_CONDITION_FILTER = "conditionIds:{1000}";
+
+interface SearchOptions {
+  /** Restrict to new/unworn listings — used to derive a "brand new" price estimate
+   * separate from the (mostly secondhand) unfiltered resale search. */
+  conditionNew?: boolean;
+}
+
+async function searchOnce(query: string, options: SearchOptions = {}, tokenRetried = false): Promise<PriceListing[]> {
   const token = await getAccessToken();
   const url = new URL(SEARCH_URL);
   url.searchParams.set("q", query);
   url.searchParams.set("limit", "12");
+  if (options.conditionNew) {
+    url.searchParams.set("filter", NEW_CONDITION_FILTER);
+  }
 
   const response = await fetch(url, {
     headers: {
@@ -76,7 +89,7 @@ async function searchOnce(query: string, tokenRetried = false): Promise<PriceLis
 
   if (response.status === 401 && !tokenRetried) {
     await getAccessToken(true); // token likely expired/invalid — force a fresh one and retry once
-    return searchOnce(query, true);
+    return searchOnce(query, options, true);
   }
   if (response.status === 429) {
     throw new EbayRateLimitError("eBay rate limit hit");
@@ -121,12 +134,17 @@ function buildWidenedQuery(input: EbaySearchInput): string {
 
 export interface EbaySearchResult {
   status: DataSourceStatus;
+  /** All-condition listings — predominantly secondhand, drives the resale range
+   * and the Similar Items tab. */
   listings: PriceListing[];
+  /** Condition-filtered (new only) listings — drives the "brand new" price range.
+   * Often empty, since most eBay clothing inventory is used. */
+  newListings: PriceListing[];
 }
 
 export async function searchEbay(input: EbaySearchInput): Promise<EbaySearchResult> {
   if (!canMakeEbayCall()) {
-    return { status: "rate_limited", listings: [] };
+    return { status: "rate_limited", listings: [], newListings: [] };
   }
 
   try {
@@ -134,17 +152,31 @@ export async function searchEbay(input: EbaySearchInput): Promise<EbaySearchResu
 
     if (listings.length === 0) {
       if (!canMakeEbayCall()) {
-        return { status: "rate_limited", listings: [] };
+        return { status: "rate_limited", listings: [], newListings: [] };
       }
       listings = await searchOnce(buildWidenedQuery(input));
     }
 
-    return { status: listings.length > 0 ? "ok" : "no_results", listings };
+    // New-condition search is best-effort: it's an enrichment on top of the primary
+    // resale search, so a failure here shouldn't fail the whole request.
+    let newListings: PriceListing[] = [];
+    if (canMakeEbayCall()) {
+      try {
+        newListings = await searchOnce(buildQuery(input), { conditionNew: true });
+        if (newListings.length === 0 && canMakeEbayCall()) {
+          newListings = await searchOnce(buildWidenedQuery(input), { conditionNew: true });
+        }
+      } catch (err) {
+        console.error("[ebayClient] new-condition search failed (non-fatal):", err);
+      }
+    }
+
+    return { status: listings.length > 0 ? "ok" : "no_results", listings, newListings };
   } catch (err) {
     if (err instanceof EbayRateLimitError) {
-      return { status: "rate_limited", listings: [] };
+      return { status: "rate_limited", listings: [], newListings: [] };
     }
     console.error("[ebayClient] search failed:", err);
-    return { status: "unavailable", listings: [] };
+    return { status: "unavailable", listings: [], newListings: [] };
   }
 }

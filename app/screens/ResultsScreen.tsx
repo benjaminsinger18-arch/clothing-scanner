@@ -92,7 +92,8 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Similar Items" && (
           <View>
             <Text style={styles.note}>
-              Live eBay listings — cross-retailer comparison (Google Shopping) lands in Phase 3.
+              Live eBay listings — mostly secondhand. Cross-retailer new-item comparison
+              (Google Shopping) lands in Phase 3.
             </Text>
             <PricingBody pricing={pricing} loading={pricingLoading} error={pricingError} onRetry={fetchPricing} />
           </View>
@@ -122,15 +123,33 @@ export function ResultsScreen({ route, navigation }: Props) {
 
 function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | null; loading: boolean }) {
   if (loading) return null;
-  const range = pricing?.estimatedPriceRange;
-  if (!range) return null;
+  const newRange = pricing?.estimatedNewRange;
+  const resaleRange = pricing?.estimatedResaleRange;
+  if (!newRange && !resaleRange) return null;
+
   return (
     <View style={styles.rangeBanner}>
-      <Text style={styles.rangeLabel}>Estimated price range (from live eBay listings)</Text>
-      <Text style={styles.rangeValue}>
-        ${range.low.toFixed(2)} – ${range.high.toFixed(2)}{" "}
-        <Text style={styles.rangeMedian}>(median ${range.median.toFixed(2)})</Text>
-      </Text>
+      {newRange && (
+        <View style={resaleRange ? { marginBottom: 10 } : undefined}>
+          <Text style={styles.rangeLabel}>Estimated new price (eBay, new-condition listings)</Text>
+          <Text style={styles.rangeValue}>
+            ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
+            <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
+          </Text>
+        </View>
+      )}
+      {resaleRange && (
+        <View>
+          <Text style={styles.rangeLabel}>Estimated resale value (secondhand eBay listings)</Text>
+          <Text style={styles.rangeValue}>
+            ${resaleRange.low.toFixed(2)} – ${resaleRange.high.toFixed(2)}{" "}
+            <Text style={styles.rangeMedian}>(median ${resaleRange.median.toFixed(2)})</Text>
+          </Text>
+        </View>
+      )}
+      {!newRange && (
+        <Text style={styles.rangeCaveat}>No new-condition eBay listings found — this is likely a used-market price only.</Text>
+      )}
     </View>
   );
 }
@@ -211,4 +230,5 @@ const styles = StyleSheet.create({
   rangeLabel: { color: "#8e8e93", fontSize: 11, textTransform: "uppercase", marginBottom: 4 },
   rangeValue: { color: "#4ade80", fontSize: 18, fontWeight: "700" },
   rangeMedian: { color: "#8e8e93", fontSize: 13, fontWeight: "400" },
+  rangeCaveat: { color: "#8e8e93", fontSize: 12, fontStyle: "italic" },
 });

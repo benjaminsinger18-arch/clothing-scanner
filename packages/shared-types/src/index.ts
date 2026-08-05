@@ -34,9 +34,21 @@ export interface PriceListing {
 
 export type DataSourceStatus = "ok" | "rate_limited" | "unavailable" | "no_results";
 
+export interface PriceRange {
+  low: number;
+  median: number;
+  high: number;
+  currency: string;
+}
+
 export interface PriceSearchResult {
   status: DataSourceStatus;
-  estimatedPriceRange?: { low: number; median: number; high: number; currency: string };
+  /** Aggregated from all-condition eBay listings — mostly secondhand, so this is a
+   * resale/secondhand market value, NOT a retail/brand-new price estimate. */
+  estimatedResaleRange?: PriceRange;
+  /** Aggregated from eBay listings filtered to new/new-with-tags condition only.
+   * Undefined when no new listings were found for this item. */
+  estimatedNewRange?: PriceRange;
   similarItems: PriceListing[];
   reviews: PriceListing[];
 }

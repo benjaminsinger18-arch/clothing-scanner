@@ -8,8 +8,12 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 **Status:**
 - Phase 1 ✅ — image capture + Claude vision classification, end-to-end.
 - Phase 2 ✅ — Similar Items / Price Comparison tabs backed by real eBay Browse API
-  listings, with an estimated price range (low/median/high). Reviews and Outfit
-  Matches tabs are still mocked (Phases 3–4).
+  listings. Two separate price ranges are shown: an **estimated new price** (from
+  eBay listings filtered to new/unworn condition) and an **estimated resale value**
+  (from all eBay listings, which skew secondhand). eBay is a secondhand-heavy
+  marketplace, so these are kept distinct rather than blended into one misleading
+  number — true cross-retailer *new* pricing arrives with SerpApi in Phase 3.
+  Reviews and Outfit Matches tabs are still mocked (Phases 3–4).
 
 ## Project layout
 
@@ -85,6 +89,8 @@ library permissions.
   `ANTHROPIC_API_KEY` and the server console for the underlying error.
 - **"Couldn't identify a clothing item"** — expected behavior for non-clothing or very
   unclear photos; retake with a single garment filling most of the frame in good light.
+- **No "estimated new price" shown, only resale** — normal for items eBay mostly sells
+  used (common for older/discontinued items); the UI already caveats this.
 
 ## Required API keys
 
@@ -103,11 +109,3 @@ library permissions.
   a reminder.
 
 Later phases will also need `SERPAPI_KEY`.
-
-## Testing the classification endpoint directly
-
-```
-curl -X POST http://localhost:3000/classify \
-  -H "Content-Type: application/json" \
-  -d "{\"imageBase64\": \"<base64 jpeg data>\"}"
-```
