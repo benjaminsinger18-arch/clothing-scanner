@@ -7,13 +7,18 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 
 **Status:**
 - Phase 1 ✅ — image capture + Claude vision classification, end-to-end.
-- Phase 2 ✅ — Similar Items / Price Comparison tabs backed by real eBay Browse API
-  listings. Two separate price ranges are shown: an **estimated new price** (from
-  eBay listings filtered to new/unworn condition) and an **estimated resale value**
-  (from all eBay listings, which skew secondhand). eBay is a secondhand-heavy
-  marketplace, so these are kept distinct rather than blended into one misleading
-  number — true cross-retailer *new* pricing arrives with SerpApi in Phase 3.
-  Reviews and Outfit Matches tabs are still mocked (Phases 3–4).
+- Phase 2 ✅ — real eBay Browse API listings power Similar Items / Price Comparison.
+- Phase 3 ✅ — SerpApi (Google Shopping) adds cross-retailer new/retail pricing and
+  review/rating snippets, merged alongside eBay's data. Two price ranges are shown:
+  an **estimated new/retail price** (eBay new-condition listings + Google Shopping)
+  and an **estimated resale value** (all eBay listings, which skew secondhand) — kept
+  separate rather than blended into one misleading number. The Reviews tab now shows
+  real rating data where Google Shopping provides it. Outfit Matches is still mocked
+  (Phase 4).
+- `/price-search` merges whichever providers are configured — **eBay and SerpApi work
+  independently**, so if you're waiting on eBay approval you can still set up
+  `SERPAPI_KEY` now and get real Google Shopping data while eBay shows as
+  unavailable.
 
 ## Project layout
 
@@ -56,7 +61,7 @@ curl -X POST http://localhost:3000/classify ^
   -d "{\"imageBase64\": \"<base64 jpeg data>\"}"
 ```
 
-Test the price search directly (Phase 2, requires eBay keys):
+Test the price search directly (works with either or both of eBay/SerpApi configured):
 
 ```
 curl "http://localhost:3000/price-search?garmentType=denim%20jacket&category=outerwear&color=blue&brandGuess=Levi%27s&brandConfidence=medium"
@@ -89,14 +94,18 @@ library permissions.
   `ANTHROPIC_API_KEY` and the server console for the underlying error.
 - **"Couldn't identify a clothing item"** — expected behavior for non-clothing or very
   unclear photos; retake with a single garment filling most of the frame in good light.
-- **No "estimated new price" shown, only resale** — normal for items eBay mostly sells
-  used (common for older/discontinued items); the UI already caveats this.
+- **No "estimated new/retail price" shown, only resale** — means neither eBay's
+  new-condition search nor SerpApi found anything; common for older/discontinued
+  items, or if `SERPAPI_KEY` isn't configured yet.
+- **Reviews tab is empty** — expected for many items; not every Google Shopping
+  listing includes a rating, and eBay listings never do.
 
 ## Required API keys
 
-- `ANTHROPIC_API_KEY` (Phase 1) — from https://console.anthropic.com/ (used for vision classification)
-- `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` (Phase 2) — from https://developer.ebay.com/:
-  1. Sign up for a free developer account (individual, no business entity needed).
+- `ANTHROPIC_API_KEY` — from https://console.anthropic.com/ (used for vision classification; required for the app to do anything at all)
+- `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` — from https://developer.ebay.com/:
+  1. Sign up for a free developer account (individual, no business entity needed) —
+     approval isn't always instant.
   2. Create an application keyset under **Application Keys** — you'll get a "Client ID" (App ID)
      and "Client Secret" (Cert ID) pair.
   3. **Use the production keyset, not sandbox** — sandbox returns fake catalog data, not real
@@ -104,8 +113,12 @@ library permissions.
   4. Paste both values into `server/.env`.
 
   The backend handles OAuth token exchange/caching itself (client-credentials grant) —
-  no further eBay-side setup needed. If these are missing, `/price-search` degrades
-  gracefully (`status: "unavailable"`) instead of crashing; check the server console for
-  a reminder.
+  no further eBay-side setup needed.
+- `SERPAPI_KEY` — from https://serpapi.com/ (sign up, key is issued immediately, no
+  approval wait). Free tier is 250 searches/month; the backend proactively throttles
+  at 220/month to leave headroom (see `server/src/lib/rateLimitTracker.ts`).
 
-Later phases will also need `SERPAPI_KEY`.
+`/price-search` merges whichever of eBay/SerpApi are configured — either can be
+missing and the endpoint still returns whatever data the other provides
+(`status: "unavailable"` only when *neither* source works). Check the server console
+on startup for a reminder of which keys are missing.

@@ -28,6 +28,9 @@ app.listen(port, () => {
     console.warn("[server] ANTHROPIC_API_KEY is not set — /classify will fail until server/.env is configured.");
   }
   if (!process.env.EBAY_CLIENT_ID || !process.env.EBAY_CLIENT_SECRET) {
-    console.warn("[server] EBAY_CLIENT_ID/EBAY_CLIENT_SECRET are not set — /price-search will fail until configured.");
+    console.warn("[server] EBAY_CLIENT_ID/EBAY_CLIENT_SECRET are not set — eBay data will be unavailable in /price-search.");
+  }
+  if (!process.env.SERPAPI_KEY) {
+    console.warn("[server] SERPAPI_KEY is not set — SerpApi data (cross-retailer pricing, reviews) will be unavailable.");
   }
 });

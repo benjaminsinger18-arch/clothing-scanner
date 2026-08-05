@@ -1,4 +1,4 @@
-import type { PriceListing } from "@clothing-scanner/shared-types";
+import type { DataSourceStatus, PriceListing } from "@clothing-scanner/shared-types";
 
 /** Aggregates a set of listings into a low/median/high summary — the "estimated
  * market value" proxy described in the plan (not an appraisal). Returns undefined
@@ -19,4 +19,16 @@ export function computePriceRange(
     median,
     currency: sorted[0].currency,
   };
+}
+
+/** Reduces multiple providers' individual statuses (eBay, SerpApi, ...) into one
+ * overall status for the response. Any actual data found beats an individual
+ * provider's failure — a partial result is still useful — so status only reports
+ * trouble when there's truly nothing to show. */
+export function combineStatus(statuses: DataSourceStatus[], totalListings: number): DataSourceStatus {
+  if (totalListings > 0) return "ok";
+  if (statuses.length > 0 && statuses.every((s) => s === "rate_limited")) return "rate_limited";
+  if (statuses.length > 0 && statuses.every((s) => s === "unavailable")) return "unavailable";
+  if (statuses.some((s) => s === "rate_limited")) return "rate_limited";
+  return "no_results";
 }

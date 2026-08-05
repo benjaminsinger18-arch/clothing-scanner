@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { PriceSearchResult } from "@clothing-scanner/shared-types";
+import type { DataSourceStatus, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { ItemCard } from "../components/ItemCard";
 import { ErrorState } from "../components/ErrorState";
-import { MOCK_OUTFIT_SUGGESTIONS, MOCK_REVIEWS } from "../lib/mockData";
+import { MOCK_OUTFIT_SUGGESTIONS } from "../lib/mockData";
 import { ApiError, searchPrices } from "../services/api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Results">;
@@ -66,36 +66,53 @@ export function ResultsScreen({ route, navigation }: Props) {
               hint={`confidence: ${classification.brandConfidence}`}
             />
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
-            <Text style={styles.note}>
-              Reviews and outfit matches below are still placeholder data — real integrations land in
-              later phases.
-            </Text>
+            <Text style={styles.note}>Outfit matches below are still placeholder data — outfit pairing lands in a later phase.</Text>
           </View>
         )}
 
         {tab === "Price Comparison" && (
           <View>
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
-            <PricingBody pricing={pricing} loading={pricingLoading} error={pricingError} onRetry={fetchPricing} />
+            <Text style={styles.note}>Sorted low to high — mix of secondhand (eBay) and new/retail (eBay + Google Shopping).</Text>
+            <ProviderDataBody
+              items={pricing?.similarItems ?? []}
+              status={pricing?.status ?? null}
+              loading={pricingLoading}
+              error={pricingError}
+              onRetry={fetchPricing}
+              emptyTitle="No similar listings found"
+              emptyDetail="Try a clearer photo or a different angle."
+            />
           </View>
         )}
 
         {tab === "Reviews" && (
           <View>
-            <MockBanner />
-            {MOCK_REVIEWS.map((item, i) => (
-              <ItemCard key={i} item={item} />
-            ))}
+            <Text style={styles.note}>Ratings sourced from Google Shopping listings where available — not all items have reviews.</Text>
+            <ProviderDataBody
+              items={pricing?.reviews ?? []}
+              status={pricing?.status ?? null}
+              loading={pricingLoading}
+              error={pricingError}
+              onRetry={fetchPricing}
+              emptyTitle="No reviews found for this item"
+              emptyDetail="This is common for less popular or secondhand items."
+            />
           </View>
         )}
 
         {tab === "Similar Items" && (
           <View>
-            <Text style={styles.note}>
-              Live eBay listings — mostly secondhand. Cross-retailer new-item comparison
-              (Google Shopping) lands in Phase 3.
-            </Text>
-            <PricingBody pricing={pricing} loading={pricingLoading} error={pricingError} onRetry={fetchPricing} />
+            <Text style={styles.note}>Combined eBay + Google Shopping listings — condition shown per item where known.</Text>
+            <ProviderDataBody
+              items={pricing?.similarItems ?? []}
+              status={pricing?.status ?? null}
+              loading={pricingLoading}
+              error={pricingError}
+              onRetry={fetchPricing}
+              emptyTitle="No similar listings found"
+              emptyDetail="Try a clearer photo or a different angle."
+            />
           </View>
         )}
 
@@ -131,7 +148,7 @@ function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | 
     <View style={styles.rangeBanner}>
       {newRange && (
         <View style={resaleRange ? { marginBottom: 10 } : undefined}>
-          <Text style={styles.rangeLabel}>Estimated new price (eBay, new-condition listings)</Text>
+          <Text style={styles.rangeLabel}>Estimated new/retail price (eBay new-condition + Google Shopping)</Text>
           <Text style={styles.rangeValue}>
             ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
             <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
@@ -148,22 +165,32 @@ function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | 
         </View>
       )}
       {!newRange && (
-        <Text style={styles.rangeCaveat}>No new-condition eBay listings found — this is likely a used-market price only.</Text>
+        <Text style={styles.rangeCaveat}>No new/retail listings found — this is likely a used-market price only.</Text>
       )}
     </View>
   );
 }
 
-function PricingBody({
-  pricing,
+/** Shared renderer for any tab backed by a PriceListing[] slice of the /price-search
+ * response (Price Comparison, Similar Items, Reviews). `status` covers provider-level
+ * failures (rate limited / unavailable); an empty `items` array under an otherwise-ok
+ * status is treated as "nothing found for this particular tab" rather than an error. */
+function ProviderDataBody({
+  items,
+  status,
   loading,
   error,
   onRetry,
+  emptyTitle,
+  emptyDetail,
 }: {
-  pricing: PriceSearchResult | null;
+  items: PriceListing[];
+  status: DataSourceStatus | null;
   loading: boolean;
   error: { title: string; detail?: string } | null;
   onRetry: () => void;
+  emptyTitle: string;
+  emptyDetail: string;
 }) {
   if (loading) {
     return <ActivityIndicator color="#fff" style={{ marginTop: 24 }} />;
@@ -171,24 +198,24 @@ function PricingBody({
   if (error) {
     return <ErrorState title={error.title} detail={error.detail} onRetry={onRetry} />;
   }
-  if (!pricing || pricing.status === "unavailable") {
-    return <ErrorState title="Pricing temporarily unavailable" detail="eBay didn't respond — try again." onRetry={onRetry} />;
+  if (status === "unavailable" || status === null) {
+    return <ErrorState title="Pricing temporarily unavailable" detail="Providers didn't respond — try again." onRetry={onRetry} />;
   }
-  if (pricing.status === "rate_limited") {
+  if (status === "rate_limited") {
     return (
       <ErrorState
-        title="eBay request limit reached"
-        detail="The app proactively throttles to stay under eBay's daily quota — try again later."
+        title="Request limit reached"
+        detail="The app proactively throttles to stay under provider quotas — try again later."
         onRetry={onRetry}
       />
     );
   }
-  if (pricing.status === "no_results" || pricing.similarItems.length === 0) {
-    return <ErrorState title="No similar listings found" detail="Try a clearer photo or a different angle." onRetry={onRetry} />;
+  if (items.length === 0) {
+    return <ErrorState title={emptyTitle} detail={emptyDetail} onRetry={onRetry} />;
   }
   return (
     <>
-      {pricing.similarItems.map((item, i) => (
+      {items.map((item, i) => (
         <ItemCard key={i} item={item} />
       ))}
     </>
