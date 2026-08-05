@@ -32,6 +32,12 @@ clothing-scanner/
 
 ## Setup
 
+Clone the repo.
+
+```
+git clone https://github.com/benjaminsinger18-arch/clothing-scanner.git
+```
+
 This is an npm workspace — run `npm install` once from the repo root (`clothing-scanner/`)
 to install both `app/` and `server/` dependencies together.
 
