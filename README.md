@@ -137,6 +137,8 @@ somewhere else, two things need to be reachable over the internet instead:
    Free-tier Render web services spin down after ~15 min idle and take a few seconds
    to wake back up on the next request — fine for testing, just expect the first
    request after a lull to be slow.
+5. Also set `APP_SHARED_SECRET` (any long random string) — see "Backend auth" below.
+   Without it, the deployed URL is wide open to anyone who finds it.
 
 **2. Tunnel Expo itself** so the QR code works from anywhere, not just your LAN:
 
@@ -150,13 +152,39 @@ Your friend scans that QR code with Expo Go, same as normal. Your PC still needs
 stay on and `expo start --tunnel` running for the whole session — this isn't a
 hosted app, it's your dev server, just reachable remotely.
 
+## Backend auth
+
+Once the backend is deployed publicly (e.g. Render), its URL is no longer private —
+anyone who finds it can hit `/classify`, `/price-search`, or `/outfit-suggestions`,
+each of which costs real money (Claude/eBay/SerpApi calls). Set `APP_SHARED_SECRET`
+on the server to a long random string, and `EXPO_PUBLIC_APP_SHARED_SECRET` in
+`app/.env` to the *same* value — the app sends it as an `X-App-Secret` header, and
+the server rejects any request to a paid endpoint without it (`/health` stays open,
+since Render's own health checks hit it with no headers).
+
+This is a **deterrent, not real security** — the secret ships inside the app bundle
+and is extractable by anyone who unpacks it. It stops casual/automated abuse of the
+bare URL, not a determined attacker. Fine for this project's scale (you + friends
+testing); if this ever goes to real users, replace it with per-user auth instead.
+
+Leave `APP_SHARED_SECRET` unset for local dev — auth is skipped entirely when it's
+not configured, so `npm run dev` works with zero setup.
+
 ### Troubleshooting
 
 - **"Could not reach the backend"** — confirm the server is running, your phone and PC
   are on the same network, and `EXPO_PUBLIC_API_URL` in `app/.env` uses the LAN IP, not
   `localhost`. Restart `expo start` after editing `.env` (Expo only reads it at startup).
+- **Occasional plain-text "Not Found" from the deployed Render backend** — a known
+  free-tier quirk (`x-render-routing: no-server` in the response headers) that happens
+  around cold starts / instance transitions, not an app bug. It resolves itself on
+  retry within a second or two. If it persists across several retries, check the
+  Render dashboard for an actual deploy/crash error instead.
 - **"classification_failed" / 502 from `/classify`** — check `server/.env` has a valid
   `ANTHROPIC_API_KEY` and the server console for the underlying error.
+- **401 "unauthorized"** — `app/.env`'s `EXPO_PUBLIC_APP_SHARED_SECRET` doesn't match
+  the server's `APP_SHARED_SECRET`. Make sure both are set to the exact same value,
+  and restart `expo start` after editing `.env`.
 - **"Couldn't identify a clothing item"** — expected behavior for non-clothing or very
   unclear photos; retake with a single garment filling most of the frame in good light.
 - **No "estimated new/retail price" shown, only resale** — means neither eBay's

@@ -14,4 +14,6 @@ services:
         sync: false
       - key: SERPAPI_KEY
         sync: false
+      - key: APP_SHARED_SECRET
+        sync: false
     healthCheckPath: /health

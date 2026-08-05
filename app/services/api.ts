@@ -7,6 +7,7 @@ import type {
 } from "@clothing-scanner/shared-types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const APP_SHARED_SECRET = process.env.EXPO_PUBLIC_APP_SHARED_SECRET;
 
 export class ApiError extends Error {
   reason?: string;
@@ -14,6 +15,12 @@ export class ApiError extends Error {
     super(message);
     this.reason = reason;
   }
+}
+
+/** Auth header for the shared-secret check (server/src/lib/sharedSecretAuth.ts).
+ * Harmless to send even when unset/not required — the server just ignores it. */
+function authHeaders(): Record<string, string> {
+  return APP_SHARED_SECRET ? { "X-App-Secret": APP_SHARED_SECRET } : {};
 }
 
 export async function classifyPhoto(imageBase64: string): Promise<ClassificationResult> {
@@ -29,7 +36,7 @@ export async function classifyPhoto(imageBase64: string): Promise<Classification
   try {
     response = await fetch(`${API_URL}/classify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(body),
     });
   } catch {
@@ -67,7 +74,7 @@ export async function searchPrices(classification: ClassificationResult): Promis
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/price-search?${params.toString()}`);
+    response = await fetch(`${API_URL}/price-search?${params.toString()}`, { headers: authHeaders() });
   } catch {
     throw new ApiError(
       "Could not reach the backend",
@@ -105,7 +112,7 @@ export async function getOutfitSuggestions(classification: ClassificationResult)
   try {
     response = await fetch(`${API_URL}/outfit-suggestions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(body),
     });
   } catch {
