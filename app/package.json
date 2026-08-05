@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.ts",
   "scripts": {
+    "prestart": "npm run build --workspace=@clothing-scanner/shared-types",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",

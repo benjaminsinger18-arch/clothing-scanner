@@ -5,7 +5,9 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
+    "predev": "npm run build --workspace=@clothing-scanner/shared-types",
     "dev": "tsx watch src/index.ts",
+    "prebuild": "npm run build --workspace=@clothing-scanner/shared-types",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
