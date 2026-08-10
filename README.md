@@ -28,13 +28,27 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 
 ## What's left (not built)
 
-Everything in the original plan's 5 phases is done except **Phase 5 polish**:
-pricing and outfit data already fetch independently in parallel once the item is
-classified (each tab shows its own loading/error state), but there's no staged
-"Identifying item… → Finding prices… → Finding outfit matches…" progress text
-during the initial classify step, no image-compression tuning beyond the Phase 1
-baseline, and no production build (EAS Build) if you want a distributable binary
-instead of Expo Go. None of that blocks using the app today.
+Phase 5 polish is now done:
+- Staged loading text — `PreviewScreen` kicks off pricing + outfit-suggestion
+  fetches in parallel right after classification (not after navigating to
+  Results), and the loading overlay tracks real progress: "Identifying item…"
+  → "Finding prices…" → "Finding outfit matches…" (flips as soon as pricing,
+  usually the quicker call, resolves). `ResultsScreen` renders the prefetched
+  data instantly instead of showing a second round of spinners; per-tab "Try
+  again" still refetches just that tab on error.
+- Image-compression tuning — `compressForUpload` now tries a few width/quality
+  presets (1024px/0.8 down to 600px/0.5) and stops at the first one whose
+  base64 payload fits a ~700KB budget, instead of a single fixed pass. Most
+  photos still take the first (highest-quality) pass unchanged; only unusually
+  large originals fall through to smaller presets.
+- Production build (EAS Build) — config is in place (`app/eas.json`, plus
+  `bundleIdentifier`/`package` in `app/app.json`); see "Building a
+  distributable binary (EAS)" below. Actually running a build needs your own
+  Expo account login, which nobody but you can do.
+
+The only thing genuinely unbuilt is submitting to the App Store / Play Store
+(needs paid developer accounts on both sides) — out of scope unless you want
+this distributed beyond internal testing.
 
 ## Project layout
 
@@ -115,6 +129,37 @@ npx expo start
 Scan the QR code with **Expo Go** (App Store / Play Store) on your phone — phone and PC
 must be on the same Wi-Fi network. The first launch will ask for camera and photo
 library permissions.
+
+## Building a distributable binary (EAS)
+
+Everything above runs through Expo Go, which is great for development but requires
+Expo Go installed and (for LAN mode) matching Wi-Fi. EAS Build produces a real `.ipa`/
+`.apk`/`.aab` you can install directly or hand to a tester — no Expo Go, no dev server
+needing to stay running.
+
+1. `npm install -g eas-cli` (or use `npx eas-cli` for the commands below without a
+   global install).
+2. `cd app && eas login` — needs a free Expo account (https://expo.dev/signup).
+3. `eas build:configure` — links this project to your Expo account and writes an
+   `extra.eas.projectId` into `app.json`. One-time, per Expo account.
+4. Pick a profile from `app/eas.json`:
+   - `development` — includes the dev client, points at `localhost` (simulator/emulator
+     only, or edit the profile's `EXPO_PUBLIC_API_URL` to your LAN IP for a device).
+   - `preview` — internal-distribution build (installable via a link EAS gives you, no
+     store needed) pointed at the deployed Render backend — closest to what a remote
+     tester should install.
+   - `production` — same backend URL, `autoIncrement` on for repeat store submissions.
+5. `eas build --profile preview --platform ios` (or `android`, or `all`). EAS builds in
+   the cloud; you'll get a QR code / URL to install the result once it finishes.
+6. If the deployed backend has `APP_SHARED_SECRET` set (see "Backend auth" below), also
+   set `EXPO_PUBLIC_APP_SHARED_SECRET` for the build — don't put a real secret in
+   `eas.json` since it's committed to git; use `eas env:create` (or the Expo dashboard)
+   to store it instead, scoped to the profile you're building.
+
+`app.json`'s `ios.bundleIdentifier` / `android.package` are currently placeholder
+values (`com.clothingscanner.app`) — fine for internal builds via step 5, but you'll
+want your own reverse-DNS identifier before ever submitting to the App Store / Play
+Store.
 
 ## Letting a remote collaborator test the app
 

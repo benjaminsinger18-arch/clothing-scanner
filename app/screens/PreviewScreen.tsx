@@ -6,17 +6,20 @@ import type { RootStackParamList } from "../navigation/types";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { ErrorState } from "../components/ErrorState";
 import { compressForUpload } from "../lib/compressImage";
-import { ApiError, classifyPhoto } from "../services/api";
+import { toErrorInfo } from "../lib/errors";
+import { classifyPhoto, getOutfitSuggestions, searchPrices } from "../services/api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preview">;
 
 export function PreviewScreen({ route, navigation }: Props) {
   const { photoUri } = route.params;
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Identifying item…");
   const [error, setError] = useState<{ title: string; detail?: string } | null>(null);
 
   async function handleUsePhoto() {
     setLoading(true);
+    setLoadingMessage("Identifying item…");
     setError(null);
     try {
       const base64 = await compressForUpload(photoUri);
@@ -30,13 +33,46 @@ export function PreviewScreen({ route, navigation }: Props) {
         return;
       }
 
-      navigation.replace("Results", { classification });
+      // Kick off both requests together (they're independent) rather than
+      // chaining them, so the wait is as short as the slower of the two, not
+      // their sum. The staged message still tracks real progress: it starts
+      // on "prices" and flips to "outfit matches" as soon as pricing (usually
+      // the quicker of the two) comes back, whichever order they finish in.
+      let pricingDone = false;
+      let outfitsDone = false;
+      const advanceStage = () => {
+        if (!pricingDone) setLoadingMessage("Finding prices…");
+        else if (!outfitsDone) setLoadingMessage("Finding outfit matches…");
+      };
+      advanceStage();
+
+      const pricingPromise = searchPrices(classification)
+        .then((value) => ({ value, error: null }))
+        .catch((err) => ({ value: null, error: toErrorInfo(err, "Failed to load pricing") }))
+        .finally(() => {
+          pricingDone = true;
+          advanceStage();
+        });
+
+      const outfitsPromise = getOutfitSuggestions(classification)
+        .then((value) => ({ value, error: null }))
+        .catch((err) => ({ value: null, error: toErrorInfo(err, "Failed to load outfit suggestions") }))
+        .finally(() => {
+          outfitsDone = true;
+          advanceStage();
+        });
+
+      const [pricing, outfits] = await Promise.all([pricingPromise, outfitsPromise]);
+
+      navigation.replace("Results", {
+        classification,
+        prefetchedPricing: pricing.value,
+        prefetchedPricingError: pricing.error,
+        prefetchedOutfits: outfits.value,
+        prefetchedOutfitsError: outfits.error,
+      });
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError({ title: err.message, detail: err.reason });
-      } else {
-        setError({ title: "Something went wrong while identifying the item." });
-      }
+      setError(toErrorInfo(err, "Something went wrong while identifying the item."));
     } finally {
       setLoading(false);
     }
@@ -57,7 +93,7 @@ export function PreviewScreen({ route, navigation }: Props) {
         </Pressable>
       </View>
 
-      {loading ? <LoadingOverlay message="Identifying item…" /> : null}
+      {loading ? <LoadingOverlay message={loadingMessage} /> : null}
     </View>
   );
 }
