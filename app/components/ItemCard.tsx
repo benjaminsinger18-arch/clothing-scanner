@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import type { PriceListing } from "@clothing-scanner/shared-types";
 
 export function ItemCard({ item }: { item: PriceListing }) {
@@ -7,7 +7,12 @@ export function ItemCard({ item }: { item: PriceListing }) {
   const imageUrl = item.imageUrl;
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={() => {
+        Linking.openURL(item.url).catch((err) => console.warn("[ItemCard] Failed to open listing URL:", err));
+      }}
+    >
       <View style={styles.contentRow}>
         {imageUrl && !imageFailed ? (
           <Image
@@ -36,7 +41,7 @@ export function ItemCard({ item }: { item: PriceListing }) {
           )}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -49,6 +54,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
+  cardPressed: { opacity: 0.7 },
   contentRow: { flexDirection: "row", gap: 12 },
   thumb: {
     width: THUMB_SIZE,
