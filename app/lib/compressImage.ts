@@ -2,7 +2,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 
 /** Upper bound on the base64 payload we're willing to send. A typical garment
  * photo (high-frequency texture — knit, denim weave, logos) at the first
- * preset's 1024px/0.8 can plausibly run up to ~930KB base64, so the budget
+ * preset's 1280px/0.8 can plausibly run up to ~1.1MB base64, so the budget
  * needs real headroom above that or most photos fall through to extra
  * decode/resize/encode passes for no benefit — each pass re-decodes the full
  * original and adds real latency before the upload even starts. 1.2MB base64
@@ -13,12 +13,16 @@ const TARGET_BASE64_BYTES = 1_200_000;
 
 /** Presets tried in order, largest/highest-quality first. Each is a fresh
  * pass over the *original* uri (not chained off the previous pass's output)
- * so quality loss doesn't compound across attempts. Phase 1 baseline was a
- * single fixed 1024px/0.8 pass; this adds smaller fallbacks for photos that
- * are still large after that (e.g. big phone camera originals), while
- * leaving typical photos untouched — most already fit in the first pass. */
+ * so quality loss doesn't compound across attempts. The preferred preset is
+ * 1280px/0.8 — bumped up from an earlier 1024px baseline to give the
+ * classifier more fine detail to work with (exact color, garment cut/
+ * construction), since misclassification mattered more than the small
+ * latency/token cost of a modestly larger single request. Smaller presets
+ * remain a safety net for photos still large after that (e.g. big phone
+ * camera originals), while leaving typical photos untouched — most still
+ * fit in the first pass. */
 const PRESETS: { width: number; compress: number }[] = [
-  { width: 1024, compress: 0.8 },
+  { width: 1280, compress: 0.8 },
   { width: 1024, compress: 0.6 },
   { width: 768, compress: 0.55 },
   { width: 600, compress: 0.5 },

@@ -11,6 +11,7 @@ import {
 import type { SupportedMediaType } from "../lib/imageUtils.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
+const SONNET_MODEL = "claude-sonnet-5";
 const CLASSIFY_TOOL_NAME = "report_classification";
 const OUTFIT_TOOL_NAME = "report_outfit_suggestions";
 
@@ -45,7 +46,8 @@ const classifyTool: Anthropic.Tool = {
       },
       category: {
         type: "string",
-        description: 'Broad category, e.g. "outerwear", "tops", "bottoms", "footwear", "accessories".',
+        enum: ["tops", "bottoms", "outerwear", "dresses", "footwear", "accessories", "activewear", "underwear-sleepwear"],
+        description: "Broad category the garment belongs to — pick the single best fit.",
       },
       color: { type: "string", description: 'Dominant color(s), e.g. "navy blue".' },
       pattern: { type: "string", description: 'e.g. "solid", "striped", "floral", "plaid", "none".' },
@@ -96,8 +98,10 @@ async function callClaude(model: string, opts: ClassifyOptions): Promise<RawClas
             type: "text",
             text:
               "Identify the piece of clothing in this photo and call report_classification with your " +
-              "best assessment. Be honest about uncertainty — do not guess a brand you can't reasonably " +
-              "support from visible evidence.",
+              "best assessment. Look closely at the garment's cut, construction, and details before " +
+              "naming its specific type, and judge its true dominant color as it actually appears in " +
+              "the photo's lighting. Be honest about uncertainty — do not guess a brand you can't " +
+              "reasonably support from visible evidence.",
           },
         ],
       },
@@ -124,20 +128,21 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
 }
 
 /**
- * Classifies a garment photo using Haiku (cheap/fast). Retries once on
- * transient failure; throws ClassificationError if the retried call also
- * fails, since nothing downstream can proceed without a base classification.
+ * Classifies a garment photo using Sonnet. Retries once on transient
+ * failure; throws ClassificationError if the retried call also fails, since
+ * nothing downstream can proceed without a base classification.
  *
- * Previously escalated to a second, sequential Sonnet call whenever brand
- * confidence came back "low" on a recognized item, to try for a better brand
- * guess. Dropped: it doubled classify latency on a large share of scans, and
- * the UI already renders "low" confidence as a normal, fully-supported result
- * (see ResultsScreen's brand-guess hint) — the accuracy trade wasn't worth
- * the wait.
+ * Previously used Haiku by default, escalating to a second, sequential
+ * Sonnet call whenever brand confidence came back "low" on a recognized
+ * item. The two-call escalation was dropped for latency (doubled classify
+ * time on a large share of scans); that in turn freed up enough latency
+ * budget to just use Sonnet for the single call outright, trading Haiku's
+ * speed/cost for accuracy across the board (not just brand guesses) per
+ * user request — still one round-trip, so the overall time budget holds.
  */
 export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
-  const result = await callClaudeWithRetry(HAIKU_MODEL, opts);
-  return { ...result, model: "claude-haiku-4-5" };
+  const result = await callClaudeWithRetry(SONNET_MODEL, opts);
+  return { ...result, model: "claude-sonnet-5" };
 }
 
 const outfitTool: Anthropic.Tool = {
