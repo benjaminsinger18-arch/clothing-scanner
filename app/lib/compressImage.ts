@@ -1,11 +1,15 @@
 import * as ImageManipulator from "expo-image-manipulator";
 
-/** Upper bound on the base64 payload we're willing to send. Keeps upload time
- * reasonable on slow/cellular connections and caps Claude vision token cost
- * (larger images cost more tokens). ~700KB base64 is comfortably under
- * eyeballed 1-2s upload time even on a slow connection, while still being
- * plenty of detail for garment classification. */
-const TARGET_BASE64_BYTES = 700_000;
+/** Upper bound on the base64 payload we're willing to send. A typical garment
+ * photo (high-frequency texture — knit, denim weave, logos) at the first
+ * preset's 1024px/0.8 can plausibly run up to ~930KB base64, so the budget
+ * needs real headroom above that or most photos fall through to extra
+ * decode/resize/encode passes for no benefit — each pass re-decodes the full
+ * original and adds real latency before the upload even starts. 1.2MB base64
+ * clears that first-pass ceiling in the common case while still bounding
+ * upload time/vision token cost, and the smaller presets below remain a
+ * safety net for genuine outliers (unusually large/detailed originals). */
+const TARGET_BASE64_BYTES = 1_200_000;
 
 /** Presets tried in order, largest/highest-quality first. Each is a fresh
  * pass over the *original* uri (not chained off the previous pass's output)

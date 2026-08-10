@@ -11,7 +11,6 @@ import {
 import type { SupportedMediaType } from "../lib/imageUtils.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
-const SONNET_MODEL = "claude-sonnet-5";
 const CLASSIFY_TOOL_NAME = "report_classification";
 const OUTFIT_TOOL_NAME = "report_outfit_suggestions";
 
@@ -124,32 +123,21 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
   }
 }
 
-function needsEscalation(result: RawClassification): boolean {
-  if (result.garmentType === UNRECOGNIZED_GARMENT) return false; // a stronger model won't fix a bad photo
-  return result.brandConfidence === "low";
-}
-
 /**
- * Classifies a garment photo. Defaults to Haiku (cheap/fast); escalates to a
- * second Sonnet call when the Haiku result reports low brand confidence on an
- * otherwise-recognized item. Retries each model once on transient failure;
- * throws ClassificationError only if the (retried) Haiku call fails outright,
- * since nothing downstream can proceed without a base classification.
+ * Classifies a garment photo using Haiku (cheap/fast). Retries once on
+ * transient failure; throws ClassificationError if the retried call also
+ * fails, since nothing downstream can proceed without a base classification.
+ *
+ * Previously escalated to a second, sequential Sonnet call whenever brand
+ * confidence came back "low" on a recognized item, to try for a better brand
+ * guess. Dropped: it doubled classify latency on a large share of scans, and
+ * the UI already renders "low" confidence as a normal, fully-supported result
+ * (see ResultsScreen's brand-guess hint) — the accuracy trade wasn't worth
+ * the wait.
  */
 export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
-  const haikuResult = await callClaudeWithRetry(HAIKU_MODEL, opts);
-
-  if (!needsEscalation(haikuResult)) {
-    return { ...haikuResult, model: "claude-haiku-4-5" };
-  }
-
-  try {
-    const sonnetResult = await callClaudeWithRetry(SONNET_MODEL, opts);
-    return { ...sonnetResult, model: "claude-sonnet-5" };
-  } catch (err) {
-    console.error("[claudeClient] Sonnet escalation failed, falling back to Haiku result:", err);
-    return { ...haikuResult, model: "claude-haiku-4-5" };
-  }
+  const result = await callClaudeWithRetry(HAIKU_MODEL, opts);
+  return { ...result, model: "claude-haiku-4-5" };
 }
 
 const outfitTool: Anthropic.Tool = {
