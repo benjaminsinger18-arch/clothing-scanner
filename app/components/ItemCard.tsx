@@ -1,25 +1,46 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 import type { PriceListing } from "@clothing-scanner/shared-types";
 
 export function ItemCard({ item }: { item: PriceListing }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = item.imageUrl;
+
   return (
     <View style={styles.card}>
-      <Text style={styles.title} numberOfLines={2}>
-        {item.title}
-      </Text>
-      <View style={styles.row}>
-        <Text style={styles.price}>{item.price > 0 ? `$${item.price.toFixed(2)}` : "—"}</Text>
-        <Text style={styles.source}>{item.source}</Text>
+      <View style={styles.contentRow}>
+        {imageUrl && !imageFailed ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.thumb}
+            resizeMode="cover"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <View style={styles.thumbPlaceholder} />
+        )}
+
+        <View style={styles.textCol}>
+          <Text style={styles.title} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <View style={styles.row}>
+            <Text style={styles.price}>{item.price > 0 ? `$${item.price.toFixed(2)}` : "—"}</Text>
+            <Text style={styles.source}>{item.source}</Text>
+          </View>
+          {item.condition ? <Text style={styles.meta}>{item.condition}</Text> : null}
+          {typeof item.rating === "number" && (
+            <Text style={styles.meta}>
+              ★ {item.rating.toFixed(1)} ({item.reviewCount ?? 0})
+            </Text>
+          )}
+        </View>
       </View>
-      {item.condition ? <Text style={styles.meta}>{item.condition}</Text> : null}
-      {typeof item.rating === "number" && (
-        <Text style={styles.meta}>
-          ★ {item.rating.toFixed(1)} ({item.reviewCount ?? 0})
-        </Text>
-      )}
     </View>
   );
 }
+
+const THUMB_SIZE = 64;
 
 const styles = StyleSheet.create({
   card: {
@@ -28,6 +49,21 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
+  contentRow: { flexDirection: "row", gap: 12 },
+  thumb: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: 8,
+    backgroundColor: "#2c2c2e",
+  },
+  thumbPlaceholder: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: 8,
+    backgroundColor: "#2c2c2e",
+    flexShrink: 0,
+  },
+  textCol: { flex: 1, minWidth: 0 },
   title: { color: "#fff", fontSize: 15, fontWeight: "600", marginBottom: 6 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   price: { color: "#4ade80", fontSize: 16, fontWeight: "700" },
