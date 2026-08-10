@@ -14,17 +14,12 @@ const TABS = ["Overview", "Price Comparison", "Reviews", "Similar Items", "Outfi
 type Tab = (typeof TABS)[number];
 
 export function ResultsScreen({ route, navigation }: Props) {
-  const { classification, prefetchedPricing, prefetchedPricingError, prefetchedOutfits, prefetchedOutfitsError } = route.params;
+  const { classification } = route.params;
   const [tab, setTab] = useState<Tab>("Overview");
 
-  // PreviewScreen already fetches pricing/outfits in parallel right after
-  // classification (see its staged "Finding prices… / Finding outfit
-  // matches…" loading text) and hands the results here, so the common case
-  // renders instantly with no second round of spinners. fetchPricing/
-  // fetchOutfits below are only re-run on explicit "Try again" taps.
-  const [pricing, setPricing] = useState<PriceSearchResult | null>(prefetchedPricing ?? null);
-  const [pricingLoading, setPricingLoading] = useState(!prefetchedPricing && !prefetchedPricingError);
-  const [pricingError, setPricingError] = useState<{ title: string; detail?: string } | null>(prefetchedPricingError ?? null);
+  const [pricing, setPricing] = useState<PriceSearchResult | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+  const [pricingError, setPricingError] = useState<{ title: string; detail?: string } | null>(null);
 
   const fetchPricing = useCallback(async () => {
     setPricingLoading(true);
@@ -40,17 +35,12 @@ export function ResultsScreen({ route, navigation }: Props) {
   }, [classification]);
 
   useEffect(() => {
-    if (!prefetchedPricing && !prefetchedPricingError) {
-      fetchPricing();
-    }
-    // Only meant to run once on mount, falling back to a fetch when Preview
-    // didn't already hand us a result — not on every fetchPricing identity change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchPricing();
+  }, [fetchPricing]);
 
-  const [outfits, setOutfits] = useState<OutfitSuggestionsResult | null>(prefetchedOutfits ?? null);
-  const [outfitsLoading, setOutfitsLoading] = useState(!prefetchedOutfits && !prefetchedOutfitsError);
-  const [outfitsError, setOutfitsError] = useState<{ title: string; detail?: string } | null>(prefetchedOutfitsError ?? null);
+  const [outfits, setOutfits] = useState<OutfitSuggestionsResult | null>(null);
+  const [outfitsLoading, setOutfitsLoading] = useState(true);
+  const [outfitsError, setOutfitsError] = useState<{ title: string; detail?: string } | null>(null);
 
   const fetchOutfits = useCallback(async () => {
     setOutfitsLoading(true);
@@ -66,11 +56,8 @@ export function ResultsScreen({ route, navigation }: Props) {
   }, [classification]);
 
   useEffect(() => {
-    if (!prefetchedOutfits && !prefetchedOutfitsError) {
-      fetchOutfits();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchOutfits();
+  }, [fetchOutfits]);
 
   return (
     <View style={styles.container}>
