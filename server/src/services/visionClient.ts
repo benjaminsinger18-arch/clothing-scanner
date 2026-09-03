@@ -1,11 +1,17 @@
-// Google Cloud Vision integration — a fallback identification pass for when Claude's
-// vision call can't confidently name the item at all. Vision's web/label detection
-// matches the photo against Google's image index, which sometimes recognizes a
-// specific product, logo, or garment type that a general-purpose vision model misses
-// (unusual angle, niche item, heavy background clutter). It doesn't replace Claude's
-// structured classification (no color/pattern/style judgment) — it just supplies a
-// text hint for a second Claude pass to work with.
-// Docs: https://cloud.google.com/vision/docs/detecting-web
+// Google Cloud Vision integration — an always-on second opinion that runs in
+// parallel with every Claude classification call, not just a fallback for outright
+// failures. Serves two purposes (see claudeClient.ts's classifyImage):
+//   1. Brand augmentation — LOGO_DETECTION can catch a brand Claude's general vision
+//      model was too conservative to name, even on items Claude otherwise identifies
+//      fine. Always surfaced as a low-confidence, clearly-attributed guess, never as
+//      something validated against the image's actual context.
+//   2. Unrecognized-item rescue — when Claude's first pass can't name the item at
+//      all, WEB_DETECTION/LABEL_DETECTION's "best guess" seeds a hint for one retry
+//      Claude call, same as before — just cheaper now since Vision starts alongside
+//      Claude's first call instead of only after it fails.
+// It still doesn't replace Claude's structured classification (no color/pattern/
+// style judgment) — just supplies signal Claude's own call didn't have.
+// Docs: https://cloud.google.com/vision/docs/detecting-web, /docs/detecting-logos
 //
 // Takes image bytes directly (base64), unlike SerpApi's Google Lens engine, which
 // requires a publicly hosted image URL — a good fit here since photos never leave
@@ -14,6 +20,8 @@
 import { canMakeVisionCall, recordVisionCall } from "../lib/rateLimitTracker.js";
 
 const ANNOTATE_URL = "https://vision.googleapis.com/v1/images:annotate";
+const REQUEST_TIMEOUT_MS = 4000;
+const LOGO_SCORE_FLOOR = 0.5;
 
 export class VisionApiError extends Error {}
 
@@ -27,22 +35,39 @@ interface LabelAnnotation {
   score: number;
 }
 
+interface LogoAnnotation {
+  description: string;
+  score: number;
+}
+
 interface AnnotateResponse {
   responses?: {
     webDetection?: WebDetection;
     labelAnnotations?: LabelAnnotation[];
+    logoAnnotations?: LogoAnnotation[];
     error?: { message: string };
   }[];
 }
 
+export interface VisionSignal {
+  /** General best-guess description from web/label detection — used as the
+   * unrecognized-item rescue hint. Same semantics as this module's old return
+   * value before it grew logo detection too. */
+  bestGuess: string | null;
+  /** Logo detections at/above LOGO_SCORE_FLOOR, best-first. Empty if LOGO_DETECTION
+   * found nothing usable. */
+  logos: { description: string; score: number }[];
+}
+
 /**
- * Asks Google Cloud Vision what it thinks the photo shows, and returns a single
- * best-effort text hint (e.g. "Levi's trucker jacket", "leather chelsea boots") for
- * Claude to reconsider its classification with. Returns null if unconfigured,
- * rate-limited, errored, or Vision genuinely found nothing useful — callers should
- * treat null the same as "no fallback available" and keep the original result.
+ * Asks Google Cloud Vision what it thinks the photo shows — a general best-guess
+ * description plus any detected logos. Returns null if unconfigured, rate-limited,
+ * errored, or Vision genuinely found nothing useful at all; callers should treat
+ * null as "no signal available" and fall back to Claude alone. A populated result
+ * may still have `bestGuess: null` or `logos: []` individually — only the "both
+ * empty" case collapses to null.
  */
-export async function identifyWithVision(imageBase64: string): Promise<string | null> {
+export async function getVisionSignal(imageBase64: string): Promise<VisionSignal | null> {
   const apiKey = process.env.GOOGLE_VISION_API_KEY;
   if (!apiKey) {
     return null;
@@ -53,6 +78,9 @@ export async function identifyWithVision(imageBase64: string): Promise<string | 
 
   const url = new URL(ANNOTATE_URL);
   url.searchParams.set("key", apiKey);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
     const response = await fetch(url, {
@@ -65,10 +93,12 @@ export async function identifyWithVision(imageBase64: string): Promise<string | 
             features: [
               { type: "WEB_DETECTION", maxResults: 10 },
               { type: "LABEL_DETECTION", maxResults: 10 },
+              { type: "LOGO_DETECTION", maxResults: 5 },
             ],
           },
         ],
       }),
+      signal: controller.signal,
     });
     recordVisionCall();
 
@@ -84,18 +114,26 @@ export async function identifyWithVision(imageBase64: string): Promise<string | 
 
     // Prefer Vision's own "best guess" (it already fuses web + label signals);
     // fall back to the top-scoring web entity, then the top label.
-    const bestGuess = result.webDetection?.bestGuessLabels?.[0]?.label;
-    if (bestGuess) return bestGuess;
+    const bestGuess =
+      result.webDetection?.bestGuessLabels?.[0]?.label ??
+      [...(result.webDetection?.webEntities ?? [])]
+        .filter((e) => e.description)
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]?.description ??
+      [...(result.labelAnnotations ?? [])].sort((a, b) => b.score - a.score)[0]?.description ??
+      null;
 
-    const topEntity = [...(result.webDetection?.webEntities ?? [])]
-      .filter((e) => e.description)
-      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
-    if (topEntity?.description) return topEntity.description;
+    const logos = [...(result.logoAnnotations ?? [])]
+      .filter((l) => l.score >= LOGO_SCORE_FLOOR)
+      .sort((a, b) => b.score - a.score);
 
-    const topLabel = [...(result.labelAnnotations ?? [])].sort((a, b) => b.score - a.score)[0];
-    return topLabel?.description ?? null;
+    if (!bestGuess && logos.length === 0) {
+      return null;
+    }
+    return { bestGuess, logos };
   } catch (err) {
     console.error("[visionClient] identification failed:", err);
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }

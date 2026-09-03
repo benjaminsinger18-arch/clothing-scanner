@@ -19,9 +19,17 @@ export interface ClassificationResult {
   /** Which model produced this result — useful for debugging escalation logic. */
   model: "claude-haiku-4-5" | "claude-sonnet-5";
   /** True when Claude's first pass came back "unrecognized" and Google Cloud Vision's
-   * web/label detection supplied a hint that let a second Claude pass identify the
-   * item after all. Absent/false when no fallback was needed (or it didn't help). */
+   * web/label detection (fetched concurrently with that first pass) supplied a hint
+   * that let a second Claude pass identify the item after all. Absent/false when no
+   * rescue pass was needed (or it didn't help). */
   visionAssisted?: boolean;
+  /** Present and set to "vision-logo" when brandGuess/brandConfidence were filled in
+   * or upgraded from Google Cloud Vision's logo detection rather than Claude's own
+   * judgment (only happens when Claude's own brandConfidence was "none" or "low").
+   * Absent means the brand guess is entirely Claude's. Treat a "vision-logo" guess
+   * as unvalidated against the image's actual context by Claude — distinct from a
+   * guess Claude itself vouches for. */
+  brandSource?: "vision-logo";
 }
 
 export interface PriceListing {

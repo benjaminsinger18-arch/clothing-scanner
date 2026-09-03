@@ -25,12 +25,19 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   set up `SERPAPI_KEY` now and get real Google Shopping data while eBay shows as
   unavailable. Outfit Matches only needs `ANTHROPIC_API_KEY` + eBay (SerpApi is
   intentionally skipped there — see "Required API keys" below).
-- Vision fallback ✅ — when Claude's classification comes back "unrecognized",
-  `/classify` now asks **Google Cloud Vision** (web + label detection) for its own
-  best guess at the item, then gives Claude one more pass with that as a hint before
-  giving up. This is what actually rescues borderline scans — Vision's web-scale
-  index sometimes names something Claude's general vision missed. Optional: unset
-  `GOOGLE_VISION_API_KEY` and this step is skipped, same as before.
+- Vision ensemble ✅ — `/classify` now runs **Google Cloud Vision** (web, label, and
+  logo detection) in parallel with every single classification call, not just as a
+  fallback for outright failures. It's used two ways: (1) **brand augmentation** —
+  when Claude's own brand guess comes back low-confidence/none, a detected logo
+  fills it in (always capped at "low" confidence and tagged `brandSource:
+  "vision-logo"`, since it's unvalidated against the image by Claude — the app
+  labels it "via logo detection" so this is never confused with a guess Claude
+  itself vouches for); (2) **unrecognized-item rescue** — same as before, Vision's
+  best guess seeds a hint for one retry Claude pass when the first pass can't name
+  the item at all, just cheaper now since Vision starts alongside Claude's first
+  call instead of only after it fails. Runs concurrently, not sequentially, so it
+  adds ~zero latency on the common path. Optional: unset `GOOGLE_VISION_API_KEY`
+  and both of these are skipped — `/classify` still works with Claude alone.
 
 ## What's left (not built)
 
@@ -315,10 +322,11 @@ not configured, so `npm run dev` works with zero setup.
   2. **Credentials** → **Create Credentials** → **API key**. No OAuth/service-account
      setup needed — the REST endpoint this app calls (`images:annotate`) accepts a
      plain API key.
-  3. Paste it into `server/.env`. Free tier is 1,000 units/month; the backend
-     throttles at 150/day to leave headroom (see `rateLimitTracker.ts`). Leave unset
-     to skip this fallback entirely — `/classify` still works, it just won't get a
-     second opinion on items Claude can't name.
+  3. Paste it into `server/.env`. Free tier is 1,000 units/month *per feature type*
+     (web/label/logo detection each get their own allotment); the backend throttles
+     at 900/month to leave headroom (see `rateLimitTracker.ts`). Leave unset to skip
+     Vision entirely — `/classify` still works with Claude alone, just without the
+     logo-detection brand boost or the unrecognized-item rescue pass.
 
 `/price-search` merges whichever of eBay/SerpApi are configured — either can be
 missing and the endpoint still returns whatever data the other provides
