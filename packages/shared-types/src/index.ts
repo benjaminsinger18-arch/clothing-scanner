@@ -16,20 +16,29 @@ export interface ClassificationResult {
   style: string;
   brandGuess: string | null;
   brandConfidence: BrandConfidence;
-  /** Which model produced this result — useful for debugging escalation logic. */
-  model: "claude-haiku-4-5" | "claude-sonnet-5";
+  /** Which model produced this result — useful for debugging escalation logic.
+   * "gemini-3.1-pro" means Claude's own pass came back "unrecognized" and Gemini's
+   * independent second opinion (run concurrently, see classifyImage) succeeded
+   * where Claude didn't — the whole result is Gemini's, not just a hint-assisted
+   * Claude retry. */
+  model: "claude-haiku-4-5" | "claude-sonnet-5" | "gemini-3.1-pro";
   /** True when Claude's first pass came back "unrecognized" and Google Cloud Vision's
    * web/label detection (fetched concurrently with that first pass) supplied a hint
    * that let a second Claude pass identify the item after all. Absent/false when no
-   * rescue pass was needed (or it didn't help). */
+   * rescue pass was needed (or it didn't help) — including when Gemini rescued the
+   * scan instead (see `model`), since that's a different mechanism than this flag
+   * documents. */
   visionAssisted?: boolean;
-  /** Present and set to "vision-logo" when brandGuess/brandConfidence were filled in
-   * or upgraded from Google Cloud Vision's logo detection rather than Claude's own
-   * judgment (only happens when Claude's own brandConfidence was "none" or "low").
-   * Absent means the brand guess is entirely Claude's. Treat a "vision-logo" guess
-   * as unvalidated against the image's actual context by Claude — distinct from a
-   * guess Claude itself vouches for. */
-  brandSource?: "vision-logo";
+  /** Present when brandGuess/brandConfidence were filled in or upgraded from a
+   * source other than the primary result's own judgment (only happens when the
+   * primary result's own brandConfidence was "none" or "low"):
+   *   - "vision-logo" — Google Cloud Vision's logo detection.
+   *   - "gemini" — Gemini's independent classification confidently named a brand
+   *     Claude didn't (softened a confidence notch on the way in — see
+   *     applyBrandCrossValidation in claudeClient.ts).
+   * Absent means the brand guess is entirely the primary model's own. Treat either
+   * tagged source as a second opinion the primary model didn't itself vouch for. */
+  brandSource?: "vision-logo" | "gemini";
 }
 
 export interface PriceListing {

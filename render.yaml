@@ -16,6 +16,8 @@ services:
         sync: false
       - key: GOOGLE_VISION_API_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: APP_SHARED_SECRET
         sync: false
     healthCheckPath: /health

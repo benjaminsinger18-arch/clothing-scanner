@@ -27,17 +27,27 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   intentionally skipped there — see "Required API keys" below).
 - Vision ensemble ✅ — `/classify` now runs **Google Cloud Vision** (web, label, and
   logo detection) in parallel with every single classification call, not just as a
-  fallback for outright failures. It's used two ways: (1) **brand augmentation** —
-  when Claude's own brand guess comes back low-confidence/none, a detected logo
-  fills it in (always capped at "low" confidence and tagged `brandSource:
-  "vision-logo"`, since it's unvalidated against the image by Claude — the app
-  labels it "via logo detection" so this is never confused with a guess Claude
-  itself vouches for); (2) **unrecognized-item rescue** — same as before, Vision's
-  best guess seeds a hint for one retry Claude pass when the first pass can't name
-  the item at all, just cheaper now since Vision starts alongside Claude's first
-  call instead of only after it fails. Runs concurrently, not sequentially, so it
-  adds ~zero latency on the common path. Optional: unset `GOOGLE_VISION_API_KEY`
-  and both of these are skipped — `/classify` still works with Claude alone.
+  fallback for outright failures. Used for (1) **brand augmentation** — a detected
+  logo fills in a low-confidence/no brand guess (capped at "low" confidence, tagged
+  `brandSource: "vision-logo"`, shown in the app as "via logo detection" so it's
+  never confused with a guess Claude itself vouches for) and (2) **unrecognized-item
+  rescue** — Vision's best guess seeds a hint for one retry Claude pass, now cheaper
+  to trigger since Vision starts alongside Claude's first call. Runs concurrently,
+  so it adds ~zero latency on the common path. Optional: unset
+  `GOOGLE_VISION_API_KEY` to skip it entirely.
+- Gemini ensemble ✅ — `/classify` also runs **Gemini 3.1 Pro** in parallel, as a
+  second full independent classification (not just entity detection like Vision).
+  Used for (1) **brand cross-validation** — if Claude's own brand guess is
+  unconfident but Gemini confidently named one, it fills in (softened a confidence
+  notch, tagged `brandSource: "gemini"`, shown in the app as "via Gemini") and (2)
+  **unrecognized-item rescue**, tried before the Vision-hint path — if Claude can't
+  identify the item but Gemini's own independent pass can, Gemini's whole result is
+  used directly (`model: "gemini-3.1-pro"` on the response). Unlike Vision, Gemini
+  is a full reasoning model comparable in weight to Claude's own call, so it *can*
+  add real latency on the common path (bounded by a timeout) — not the free
+  zero-latency ride Vision gets. Optional: unset `GEMINI_API_KEY` to skip it
+  entirely. **Note:** unlike every other optional provider here, Gemini 3.1 Pro has
+  no free tier — see "Required API keys" below before enabling it.
 
 ## What's left (not built)
 
@@ -233,10 +243,11 @@ somewhere else, two things need to be reachable over the internet instead:
 2. Go to https://dashboard.render.com/ → **New** → **Blueprint** → connect this repo.
    Render reads `render.yaml` and creates the web service automatically.
 3. In the Render dashboard, set the `ANTHROPIC_API_KEY` / `EBAY_CLIENT_ID` /
-   `EBAY_CLIENT_SECRET` / `SERPAPI_KEY` / `GOOGLE_VISION_API_KEY` env vars (they're
-   marked `sync: false` in the blueprint, so Render prompts for them rather than
-   expecting them in the repo — `GOOGLE_VISION_API_KEY` can be left blank, it's
-   optional).
+   `EBAY_CLIENT_SECRET` / `SERPAPI_KEY` / `GOOGLE_VISION_API_KEY` / `GEMINI_API_KEY`
+   env vars (they're marked `sync: false` in the blueprint, so Render prompts for
+   them rather than expecting them in the repo — `GOOGLE_VISION_API_KEY` and
+   `GEMINI_API_KEY` can both be left blank, they're optional; remember Gemini has
+   no free tier if you do set it, see "Required API keys" below).
 4. Once deployed, Render gives you a stable URL like
    `https://clothing-scanner-server.onrender.com`. Put that in **both** your and your
    friend's `app/.env` as `EXPO_API_URL` (instead of the LAN IP).
@@ -327,6 +338,18 @@ not configured, so `npm run dev` works with zero setup.
      at 900/month to leave headroom (see `rateLimitTracker.ts`). Leave unset to skip
      Vision entirely — `/classify` still works with Claude alone, just without the
      logo-detection brand boost or the unrecognized-item rescue pass.
+- `GEMINI_API_KEY` — optional, from https://aistudio.google.com/ (API keys section
+  — sign up, key is issued immediately). Paste it into `server/.env`.
+  **Unlike every other key above, this one has no free tier at all** — Gemini 3.1
+  Pro is billed from the first call (~$2/M input tokens, ~$12/M output tokens as of
+  writing). A single classification call is roughly 1,500-2,000 tokens all in, so
+  in practice this runs to fractions of a cent per scan — at this project's
+  ~80-100 scans/month estimate that's well under a dollar a month, but it's real
+  money from the very first request, unlike everything else in this list. The
+  backend caps it at 300 calls/day (see `rateLimitTracker.ts`) purely as a
+  runaway-cost circuit breaker, not quota protection. Leave unset to skip Gemini
+  entirely — `/classify` still works with Claude (+ Vision) alone, just without
+  Gemini's brand cross-validation or its unrecognized-item rescue pass.
 
 `/price-search` merges whichever of eBay/SerpApi are configured — either can be
 missing and the endpoint still returns whatever data the other provides

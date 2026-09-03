@@ -74,13 +74,34 @@ export function recordVisionCall(): void {
   visionCounter.count += 1;
 }
 
+// --- Gemini: unlike every other cap in this file, Gemini 3.1 Pro has no free tier
+// at all — it's billed from the first call. This cap isn't protecting a free
+// allotment, it's a pure runaway-cost circuit breaker (e.g. against a bug that
+// loops classification calls). Sized well above realistic usage (~80-100
+// scans/month, see SerpApi's cap above) with a daily period so a bad day can't run
+// up an unbounded bill before anyone notices. ---
+const GEMINI_DAILY_SOFT_CAP = 300;
+const geminiCounter: Counter = { count: 0, periodKey: todayKey() };
+
+export function canMakeGeminiCall(): boolean {
+  resetIfNewPeriod(geminiCounter, todayKey());
+  return geminiCounter.count < GEMINI_DAILY_SOFT_CAP;
+}
+
+export function recordGeminiCall(): void {
+  resetIfNewPeriod(geminiCounter, todayKey());
+  geminiCounter.count += 1;
+}
+
 export function getUsageSnapshot() {
   resetIfNewPeriod(ebayCounter, todayKey());
   resetIfNewPeriod(serpApiCounter, monthKey());
   resetIfNewPeriod(visionCounter, monthKey());
+  resetIfNewPeriod(geminiCounter, todayKey());
   return {
     ebay: { count: ebayCounter.count, cap: EBAY_DAILY_SOFT_CAP, period: "day" as const },
     serpapi: { count: serpApiCounter.count, cap: SERPAPI_MONTHLY_SOFT_CAP, period: "month" as const },
     vision: { count: visionCounter.count, cap: VISION_MONTHLY_SOFT_CAP, period: "month" as const },
+    gemini: { count: geminiCounter.count, cap: GEMINI_DAILY_SOFT_CAP, period: "day" as const },
   };
 }

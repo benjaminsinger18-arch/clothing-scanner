@@ -43,8 +43,14 @@ app.listen(port, () => {
   }
   if (!process.env.GOOGLE_VISION_API_KEY) {
     console.warn(
-      "[server] GOOGLE_VISION_API_KEY is not set — /classify will skip the Vision fallback and just return " +
-        "\"unrecognized\" for items Claude alone can't identify."
+      "[server] GOOGLE_VISION_API_KEY is not set — /classify will run Claude (+ Gemini, if configured) alone, " +
+        "with no logo-detection brand boost or Vision-hint rescue."
+    );
+  }
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn(
+      "[server] GEMINI_API_KEY is not set — /classify will run without Gemini's second opinion " +
+        "(no brand cross-validation from it, no Gemini rescue pass)."
     );
   }
   if (!process.env.APP_SHARED_SECRET) {
