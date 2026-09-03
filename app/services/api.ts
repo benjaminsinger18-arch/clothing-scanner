@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import type {
   ClassificationResult,
   ClassifyRequestBody,
@@ -6,8 +7,12 @@ import type {
   PriceSearchResult,
 } from "@clothing-scanner/shared-types";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-const APP_SHARED_SECRET = process.env.EXPO_PUBLIC_APP_SHARED_SECRET;
+// Read from app.config.js's `extra` (populated from EXPO_API_URL /
+// EXPO_APP_SHARED_SECRET at build time) rather than process.env directly — Metro
+// only auto-inlines EXPO_PUBLIC_-prefixed vars, and these intentionally aren't
+// prefixed that way. See app.config.js for why this doesn't change what's exposed.
+const API_URL = Constants.expoConfig?.extra?.apiUrl as string | null | undefined;
+const APP_SHARED_SECRET = Constants.expoConfig?.extra?.appSharedSecret as string | null | undefined;
 
 export class ApiError extends Error {
   reason?: string;
@@ -26,7 +31,7 @@ function authHeaders(): Record<string, string> {
 export async function classifyPhoto(imageBase64: string): Promise<ClassificationResult> {
   if (!API_URL) {
     throw new ApiError(
-      "EXPO_PUBLIC_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
+      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
     );
   }
 
@@ -42,7 +47,7 @@ export async function classifyPhoto(imageBase64: string): Promise<Classification
   } catch {
     throw new ApiError(
       "Could not reach the backend",
-      `Check that the server is running and EXPO_PUBLIC_API_URL (${API_URL}) is reachable from your phone`
+      `Check that the server is running and EXPO_API_URL (${API_URL}) is reachable from your phone`
     );
   }
 
@@ -58,7 +63,7 @@ export async function classifyPhoto(imageBase64: string): Promise<Classification
 export async function searchPrices(classification: ClassificationResult): Promise<PriceSearchResult> {
   if (!API_URL) {
     throw new ApiError(
-      "EXPO_PUBLIC_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
+      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
     );
   }
 
@@ -78,7 +83,7 @@ export async function searchPrices(classification: ClassificationResult): Promis
   } catch {
     throw new ApiError(
       "Could not reach the backend",
-      `Check that the server is running and EXPO_PUBLIC_API_URL (${API_URL}) is reachable from your phone`
+      `Check that the server is running and EXPO_API_URL (${API_URL}) is reachable from your phone`
     );
   }
 
@@ -94,7 +99,7 @@ export async function searchPrices(classification: ClassificationResult): Promis
 export async function getOutfitSuggestions(classification: ClassificationResult): Promise<OutfitSuggestionsResult> {
   if (!API_URL) {
     throw new ApiError(
-      "EXPO_PUBLIC_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
+      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
     );
   }
 
@@ -118,7 +123,7 @@ export async function getOutfitSuggestions(classification: ClassificationResult)
   } catch {
     throw new ApiError(
       "Could not reach the backend",
-      `Check that the server is running and EXPO_PUBLIC_API_URL (${API_URL}) is reachable from your phone`
+      `Check that the server is running and EXPO_API_URL (${API_URL}) is reachable from your phone`
     );
   }
 
