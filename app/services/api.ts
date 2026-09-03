@@ -96,6 +96,37 @@ export async function searchPrices(classification: ClassificationResult): Promis
   return json as PriceSearchResult;
 }
 
+export async function lookupBarcode(code: string): Promise<ClassificationResult> {
+  if (!API_URL) {
+    throw new ApiError(
+      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
+    );
+  }
+
+  const params = new URLSearchParams({ code });
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/barcode-lookup?${params.toString()}`, { headers: authHeaders() });
+  } catch {
+    throw new ApiError(
+      "Could not reach the backend",
+      `Check that the server is running and EXPO_API_URL (${API_URL}) is reachable from your phone`
+    );
+  }
+
+  const json = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    // json?.error carries a specific code here — notably "not_found", which is a
+    // common/expected outcome for clothing barcodes, not a generic failure.
+    // BarcodeScanScreen branches on this to show a dedicated message.
+    throw new ApiError(json?.error ?? "barcode_lookup_failed", json?.reason);
+  }
+
+  return json.classification as ClassificationResult;
+}
+
 export async function getOutfitSuggestions(classification: ClassificationResult): Promise<OutfitSuggestionsResult> {
   if (!API_URL) {
     throw new ApiError(

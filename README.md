@@ -48,6 +48,23 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   zero-latency ride Vision gets. Optional: unset `GEMINI_API_KEY` to skip it
   entirely. **Note:** unlike every other optional provider here, Gemini 3.1 Pro has
   no free tier — see "Required API keys" below before enabling it.
+- Barcode scanning ✅ — a second entry point alongside the photo flow: scan a
+  UPC/EAN barcode on a clothing tag (in-app live camera via `expo-camera`, new
+  "Scan Barcode" button on the Capture screen) and the backend looks it up via
+  **UPCitemdb** (`GET /barcode-lookup`, keyless free trial tier, no signup) and
+  normalizes the match into the exact same classification shape the photo flow
+  produces — brand comes straight from the database match (`brandConfidence:
+  "high"`, `brandSource: "barcode"`, no guessing), garmentType/category/pattern/
+  style are a cheap text-only Haiku inference pass over the sparse product-listing
+  text. From there it's the *same* Results screen, unmodified — pricing and outfit
+  matches work identically regardless of how the item was identified. **Coverage
+  caveat:** general UPC databases have historically thin coverage for clothing
+  specifically (lots of private-label/fast-fashion items were never registered) —
+  a "no product found" result is common and expected, not a bug; the scan screen
+  offers "Try Again" and "Take Photo Instead" for exactly that reason. UPCitemdb's
+  trial tier is capped at 100 requests/day *shared across all anonymous callers*,
+  not just this app — the backend throttles its own usage to 80/day to leave
+  headroom for others on that same pool.
 
 ## What's left (not built)
 

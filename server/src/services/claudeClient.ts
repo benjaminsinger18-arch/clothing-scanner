@@ -12,6 +12,7 @@ import type { SupportedMediaType } from "../lib/imageUtils.js";
 import { CLASSIFICATION_JSON_SCHEMA, CLASSIFICATION_PROMPT, type RawClassification } from "../lib/classificationSchema.js";
 import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 import { classifyWithGemini } from "./geminiClient.js";
+import type { UpcItem } from "./upcClient.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const SONNET_MODEL = "claude-sonnet-5";
@@ -240,6 +241,86 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
     model: "claude-sonnet-5",
     visionAssisted: retried.garmentType !== UNRECOGNIZED_GARMENT,
   };
+}
+
+/**
+ * Normalizes a UPCitemdb barcode match into a full ClassificationResult. Text-only
+ * (no image — none is available for a barcode scan), so it's cheap — always uses
+ * Haiku, same as suggestOutfitPairings. Reuses the exact same classifyTool object
+ * classifyImage's photo path uses, so there's no second schema to keep in sync.
+ *
+ * Unlike a photo classification, brandGuess/brandConfidence are NOT trusted from
+ * the model's own output here — they're post-processed straight from the barcode's
+ * own `brand` field, forced to "high" confidence and brandSource: "barcode", since
+ * an exact UPC match is strictly more authoritative than any model self-report of
+ * it (same never-trust-the-model's-own-confidence principle applyBrandCrossValidation
+ * uses for Vision/Gemini brand signals, just inverted — here the non-model source
+ * wins outright rather than only filling a gap). garmentType/category/pattern/style
+ * are genuine model inference from the sparse title/description text, since the
+ * barcode database has no structured data for those.
+ */
+export async function classifyFromBarcode(item: UpcItem): Promise<ClassificationResult> {
+  const raw = await callBarcodeClassificationWithRetry(item);
+  return {
+    ...raw,
+    brandGuess: item.brand ?? raw.brandGuess,
+    brandConfidence: item.brand ? "high" : "none",
+    brandSource: item.brand ? "barcode" : undefined,
+    model: "claude-haiku-4-5",
+    source: "barcode",
+  };
+}
+
+async function callBarcodeClassification(item: UpcItem): Promise<RawClassification> {
+  const details = [
+    `Title: "${item.title}"`,
+    item.brand ? `Brand: "${item.brand}"` : null,
+    item.color ? `Color: "${item.color}"` : null,
+    item.category ? `Database category: "${item.category}"` : null,
+    item.description ? `Description: "${item.description}"` : null,
+  ]
+    .filter(Boolean)
+    .join(". ");
+
+  const response = await getClient().messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 512,
+    tools: [classifyTool],
+    tool_choice: { type: "tool", name: CLASSIFY_TOOL_NAME },
+    messages: [
+      {
+        role: "user",
+        content:
+          "A barcode scan matched this clothing product's database listing — no photo is available, " +
+          "text only. Treat the fields below as reliable ground truth, not things to second-guess the way " +
+          "you would from a photo: " +
+          details +
+          ". Map the database category into the required category enum as best you can. Only garmentType, " +
+          "pattern, and style require genuine inference from this sparse text — say your honest best guess " +
+          "rather than \"unknown\" where the text doesn't pin it down exactly. Call report_classification " +
+          "with your best structured assessment. " +
+          CLASSIFICATION_PROMPT,
+      },
+    ],
+  });
+
+  const toolUse = response.content.find(
+    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === CLASSIFY_TOOL_NAME
+  );
+  if (!toolUse) {
+    throw new ClassificationError("Claude did not return a structured classification for the barcode match");
+  }
+  return toolUse.input as RawClassification;
+}
+
+async function callBarcodeClassificationWithRetry(item: UpcItem): Promise<RawClassification> {
+  try {
+    return await callBarcodeClassification(item);
+  } catch (err) {
+    console.warn("[claudeClient] barcode classification call failed, retrying once:", err);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return await callBarcodeClassification(item);
+  }
 }
 
 const outfitTool: Anthropic.Tool = {

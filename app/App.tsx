@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { RootStackParamList } from "./navigation/types";
 import { CaptureScreen } from "./screens/CaptureScreen";
 import { PreviewScreen } from "./screens/PreviewScreen";
+import { BarcodeScanScreen } from "./screens/BarcodeScanScreen";
 import { ResultsScreen } from "./screens/ResultsScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -23,6 +24,7 @@ export default function App() {
         >
           <Stack.Screen name="Capture" component={CaptureScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Preview" component={PreviewScreen} options={{ title: "Confirm Photo" }} />
+          <Stack.Screen name="BarcodeScan" component={BarcodeScanScreen} options={{ title: "Scan Barcode" }} />
           <Stack.Screen name="Results" component={ResultsScreen} options={{ title: "Results" }} />
         </Stack.Navigator>
       </NavigationContainer>

@@ -93,15 +93,33 @@ export function recordGeminiCall(): void {
   geminiCounter.count += 1;
 }
 
+// --- UPCitemdb: trial tier is keyless and its 100 req/day quota is shared across
+// all anonymous callers, not ours alone — cap well under that so this app's own
+// usage doesn't tip an already-shared pool over the edge for everyone else. ---
+const UPC_DAILY_SOFT_CAP = 80;
+const upcCounter: Counter = { count: 0, periodKey: todayKey() };
+
+export function canMakeUpcCall(): boolean {
+  resetIfNewPeriod(upcCounter, todayKey());
+  return upcCounter.count < UPC_DAILY_SOFT_CAP;
+}
+
+export function recordUpcCall(): void {
+  resetIfNewPeriod(upcCounter, todayKey());
+  upcCounter.count += 1;
+}
+
 export function getUsageSnapshot() {
   resetIfNewPeriod(ebayCounter, todayKey());
   resetIfNewPeriod(serpApiCounter, monthKey());
   resetIfNewPeriod(visionCounter, monthKey());
   resetIfNewPeriod(geminiCounter, todayKey());
+  resetIfNewPeriod(upcCounter, todayKey());
   return {
     ebay: { count: ebayCounter.count, cap: EBAY_DAILY_SOFT_CAP, period: "day" as const },
     serpapi: { count: serpApiCounter.count, cap: SERPAPI_MONTHLY_SOFT_CAP, period: "month" as const },
     vision: { count: visionCounter.count, cap: VISION_MONTHLY_SOFT_CAP, period: "month" as const },
     gemini: { count: geminiCounter.count, cap: GEMINI_DAILY_SOFT_CAP, period: "day" as const },
+    upc: { count: upcCounter.count, cap: UPC_DAILY_SOFT_CAP, period: "day" as const },
   };
 }
