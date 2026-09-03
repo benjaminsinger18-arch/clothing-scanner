@@ -128,7 +128,7 @@ ipconfig          # look for "IPv4 Address" under your active Wi-Fi adapter
 
 ```
 cd app
-copy .env.example .env      # set EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:3000
+copy .env.example .env      # set EXPO_API_URL=http://<your-LAN-IP>:3000
 npx expo start
 ```
 
@@ -150,7 +150,7 @@ needing to stay running.
    `extra.eas.projectId` into `app.json`. One-time, per Expo account.
 4. Pick a profile from `app/eas.json`:
    - `development` — includes the dev client, points at `localhost` (simulator/emulator
-     only, or edit the profile's `EXPO_PUBLIC_API_URL` to your LAN IP for a device).
+     only, or edit the profile's `EXPO_API_URL` to your LAN IP for a device).
    - `preview` — internal-distribution build (installable via a link EAS gives you, no
      store needed) pointed at the deployed Render backend — closest to what a remote
      tester should install.
@@ -158,7 +158,7 @@ needing to stay running.
 5. `eas build --profile preview --platform ios` (or `android`, or `all`). EAS builds in
    the cloud; you'll get a QR code / URL to install the result once it finishes.
 6. If the deployed backend has `APP_SHARED_SECRET` set (see "Backend auth" below), also
-   set `EXPO_PUBLIC_APP_SHARED_SECRET` for the build — don't put a real secret in
+   set `EXPO_APP_SHARED_SECRET` for the build — don't put a real secret in
    `eas.json` since it's committed to git; use `eas env:create` (or the Expo dashboard)
    to store it instead, scoped to the profile you're building.
 
@@ -196,11 +196,14 @@ npx expo start --web
    setting can stick and override it; set it explicitly to be safe.
 4. Before the first deploy, add these under **Settings → Environment Variables**
    (same values as `app/.env` — see "Mobile app" setup above):
-   - `EXPO_PUBLIC_API_URL` — your deployed Render backend URL.
-   - `EXPO_PUBLIC_APP_SHARED_SECRET` — only if the backend has `APP_SHARED_SECRET` set.
+   - `EXPO_API_URL` — your deployed Render backend URL.
+   - `EXPO_APP_SHARED_SECRET` — only if the backend has `APP_SHARED_SECRET` set.
 
-   These get baked into the JS bundle at build time (that's how `EXPO_PUBLIC_*` vars
-   work), so they must be set *before* the build runs, not after.
+   `app/app.config.js` reads these from `process.env` at build time and re-exposes
+   them via `extra` for the app to read through `expo-constants` — note they still
+   end up in the shipped bundle either way (unavoidable for anything the client
+   needs to call the backend with), same as Metro's `EXPO_PUBLIC_*` auto-inlining
+   would do. Either way, they must be set *before* the build runs, not after.
 5. Deploy. Vercel runs `vercel.json`'s `buildCommand` (builds `shared-types`, then
    `expo export --platform web` inside `app/`) and serves the static `app/dist`
    output, with a rewrite so client-side navigation doesn't 404 on refresh.
@@ -229,7 +232,7 @@ somewhere else, two things need to be reachable over the internet instead:
    optional).
 4. Once deployed, Render gives you a stable URL like
    `https://clothing-scanner-server.onrender.com`. Put that in **both** your and your
-   friend's `app/.env` as `EXPO_PUBLIC_API_URL` (instead of the LAN IP).
+   friend's `app/.env` as `EXPO_API_URL` (instead of the LAN IP).
 
    Free-tier Render web services spin down after ~15 min idle and take a few seconds
    to wake back up on the next request — fine for testing, just expect the first
@@ -254,7 +257,7 @@ hosted app, it's your dev server, just reachable remotely.
 Once the backend is deployed publicly (e.g. Render), its URL is no longer private —
 anyone who finds it can hit `/classify`, `/price-search`, or `/outfit-suggestions`,
 each of which costs real money (Claude/eBay/SerpApi calls). Set `APP_SHARED_SECRET`
-on the server to a long random string, and `EXPO_PUBLIC_APP_SHARED_SECRET` in
+on the server to a long random string, and `EXPO_APP_SHARED_SECRET` in
 `app/.env` to the *same* value — the app sends it as an `X-App-Secret` header, and
 the server rejects any request to a paid endpoint without it (`/health` stays open,
 since Render's own health checks hit it with no headers).
@@ -270,7 +273,7 @@ not configured, so `npm run dev` works with zero setup.
 ### Troubleshooting
 
 - **"Could not reach the backend"** — confirm the server is running, your phone and PC
-  are on the same network, and `EXPO_PUBLIC_API_URL` in `app/.env` uses the LAN IP, not
+  are on the same network, and `EXPO_API_URL` in `app/.env` uses the LAN IP, not
   `localhost`. Restart `expo start` after editing `.env` (Expo only reads it at startup).
 - **Occasional plain-text "Not Found" from the deployed Render backend** — a known
   free-tier quirk (`x-render-routing: no-server` in the response headers) that happens
@@ -279,7 +282,7 @@ not configured, so `npm run dev` works with zero setup.
   Render dashboard for an actual deploy/crash error instead.
 - **"classification_failed" / 502 from `/classify`** — check `server/.env` has a valid
   `ANTHROPIC_API_KEY` and the server console for the underlying error.
-- **401 "unauthorized"** — `app/.env`'s `EXPO_PUBLIC_APP_SHARED_SECRET` doesn't match
+- **401 "unauthorized"** — `app/.env`'s `EXPO_APP_SHARED_SECRET` doesn't match
   the server's `APP_SHARED_SECRET`. Make sure both are set to the exact same value,
   and restart `expo start` after editing `.env`.
 - **"Couldn't identify a clothing item"** — expected behavior for non-clothing or very

@@ -8,19 +8,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
+        "EXPO_API_URL": "http://localhost:3000"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://clothing-scanner-server.onrender.com"
+        "EXPO_API_URL": "https://clothing-scanner-server.onrender.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://clothing-scanner-server.onrender.com"
+        "EXPO_API_URL": "https://clothing-scanner-server.onrender.com"
       }
     }
   },
