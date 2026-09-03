@@ -49,6 +49,9 @@ export function CaptureScreen({ navigation }: Props) {
       <Pressable style={styles.primaryButton} onPress={takePhoto}>
         <Text style={styles.primaryButtonText}>Take Photo</Text>
       </Pressable>
+      <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate("BarcodeScan")}>
+        <Text style={styles.secondaryButtonText}>Scan Barcode</Text>
+      </Pressable>
       <Pressable style={styles.secondaryButton} onPress={pickPhoto}>
         <Text style={styles.secondaryButtonText}>Choose from Library</Text>
       </Pressable>
@@ -62,6 +65,6 @@ const styles = StyleSheet.create({
   subtitle: { color: "#8e8e93", fontSize: 15, textAlign: "center", marginBottom: 32 },
   primaryButton: { backgroundColor: "#fff", paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginBottom: 12, width: "100%", alignItems: "center" },
   primaryButtonText: { color: "#000", fontSize: 16, fontWeight: "700" },
-  secondaryButton: { paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, width: "100%", alignItems: "center", borderWidth: 1, borderColor: "#3a3a3c" },
+  secondaryButton: { paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginBottom: 12, width: "100%", alignItems: "center", borderWidth: 1, borderColor: "#3a3a3c" },
   secondaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });

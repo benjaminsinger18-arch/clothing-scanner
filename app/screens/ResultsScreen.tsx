@@ -85,7 +85,9 @@ export function ResultsScreen({ route, navigation }: Props) {
                   ? " (via logo detection)"
                   : classification.brandSource === "gemini"
                     ? " (via Gemini)"
-                    : ""
+                    : classification.brandSource === "barcode"
+                      ? " (via barcode)"
+                      : ""
               }`}
             />
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />

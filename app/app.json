@@ -10,7 +10,7 @@
       "bundleIdentifier": "com.clothingscanner.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "Used to photograph a piece of clothing to identify it.",
+        "NSCameraUsageDescription": "Used to photograph clothing or scan a barcode to identify it.",
         "NSPhotoLibraryUsageDescription": "Used to pick an existing photo of a piece of clothing."
       }
     },

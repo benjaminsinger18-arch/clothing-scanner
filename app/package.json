@@ -18,6 +18,7 @@
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "expo": "~54.0.0",
+    "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.14",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.11",

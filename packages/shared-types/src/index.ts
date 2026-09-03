@@ -32,13 +32,22 @@ export interface ClassificationResult {
   /** Present when brandGuess/brandConfidence were filled in or upgraded from a
    * source other than the primary result's own judgment (only happens when the
    * primary result's own brandConfidence was "none" or "low"):
-   *   - "vision-logo" — Google Cloud Vision's logo detection.
+   *   - "vision-logo" — Google Cloud Vision's logo detection. Softened to "low"
+   *     confidence regardless of Vision's own score — an unvalidated opinion.
    *   - "gemini" — Gemini's independent classification confidently named a brand
-   *     Claude didn't (softened a confidence notch on the way in — see
-   *     applyBrandCrossValidation in claudeClient.ts).
-   * Absent means the brand guess is entirely the primary model's own. Treat either
-   * tagged source as a second opinion the primary model didn't itself vouch for. */
-  brandSource?: "vision-logo" | "gemini";
+   *     Claude didn't. Softened a confidence notch on the way in (see
+   *     applyBrandCrossValidation in claudeClient.ts) — also an unvalidated
+   *     opinion, just a stronger one than Vision's raw logo match.
+   *   - "barcode" — UPCitemdb's own `brand` field on an exact UPC match. Unlike
+   *     the other two, this is ground truth, not an opinion — always paired with
+   *     brandConfidence: "high", never softened.
+   * Absent means the brand guess is entirely the primary model's own. */
+  brandSource?: "vision-logo" | "gemini" | "barcode";
+  /** How this whole classification was produced. Absent/"photo" = today's default:
+   * AI visual judgment on a captured image. "barcode" = every field came from a
+   * UPCitemdb match plus a text-only normalization pass (see classifyFromBarcode
+   * in claudeClient.ts) — no image was ever looked at for this result. */
+  source?: "photo" | "barcode";
 }
 
 export interface PriceListing {
