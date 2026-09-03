@@ -15,6 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
     "@clothing-scanner/shared-types": "0.1.0",
+    "@google/genai": "^2.21.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0"

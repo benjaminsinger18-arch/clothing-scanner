@@ -81,7 +81,11 @@ export function ResultsScreen({ route, navigation }: Props) {
               label="Brand guess"
               value={classification.brandGuess ?? "Not confidently identified"}
               hint={`confidence: ${classification.brandConfidence}${
-                classification.brandSource === "vision-logo" ? " (via logo detection)" : ""
+                classification.brandSource === "vision-logo"
+                  ? " (via logo detection)"
+                  : classification.brandSource === "gemini"
+                    ? " (via Gemini)"
+                    : ""
               }`}
             />
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
