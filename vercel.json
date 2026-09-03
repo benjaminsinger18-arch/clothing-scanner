@@ -1,0 +1,8 @@
+{
+  "framework": null,
+  "buildCommand": "npm run build --workspace=@clothing-scanner/shared-types && npm run build:web --workspace=app",
+  "outputDirectory": "app/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
