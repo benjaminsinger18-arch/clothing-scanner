@@ -83,11 +83,9 @@ export function ResultsScreen({ route, navigation }: Props) {
               hint={`confidence: ${classification.brandConfidence}${
                 classification.brandSource === "vision-logo"
                   ? " (via logo detection)"
-                  : classification.brandSource === "gemini"
-                    ? " (via Gemini)"
-                    : classification.brandSource === "barcode"
-                      ? " (via barcode)"
-                      : ""
+                  : classification.brandSource === "barcode"
+                    ? " (via barcode)"
+                    : ""
               }`}
             />
 

@@ -105,33 +105,23 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
   }
 }
 
-/** Post-hoc merge of secondary brand opinions into a primary result. Only fills
- * in/upgrades the brand guess when the primary result itself was unconfident
- * (none/low) — a confident primary guess (medium/high) is left untouched, since
- * it's already vetted against the actual image context and neither secondary
- * source has been. Priority when the primary is unconfident: Gemini's own
- * independent classification (a full reasoned second opinion) over Vision's logo
- * detection (a raw entity match with no holistic reasoning) — Gemini only wins
- * when it itself reported medium/high brand confidence, softened one notch on the
- * way in (high→medium, medium→low) since it's still an opinion the primary model
- * didn't itself corroborate. Vision's logo guess is always forced to "low"
- * regardless of its own score, same as before. Either case tags brandSource so
- * this is never conflated with the primary model's own guess. */
-function applyBrandCrossValidation(
+/** Post-hoc merge of Vision's logo detection into a result. Only fills in/upgrades
+ * the brand guess when the result itself was unconfident (none/low) — a confident
+ * guess (medium/high) is left untouched, since it's already vetted against the
+ * actual image context and Vision's logo match hasn't been. Forces brandConfidence
+ * to "low" regardless of Vision's own score, and tags brandSource so this is never
+ * conflated with the model's own guess.
+ *
+ * Gemini used to also feed into this (a second cross-validation source, ranked
+ * above Vision's raw logo match), back when it ran on every scan. It doesn't
+ * anymore — see classifyImage's doc comment for why — so Gemini's own brand
+ * judgment now only ever surfaces via its own rescue result directly (untouched,
+ * since it's primary there, not a secondary opinion to cross-validate). */
+function applyVisionBrandSignal(
   primary: RawClassification,
-  gemini: RawClassification | null,
   vision: VisionSignal | null
-): RawClassification & { brandSource?: "vision-logo" | "gemini" } {
+): RawClassification & { brandSource?: "vision-logo" } {
   if (primary.brandConfidence !== "none" && primary.brandConfidence !== "low") return primary;
-
-  if (gemini?.brandGuess && (gemini.brandConfidence === "medium" || gemini.brandConfidence === "high")) {
-    return {
-      ...primary,
-      brandGuess: gemini.brandGuess,
-      brandConfidence: gemini.brandConfidence === "high" ? "medium" : "low",
-      brandSource: "gemini",
-    };
-  }
 
   if (vision && vision.logos.length > 0) {
     return {
@@ -158,65 +148,58 @@ function applyBrandCrossValidation(
  * speed/cost for accuracy across the board (not just brand guesses) per
  * user request — still one round-trip, so the overall time budget holds.
  * That constraint still holds here: exactly one Claude call happens on the
- * common (recognized) path below, same as before — Gemini is a second,
- * independent *provider* call, not a second Claude call, so it doesn't
- * reintroduce the thing that constraint was protecting against.
+ * common (recognized) path below, same as before.
  *
- * Google Cloud Vision and Gemini both now run as always-on ensemble signals
- * alongside that one Claude call — all fired concurrently, not sequentially,
- * so neither delays Claude's first call. Vision is fast enough that awaiting
- * it after Claude resolves is expected to add ~zero latency; Gemini is a full
- * reasoning model like Claude itself and may genuinely take comparable or
- * longer to resolve, so it CAN add real latency on the common path (bounded
- * by geminiClient's own timeout) — this is a real tradeoff, not a free one
- * like Vision's slot in this design.
+ * Google Cloud Vision runs as an always-on ensemble signal alongside that one
+ * Claude call — fired concurrently, so it never delays Claude's first call, and
+ * (being a lightweight annotate call, not a reasoning model) awaiting it after
+ * Claude resolves is expected to add ~zero latency to the common path.
  *
- * The two-provider signal is used three ways:
- *   1. Brand cross-validation (applyBrandCrossValidation, above) — either
- *      secondary source can catch a brand Claude was too conservative to
- *      name, on any result.
- *   2. Unrecognized-item rescue via Gemini (new, tried first) — if Claude's
- *      first pass can't name the item at all, and Gemini's own independent
- *      pass *can*, Gemini's full result is used directly — stronger recovery
- *      than a hint, since it's Gemini's own reasoned classification rather
- *      than Claude reconsidering with a fragment of context.
- *   3. Unrecognized-item rescue via Vision hint (existing fallback, now last
- *      resort) — only tried if Gemini also couldn't identify it (or isn't
- *      configured): Vision's web/label best guess seeds a hint for one retry
- *      Claude call, exactly as before.
- * Each provider degrades silently and independently if unconfigured/erroring —
- * with neither Gemini nor Vision available, this is exactly Claude-alone
- * behavior.
+ * Gemini is deliberately NOT part of that always-on signal — it used to be
+ * (fired concurrently on every scan, for brand cross-validation), but that traded
+ * real, unpredictable latency for a marginal benefit on the common case: measured
+ * live, classify averaged ~2.2-2.6s without Gemini in the mix vs. 3-7.7s with it,
+ * since Gemini 3.1 Pro spends real time "thinking" internally even at its lowest
+ * setting, unlike Vision's cheap annotate call. That cost is only worth paying
+ * when Claude has genuinely failed to identify the item at all — Gemini is called
+ * *only* on that rescue path below, same as Vision's hint-rescue always was, not
+ * on every scan.
+ *
+ * The rescue order when Claude comes back unrecognized:
+ *   1. Gemini's own independent pass — a full second opinion, stronger recovery
+ *      than a hint, since it's Gemini's own reasoned classification rather than
+ *      Claude reconsidering with a fragment of context.
+ *   2. Vision-hint rescue (last resort) — only tried if Gemini also couldn't
+ *      identify it (or isn't configured): Vision's web/label best guess seeds a
+ *      hint for one retry Claude call.
+ * Both degrade silently and independently if unconfigured/erroring — with
+ * neither available, this is exactly Claude-alone behavior.
  */
 export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
-  // Fire all three immediately, in parallel. Both helpers already catch their own
-  // errors internally and resolve null rather than throwing, but wrap defensively
-  // anyway so a future change to either contract can't take classifyImage down.
+  // Vision starts immediately, in parallel — cheap enough to always run. Gemini
+  // does NOT start here anymore (see the latency note above) — it's only called
+  // further down, and only on the unrecognized path.
   const visionPromise = getVisionSignal(opts.imageBase64).catch(() => null);
-  const geminiPromise = classifyWithGemini(opts.imageBase64, opts.mediaType).catch(() => null);
 
-  // Claude's first pass does NOT wait on either — it can't, since neither has
-  // resolved yet at this point (they all started together).
   const first = await callClaudeWithRetry(SONNET_MODEL, opts);
 
   if (first.garmentType !== UNRECOGNIZED_GARMENT) {
-    // Common path: Claude already has an answer. Await both concurrently-started
-    // promises — Vision is typically already resolved (near-instant); Gemini may
-    // not be (see the latency note above).
-    const [vision, gemini] = await Promise.all([visionPromise, geminiPromise]);
-    const merged = applyBrandCrossValidation(first, gemini, vision);
+    // Common path: Claude already has an answer. Await the concurrently-started
+    // Vision promise — typically already resolved, so this is expected to be
+    // near-instant. No Gemini call on this path at all.
+    const vision = await visionPromise;
+    const merged = applyVisionBrandSignal(first, vision);
     return { ...merged, model: "claude-sonnet-5" };
   }
 
-  // Claude couldn't identify it. Try Gemini's own independent answer first — a
-  // full second opinion beats a single-phrase hint fed back to Claude.
-  const gemini = await geminiPromise;
+  // Claude couldn't identify it — NOW call Gemini, only here, so its latency is
+  // paid rarely (a genuine failure) rather than on every scan. Try Gemini's own
+  // independent answer first — a full second opinion beats a single-phrase hint
+  // fed back to Claude.
+  const gemini = await classifyWithGemini(opts.imageBase64, opts.mediaType).catch(() => null);
   if (gemini && gemini.garmentType !== UNRECOGNIZED_GARMENT) {
     const vision = await visionPromise;
-    // Gemini is primary here, so no gemini opinion left to cross-validate against
-    // (would be comparing it to itself) — only Vision can still add a brand signal
-    // on top of Gemini's own.
-    const merged = applyBrandCrossValidation(gemini, null, vision);
+    const merged = applyVisionBrandSignal(gemini, vision);
     return { ...merged, model: GEMINI_MODEL_LABEL };
   }
 
@@ -236,7 +219,7 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   }
 
   const retried = await callClaudeWithRetry(SONNET_MODEL, { ...opts, hint: hintText });
-  const merged = applyBrandCrossValidation(retried, null, vision);
+  const merged = applyVisionBrandSignal(retried, vision);
   return {
     ...merged,
     model: "claude-sonnet-5",

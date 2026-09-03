@@ -18,9 +18,9 @@ export interface ClassificationResult {
   brandConfidence: BrandConfidence;
   /** Which model produced this result — useful for debugging escalation logic.
    * "gemini-3.1-pro" means Claude's own pass came back "unrecognized" and Gemini's
-   * independent second opinion (run concurrently, see classifyImage) succeeded
-   * where Claude didn't — the whole result is Gemini's, not just a hint-assisted
-   * Claude retry. */
+   * independent second opinion (only called on this rescue path, see classifyImage)
+   * succeeded where Claude didn't — the whole result is Gemini's, not just a
+   * hint-assisted Claude retry. */
   model: "claude-haiku-4-5" | "claude-sonnet-5" | "gemini-3.1-pro";
   /** True when Claude's first pass came back "unrecognized" and Google Cloud Vision's
    * web/label detection (fetched concurrently with that first pass) supplied a hint
@@ -34,15 +34,13 @@ export interface ClassificationResult {
    * primary result's own brandConfidence was "none" or "low"):
    *   - "vision-logo" — Google Cloud Vision's logo detection. Softened to "low"
    *     confidence regardless of Vision's own score — an unvalidated opinion.
-   *   - "gemini" — Gemini's independent classification confidently named a brand
-   *     Claude didn't. Softened a confidence notch on the way in (see
-   *     applyBrandCrossValidation in claudeClient.ts) — also an unvalidated
-   *     opinion, just a stronger one than Vision's raw logo match.
    *   - "barcode" — UPCitemdb's own `brand` field on an exact UPC match. Unlike
-   *     the other two, this is ground truth, not an opinion — always paired with
+   *     "vision-logo", this is ground truth, not an opinion — always paired with
    *     brandConfidence: "high", never softened.
-   * Absent means the brand guess is entirely the primary model's own. */
-  brandSource?: "vision-logo" | "gemini" | "barcode";
+   * Absent means the brand guess is entirely the primary model's own — including
+   * whenever `model` is "gemini-3.1-pro", since that's Gemini's own judgment as a
+   * rescue result, not a secondary opinion layered onto something else. */
+  brandSource?: "vision-logo" | "barcode";
   /** How this whole classification was produced. Absent/"photo" = today's default:
    * AI visual judgment on a captured image. "barcode" = every field came from a
    * UPCitemdb match plus a text-only normalization pass (see classifyFromBarcode
