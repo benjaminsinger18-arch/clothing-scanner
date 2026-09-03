@@ -9,7 +9,7 @@ import {
   type ClassificationResult,
 } from "@clothing-scanner/shared-types";
 import type { SupportedMediaType } from "../lib/imageUtils.js";
-import { identifyWithVision } from "./visionClient.js";
+import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const SONNET_MODEL = "claude-sonnet-5";
@@ -82,9 +82,11 @@ interface RawClassification {
 interface ClassifyOptions {
   imageBase64: string;
   mediaType: SupportedMediaType;
-  /** Optional best-guess description from a fallback identification source (currently
-   * Google Cloud Vision), offered as a hint on a second pass after Claude's first
-   * pass came back unrecognized. */
+  /** Optional best-guess description from Google Cloud Vision, offered as a hint on
+   * the retry pass after Claude's first pass came back unrecognized. Vision itself
+   * now always runs (see classifyImage), concurrently with the first pass — this
+   * field is still only ever attached to the second/rescue call, never the first,
+   * since Vision hasn't resolved yet at the moment the first call fires. */
   hint?: string;
 }
 
@@ -139,6 +141,28 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
   }
 }
 
+/** Post-hoc merge of Vision's logo detection into a Claude result. Only fills in/
+ * upgrades the brand guess when Claude itself was unconfident (none/low) — a
+ * confident Claude brand guess (medium/high) is left untouched, since it's already
+ * vetted against the actual image context and Vision's logo match hasn't been.
+ * Forces brandConfidence to "low" on any Vision-sourced guess regardless of
+ * Vision's own score, and tags brandSource so this is never conflated with a
+ * Claude-vouched guess. */
+function applyVisionBrandSignal(
+  result: RawClassification,
+  vision: VisionSignal | null
+): RawClassification & { brandSource?: "vision-logo" } {
+  if (!vision || vision.logos.length === 0) return result;
+  if (result.brandConfidence !== "none" && result.brandConfidence !== "low") return result;
+
+  return {
+    ...result,
+    brandGuess: vision.logos[0].description,
+    brandConfidence: "low",
+    brandSource: "vision-logo",
+  };
+}
+
 /**
  * Classifies a garment photo using Sonnet. Retries once on transient
  * failure; throws ClassificationError if the retried call also fails, since
@@ -151,30 +175,63 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
  * budget to just use Sonnet for the single call outright, trading Haiku's
  * speed/cost for accuracy across the board (not just brand guesses) per
  * user request — still one round-trip, so the overall time budget holds.
+ * That constraint still holds here: exactly one Claude call happens on the
+ * common (recognized) path below, same as before.
  *
- * If that first pass comes back "unrecognized", this adds one more round-trip
- * (only on that failure path, so it doesn't cost latency on the common case):
- * ask Google Cloud Vision for its own best guess, then give Claude a second
- * pass with that as a hint. Vision's web-scale image index occasionally
- * recognizes something Claude's general vision missed — a specific product,
- * logo, or unusual garment — so this genuinely rescues some scans that would
- * otherwise dead-end at "couldn't identify a clothing item". Silently a
- * no-op if GOOGLE_VISION_API_KEY isn't configured.
+ * Google Cloud Vision now runs as an always-on ensemble signal alongside that
+ * one Claude call — fired concurrently, not sequentially, so it never delays
+ * the first Claude call and (since Vision's images:annotate call is typically
+ * faster than a Sonnet vision call) adds ~zero latency to the common path: by
+ * the time Claude resolves, Vision has usually already resolved too. It's used
+ * two ways:
+ *   1. Brand augmentation (applyVisionBrandSignal, above) — logo detection can
+ *      catch a brand Claude was too conservative to name, on any result.
+ *   2. Unrecognized-item rescue (unchanged in spirit from before, just cheaper
+ *      to trigger) — if Claude's first pass can't name the item at all, Vision's
+ *      web/label best guess seeds a hint for one retry Claude call. Since Vision
+ *      started concurrently with the first Claude call rather than only after it
+ *      failed, this pays less latency than the old sequential fallback did.
+ * If GOOGLE_VISION_API_KEY isn't configured (or Vision errors/rate-limits/finds
+ * nothing), this degrades silently to exactly Claude-alone behavior.
  */
 export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
-  const result = await callClaudeWithRetry(SONNET_MODEL, opts);
-  if (result.garmentType !== UNRECOGNIZED_GARMENT) {
-    return { ...result, model: "claude-sonnet-5" };
+  // Fire both immediately, in parallel. getVisionSignal already catches its own
+  // errors internally and resolves null rather than throwing, but wrap defensively
+  // anyway so a future change to that contract can't take classifyImage down with it.
+  const visionPromise = getVisionSignal(opts.imageBase64).catch(() => null);
+
+  // Claude's first pass does NOT wait on Vision — it can't, since Vision hasn't
+  // resolved yet at this point (they started together).
+  const first = await callClaudeWithRetry(SONNET_MODEL, opts);
+
+  if (first.garmentType !== UNRECOGNIZED_GARMENT) {
+    // Common path: Claude already has an answer. Await the concurrently-started
+    // Vision promise — by now it has typically already resolved, so this is
+    // expected to be near-instant.
+    const vision = await visionPromise;
+    const merged = applyVisionBrandSignal(first, vision);
+    return { ...merged, model: "claude-sonnet-5" };
   }
 
-  const hint = await identifyWithVision(opts.imageBase64);
-  if (!hint) {
-    return { ...result, model: "claude-sonnet-5" };
+  // Unrecognized path: reuse the same already-in-flight Vision promise (it had a
+  // head start from launching concurrently, instead of only starting now).
+  const vision = await visionPromise;
+  if (!vision) {
+    return { ...first, model: "claude-sonnet-5" };
   }
 
-  const retried = await callClaudeWithRetry(SONNET_MODEL, { ...opts, hint });
+  // Prefer Vision's general scene guess for the rescue hint; if web/label detection
+  // came up empty but a logo was found, fall back to a logo-derived hint — new
+  // value versus before, where only bestGuess could ever rescue a scan.
+  const hintText = vision.bestGuess ?? (vision.logos[0] ? `a logo matching "${vision.logos[0].description}"` : null);
+  if (!hintText) {
+    return { ...first, model: "claude-sonnet-5" };
+  }
+
+  const retried = await callClaudeWithRetry(SONNET_MODEL, { ...opts, hint: hintText });
+  const merged = applyVisionBrandSignal(retried, vision);
   return {
-    ...retried,
+    ...merged,
     model: "claude-sonnet-5",
     visionAssisted: retried.garmentType !== UNRECOGNIZED_GARMENT,
   };

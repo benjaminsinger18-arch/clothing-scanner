@@ -80,7 +80,9 @@ export function ResultsScreen({ route, navigation }: Props) {
             <Row
               label="Brand guess"
               value={classification.brandGuess ?? "Not confidently identified"}
-              hint={`confidence: ${classification.brandConfidence}`}
+              hint={`confidence: ${classification.brandConfidence}${
+                classification.brandSource === "vision-logo" ? " (via logo detection)" : ""
+              }`}
             />
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
           </View>
