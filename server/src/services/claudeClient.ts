@@ -9,6 +9,7 @@ import {
   type ClassificationResult,
 } from "@clothing-scanner/shared-types";
 import type { SupportedMediaType } from "../lib/imageUtils.js";
+import { identifyWithVision } from "./visionClient.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const SONNET_MODEL = "claude-sonnet-5";
@@ -81,9 +82,19 @@ interface RawClassification {
 interface ClassifyOptions {
   imageBase64: string;
   mediaType: SupportedMediaType;
+  /** Optional best-guess description from a fallback identification source (currently
+   * Google Cloud Vision), offered as a hint on a second pass after Claude's first
+   * pass came back unrecognized. */
+  hint?: string;
 }
 
 async function callClaude(model: string, opts: ClassifyOptions): Promise<RawClassification> {
+  const hintText = opts.hint
+    ? ` A separate image-recognition system's best guess for this photo is "${opts.hint}" — treat that ` +
+      "as a hint, not ground truth: weigh it against what you actually see, and still call " +
+      "report_classification with garmentType set to \"unrecognized\" if the hint doesn't hold up either."
+    : "";
+
   const response = await getClient().messages.create({
     model,
     max_tokens: 512,
@@ -101,7 +112,8 @@ async function callClaude(model: string, opts: ClassifyOptions): Promise<RawClas
               "best assessment. Look closely at the garment's cut, construction, and details before " +
               "naming its specific type, and judge its true dominant color as it actually appears in " +
               "the photo's lighting. Be honest about uncertainty — do not guess a brand you can't " +
-              "reasonably support from visible evidence.",
+              "reasonably support from visible evidence." +
+              hintText,
           },
         ],
       },
@@ -139,10 +151,33 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
  * budget to just use Sonnet for the single call outright, trading Haiku's
  * speed/cost for accuracy across the board (not just brand guesses) per
  * user request — still one round-trip, so the overall time budget holds.
+ *
+ * If that first pass comes back "unrecognized", this adds one more round-trip
+ * (only on that failure path, so it doesn't cost latency on the common case):
+ * ask Google Cloud Vision for its own best guess, then give Claude a second
+ * pass with that as a hint. Vision's web-scale image index occasionally
+ * recognizes something Claude's general vision missed — a specific product,
+ * logo, or unusual garment — so this genuinely rescues some scans that would
+ * otherwise dead-end at "couldn't identify a clothing item". Silently a
+ * no-op if GOOGLE_VISION_API_KEY isn't configured.
  */
 export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
   const result = await callClaudeWithRetry(SONNET_MODEL, opts);
-  return { ...result, model: "claude-sonnet-5" };
+  if (result.garmentType !== UNRECOGNIZED_GARMENT) {
+    return { ...result, model: "claude-sonnet-5" };
+  }
+
+  const hint = await identifyWithVision(opts.imageBase64);
+  if (!hint) {
+    return { ...result, model: "claude-sonnet-5" };
+  }
+
+  const retried = await callClaudeWithRetry(SONNET_MODEL, { ...opts, hint });
+  return {
+    ...retried,
+    model: "claude-sonnet-5",
+    visionAssisted: retried.garmentType !== UNRECOGNIZED_GARMENT,
+  };
 }
 
 const outfitTool: Anthropic.Tool = {

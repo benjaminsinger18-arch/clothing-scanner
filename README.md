@@ -25,6 +25,12 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   set up `SERPAPI_KEY` now and get real Google Shopping data while eBay shows as
   unavailable. Outfit Matches only needs `ANTHROPIC_API_KEY` + eBay (SerpApi is
   intentionally skipped there — see "Required API keys" below).
+- Vision fallback ✅ — when Claude's classification comes back "unrecognized",
+  `/classify` now asks **Google Cloud Vision** (web + label detection) for its own
+  best guess at the item, then gives Claude one more pass with that as a hint before
+  giving up. This is what actually rescues borderline scans — Vision's web-scale
+  index sometimes names something Claude's general vision missed. Optional: unset
+  `GOOGLE_VISION_API_KEY` and this step is skipped, same as before.
 
 ## What's left (not built)
 
@@ -173,8 +179,10 @@ somewhere else, two things need to be reachable over the internet instead:
 2. Go to https://dashboard.render.com/ → **New** → **Blueprint** → connect this repo.
    Render reads `render.yaml` and creates the web service automatically.
 3. In the Render dashboard, set the `ANTHROPIC_API_KEY` / `EBAY_CLIENT_ID` /
-   `EBAY_CLIENT_SECRET` / `SERPAPI_KEY` env vars (they're marked `sync: false` in the
-   blueprint, so Render prompts for them rather than expecting them in the repo).
+   `EBAY_CLIENT_SECRET` / `SERPAPI_KEY` / `GOOGLE_VISION_API_KEY` env vars (they're
+   marked `sync: false` in the blueprint, so Render prompts for them rather than
+   expecting them in the repo — `GOOGLE_VISION_API_KEY` can be left blank, it's
+   optional).
 4. Once deployed, Render gives you a stable URL like
    `https://clothing-scanner-server.onrender.com`. Put that in **both** your and your
    friend's `app/.env` as `EXPO_PUBLIC_API_URL` (instead of the LAN IP).
@@ -255,6 +263,15 @@ not configured, so `npm run dev` works with zero setup.
 - `SERPAPI_KEY` — from https://serpapi.com/ (sign up, key is issued immediately, no
   approval wait). Free tier is 250 searches/month; the backend proactively throttles
   at 220/month to leave headroom (see `server/src/lib/rateLimitTracker.ts`).
+- `GOOGLE_VISION_API_KEY` — optional, from https://console.cloud.google.com/:
+  1. Create (or pick) a project, then enable the **Cloud Vision API** for it.
+  2. **Credentials** → **Create Credentials** → **API key**. No OAuth/service-account
+     setup needed — the REST endpoint this app calls (`images:annotate`) accepts a
+     plain API key.
+  3. Paste it into `server/.env`. Free tier is 1,000 units/month; the backend
+     throttles at 150/day to leave headroom (see `rateLimitTracker.ts`). Leave unset
+     to skip this fallback entirely — `/classify` still works, it just won't get a
+     second opinion on items Claude can't name.
 
 `/price-search` merges whichever of eBay/SerpApi are configured — either can be
 missing and the endpoint still returns whatever data the other provides
