@@ -35,17 +35,19 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   to trigger since Vision starts alongside Claude's first call. Runs concurrently,
   so it adds ~zero latency on the common path. Optional: unset
   `GOOGLE_VISION_API_KEY` to skip it entirely.
-- Gemini ensemble ✅ — `/classify` also runs **Gemini 3.1 Pro** in parallel, as a
-  second full independent classification (not just entity detection like Vision).
-  Used for (1) **brand cross-validation** — if Claude's own brand guess is
-  unconfident but Gemini confidently named one, it fills in (softened a confidence
-  notch, tagged `brandSource: "gemini"`, shown in the app as "via Gemini") and (2)
-  **unrecognized-item rescue**, tried before the Vision-hint path — if Claude can't
-  identify the item but Gemini's own independent pass can, Gemini's whole result is
-  used directly (`model: "gemini-3.1-pro"` on the response). Unlike Vision, Gemini
-  is a full reasoning model comparable in weight to Claude's own call, so it *can*
-  add real latency on the common path (bounded by a timeout) — not the free
-  zero-latency ride Vision gets. Optional: unset `GEMINI_API_KEY` to skip it
+- Gemini rescue ✅ — `/classify` calls **Gemini 3.1 Pro** as a second, independent
+  full classification (not just entity detection like Vision) **only when Claude's
+  own pass comes back "unrecognized"** — if Gemini's independent pass succeeds
+  where Claude didn't, Gemini's whole result is used directly (`model:
+  "gemini-3.1-pro"` on the response), tried before the older Vision-hint rescue
+  path. This used to run on *every* scan (for brand cross-validation too), but
+  that was reverted after live measurement: Gemini 3.1 Pro spends real time
+  "thinking" internally even at its lowest setting, and running it in parallel on
+  every scan pushed average classify time from a consistent ~2.2-2.6s to an
+  unpredictable 3-7.7s — a real, user-visible slowdown for a benefit (brand
+  fill-in on already-correctly-identified items) that mattered far less than
+  fixing outright misses. It's rescue-only now, so that cost is only paid on a
+  genuine failure, not on every scan. Optional: unset `GEMINI_API_KEY` to skip it
   entirely. **Note:** unlike every other optional provider here, Gemini 3.1 Pro has
   no free tier — see "Required API keys" below before enabling it.
 - Barcode scanning ✅ — a second entry point alongside the photo flow: scan a
