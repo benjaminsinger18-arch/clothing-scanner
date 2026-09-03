@@ -167,6 +167,44 @@ values (`com.clothingscanner.app`) — fine for internal builds via step 5, but 
 want your own reverse-DNS identifier before ever submitting to the App Store / Play
 Store.
 
+## Running as a website (no Expo Go, no app install at all)
+
+Expo can also export this app as a static website via `react-native-web` — open a
+URL in any browser (including a phone browser) instead of installing anything.
+Everything under `app/screens` runs unmodified; `expo-image-picker`'s camera launch
+falls back to the browser's native file/camera input on web.
+
+**Try it locally first:**
+
+```
+cd app
+npx expo start --web
+```
+
+**Deploy to Vercel:**
+
+1. Push this repo to GitHub (skip if already there).
+2. Go to https://vercel.com/new and import the repo. Vercel will detect the included
+   `vercel.json` (repo root) automatically — leave the project's **Root Directory**
+   as the repo root, don't point it at `app/`, since the build needs to see the whole
+   npm workspace to link `@clothing-scanner/shared-types`.
+3. Before the first deploy, add these under **Settings → Environment Variables**
+   (same values as `app/.env` — see "Mobile app" setup above):
+   - `EXPO_PUBLIC_API_URL` — your deployed Render backend URL.
+   - `EXPO_PUBLIC_APP_SHARED_SECRET` — only if the backend has `APP_SHARED_SECRET` set.
+
+   These get baked into the JS bundle at build time (that's how `EXPO_PUBLIC_*` vars
+   work), so they must be set *before* the build runs, not after.
+4. Deploy. Vercel runs `vercel.json`'s `buildCommand` (builds `shared-types`, then
+   `expo export --platform web` inside `app/`) and serves the static `app/dist`
+   output, with a rewrite so client-side navigation doesn't 404 on refresh.
+5. Any push to the connected branch redeploys automatically.
+
+This is genuinely a different runtime than the native app (React Native Web renders
+DOM instead of native views), so double-check the capture flow in a real mobile
+browser after your first deploy — camera permission prompts and file-input behavior
+vary more across browsers than across iOS/Android.
+
 ## Letting a remote collaborator test the app
 
 The steps above only work if your friend's phone is on the *same Wi-Fi network* as
