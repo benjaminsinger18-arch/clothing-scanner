@@ -109,17 +109,40 @@ export function recordUpcCall(): void {
   upcCounter.count += 1;
 }
 
+// --- Claude web search (correction verification): like Gemini above, this has no
+// free tier — $10 per 1,000 searches plus standard token costs, billed from the
+// first call. Unlike every other provider in this file, though, it's not tied to
+// scan volume at all: it only fires when a user explicitly disputes a result and
+// submits a correction, a rare, deliberate action rather than something that runs
+// on every scan. Sized far below Gemini's 300/day cap to reflect that — this is a
+// pure runaway-cost circuit breaker (e.g. a client bug retry-looping corrections),
+// not quota protection against realistic organic usage. ---
+const WEB_SEARCH_DAILY_SOFT_CAP = 50;
+const webSearchCounter: Counter = { count: 0, periodKey: todayKey() };
+
+export function canMakeWebSearchCall(): boolean {
+  resetIfNewPeriod(webSearchCounter, todayKey());
+  return webSearchCounter.count < WEB_SEARCH_DAILY_SOFT_CAP;
+}
+
+export function recordWebSearchCall(): void {
+  resetIfNewPeriod(webSearchCounter, todayKey());
+  webSearchCounter.count += 1;
+}
+
 export function getUsageSnapshot() {
   resetIfNewPeriod(ebayCounter, todayKey());
   resetIfNewPeriod(serpApiCounter, monthKey());
   resetIfNewPeriod(visionCounter, monthKey());
   resetIfNewPeriod(geminiCounter, todayKey());
   resetIfNewPeriod(upcCounter, todayKey());
+  resetIfNewPeriod(webSearchCounter, todayKey());
   return {
     ebay: { count: ebayCounter.count, cap: EBAY_DAILY_SOFT_CAP, period: "day" as const },
     serpapi: { count: serpApiCounter.count, cap: SERPAPI_MONTHLY_SOFT_CAP, period: "month" as const },
     vision: { count: visionCounter.count, cap: VISION_MONTHLY_SOFT_CAP, period: "month" as const },
     gemini: { count: geminiCounter.count, cap: GEMINI_DAILY_SOFT_CAP, period: "day" as const },
     upc: { count: upcCounter.count, cap: UPC_DAILY_SOFT_CAP, period: "day" as const },
+    webSearch: { count: webSearchCounter.count, cap: WEB_SEARCH_DAILY_SOFT_CAP, period: "day" as const },
   };
 }

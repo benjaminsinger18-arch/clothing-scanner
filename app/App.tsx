@@ -7,6 +7,7 @@ import { CaptureScreen } from "./screens/CaptureScreen";
 import { PreviewScreen } from "./screens/PreviewScreen";
 import { BarcodeScanScreen } from "./screens/BarcodeScanScreen";
 import { ResultsScreen } from "./screens/ResultsScreen";
+import { CorrectionScreen } from "./screens/CorrectionScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,6 +27,7 @@ export default function App() {
           <Stack.Screen name="Preview" component={PreviewScreen} options={{ title: "Confirm Photo" }} />
           <Stack.Screen name="BarcodeScan" component={BarcodeScanScreen} options={{ title: "Scan Barcode" }} />
           <Stack.Screen name="Results" component={ResultsScreen} options={{ title: "Results" }} />
+          <Stack.Screen name="Correction" component={CorrectionScreen} options={{ title: "Correct This" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

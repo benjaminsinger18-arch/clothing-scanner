@@ -13,6 +13,7 @@ import { CLASSIFICATION_JSON_SCHEMA, CLASSIFICATION_PROMPT, type RawClassificati
 import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 import { classifyWithGemini } from "./geminiClient.js";
 import type { UpcItem } from "./upcClient.js";
+import { canMakeWebSearchCall, recordWebSearchCall } from "../lib/rateLimitTracker.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const SONNET_MODEL = "claude-sonnet-5";
@@ -321,6 +322,244 @@ async function callBarcodeClassificationWithRetry(item: UpcItem): Promise<RawCla
     await new Promise((resolve) => setTimeout(resolve, 500));
     return await callBarcodeClassification(item);
   }
+}
+
+// --- User-correction verification -----------------------------------------------
+// Lets a user dispute a classification and type what the item actually is. Unlike
+// every path above, the correction is checked against a real web search before
+// being trusted — a raw re-guess (ours or the user's own unverified claim) isn't
+// good enough for a "make sure it's actually right" feature.
+//
+// This has to be two Anthropic calls, not one: Anthropic's web_search tool is a
+// server-side tool (the API runs the search itself and feeds results back to
+// Claude within a single response), but per their docs, forcing tool_choice onto
+// a client tool (like our classifyTool) in the same call preempts web_search
+// entirely — Claude never gets the chance to search first. So:
+//   1. Research — Claude + web_search, tool_choice left at default "auto" so
+//      Claude can decide whether/how much to search, producing free text with
+//      citations.
+//   2. Structure — the same classifyFromBarcode pattern: Haiku, classifyTool
+//      forced, text-only, given the research summary as input.
+//
+// Phase 1 is a raw fetch against the Anthropic REST API directly, NOT the SDK
+// client this file otherwise uses everywhere else. server/package.json pins
+// @anthropic-ai/sdk far behind current (0.32.x vs 0.123.x latest at time of
+// writing) and 0.x semver carries no inter-minor stability guarantee — bumping it
+// risked regressing classifyImage/classifyFromBarcode/suggestOutfitPairings for a
+// feature that doesn't need the bump at all. visionClient.ts and upcClient.ts
+// already establish the "raw fetch, no SDK" pattern in this codebase for exactly
+// this situation.
+
+const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
+const WEB_SEARCH_TOOL_TYPE = "web_search_20250305";
+
+export type ResearchResult =
+  | { status: "ok"; summary: string; sources: { title: string; url: string }[] }
+  | { status: "rate_limited" }
+  | { status: "unavailable" };
+
+export type CorrectionResult =
+  | { status: "ok"; classification: ClassificationResult }
+  | { status: "rate_limited" }
+  | { status: "research_unavailable" }
+  | { status: "structuring_failed"; reason: string };
+
+function describeOriginalForCorrection(original: ClassificationResult): string {
+  const brandPart =
+    original.brandGuess && original.brandConfidence !== "none"
+      ? ` (guessed brand: ${original.brandGuess}, confidence ${original.brandConfidence})`
+      : "";
+  const patternPart = original.pattern && original.pattern.toLowerCase() !== "none" ? `${original.pattern} ` : "";
+  return `${original.color} ${patternPart}${original.garmentType}${brandPart}, category: ${original.category}, style: ${original.style}`;
+}
+
+interface AnthropicTextBlock {
+  type: "text";
+  text: string;
+  citations?: { type: string; url?: string; title?: string }[];
+}
+
+async function callResearch(
+  correctionText: string,
+  original: ClassificationResult
+): Promise<{ summary: string; sources: { title: string; url: string }[] }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new ClassificationError(
+      "ANTHROPIC_API_KEY is not set — copy server/.env.example to server/.env and fill it in"
+    );
+  }
+
+  const response = await fetch(ANTHROPIC_MESSAGES_URL, {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": ANTHROPIC_VERSION,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: SONNET_MODEL,
+      max_tokens: 1024,
+      // No tool_choice here — left at the default "auto" on purpose, see the
+      // block comment above this section for why forcing it would be a mistake.
+      tools: [{ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: 4 }],
+      messages: [
+        {
+          role: "user",
+          content:
+            `A user is correcting an AI clothing classification they believe is wrong. The system ` +
+            `previously identified the item as: ${describeOriginalForCorrection(original)}. The user says: ` +
+            `"${correctionText}". Research this on the web if it would help confirm the item's real garment ` +
+            `type, category, color, pattern, style, or brand — search for the specific product/brand/model ` +
+            `the user named if one is identifiable. Use your judgment about whether a search is actually ` +
+            `needed. When done, write one clear, confident paragraph stating what this item actually is, ` +
+            `covering garment type, category, color, pattern, style, and brand (with your honest confidence) ` +
+            `— no meta-commentary about your search process, just the final factual summary.`,
+        },
+      ],
+    }),
+  });
+
+  // Record right after a successful HTTP response, same granularity as
+  // visionClient.ts/geminiClient.ts — counts this as one use against our own soft
+  // cap regardless of whether Claude actually invoked web_search internally (it
+  // may have judged no search was needed), same approximation those two make.
+  recordWebSearchCall();
+
+  if (!response.ok) {
+    throw new ClassificationError(`Anthropic research call failed: ${response.status} ${await response.text()}`);
+  }
+
+  const json = (await response.json()) as { content?: unknown[] };
+  const textBlocks = (json.content ?? []).filter(
+    (b): b is AnthropicTextBlock => (b as { type?: string }).type === "text"
+  );
+  const summary = textBlocks.map((b) => b.text).join("\n\n").trim();
+
+  const sources: { title: string; url: string }[] = [];
+  const seenUrls = new Set<string>();
+  outer: for (const block of textBlocks) {
+    for (const citation of block.citations ?? []) {
+      if (citation.type !== "web_search_result_location" || !citation.url) continue;
+      if (seenUrls.has(citation.url)) continue;
+      seenUrls.add(citation.url);
+      sources.push({ title: citation.title ?? citation.url, url: citation.url });
+      if (sources.length >= 3) break outer;
+    }
+  }
+
+  if (!summary) {
+    throw new ClassificationError("Claude's research pass returned no summary text");
+  }
+  return { summary, sources };
+}
+
+async function callResearchWithRetry(correctionText: string, original: ClassificationResult) {
+  try {
+    return await callResearch(correctionText, original);
+  } catch (err) {
+    console.warn("[claudeClient] correction research call failed, retrying once:", err);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return await callResearch(correctionText, original);
+  }
+}
+
+async function callCorrectionStructuring(
+  researchSummary: string,
+  correctionText: string,
+  original: ClassificationResult
+): Promise<RawClassification> {
+  const response = await getClient().messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 512,
+    tools: [classifyTool],
+    tool_choice: { type: "tool", name: CLASSIFY_TOOL_NAME },
+    messages: [
+      {
+        role: "user",
+        content:
+          `A user corrected an earlier (likely wrong) classification of "${describeOriginalForCorrection(original)}" ` +
+          `by saying: "${correctionText}". That correction was researched on the web; here is what the research ` +
+          `found: ${researchSummary} Based on the user's correction and this research, call report_classification ` +
+          `with the corrected, verified classification. ` +
+          CLASSIFICATION_PROMPT,
+      },
+    ],
+  });
+
+  const toolUse = response.content.find(
+    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === CLASSIFY_TOOL_NAME
+  );
+  if (!toolUse) {
+    throw new ClassificationError("Claude did not return a structured classification for the correction");
+  }
+  return toolUse.input as RawClassification;
+}
+
+async function callCorrectionStructuringWithRetry(
+  researchSummary: string,
+  correctionText: string,
+  original: ClassificationResult
+): Promise<RawClassification> {
+  try {
+    return await callCorrectionStructuring(researchSummary, correctionText, original);
+  } catch (err) {
+    console.warn("[claudeClient] correction structuring call failed, retrying once:", err);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return await callCorrectionStructuring(researchSummary, correctionText, original);
+  }
+}
+
+/**
+ * Verifies a user's free-text correction against a real web search, then
+ * structures the verified result into a full ClassificationResult. Two Anthropic
+ * calls (see the block comment above this section for why it can't be one) — the
+ * three ways this can come up short (rate-limited, research failed, structuring
+ * failed) are surfaced distinctly rather than silently degrading, unlike
+ * classifyImage's Vision/Gemini ensemble signals: a failed search here isn't a
+ * droppable secondary opinion, it's the entire point of the endpoint, so the
+ * route needs a real error to show the user instead of a quiet fallback.
+ *
+ * brandGuess/brandConfidence are trusted directly from the structuring call's own
+ * output here, unlike classifyFromBarcode's forced override. classifyFromBarcode
+ * can override because a UPC's `brand` field is one authoritative ground-truth
+ * source with nothing to weigh it against. Here there's no equivalent single
+ * authoritative field — the user's text is an assertion, and the web research is
+ * itself Claude's synthesized judgment, not a structured record — so forcing
+ * "high" confidence would overstate certainty the pipeline doesn't actually have.
+ */
+export async function verifyCorrection(correctionText: string, original: ClassificationResult): Promise<CorrectionResult> {
+  if (!canMakeWebSearchCall()) {
+    return { status: "rate_limited" };
+  }
+
+  let research: { summary: string; sources: { title: string; url: string }[] };
+  try {
+    research = await callResearchWithRetry(correctionText, original);
+  } catch (err) {
+    console.error("[claudeClient] correction research failed:", err);
+    return { status: "research_unavailable" };
+  }
+
+  let raw: RawClassification;
+  try {
+    raw = await callCorrectionStructuringWithRetry(research.summary, correctionText, original);
+  } catch (err) {
+    console.error("[claudeClient] correction structuring failed:", err);
+    const reason = err instanceof ClassificationError ? err.message : "Unknown error structuring the corrected classification";
+    return { status: "structuring_failed", reason };
+  }
+
+  return {
+    status: "ok",
+    classification: {
+      ...raw,
+      model: "claude-haiku-4-5",
+      source: "correction",
+      sources: research.sources.length > 0 ? research.sources : undefined,
+    },
+  };
 }
 
 const outfitTool: Anthropic.Tool = {

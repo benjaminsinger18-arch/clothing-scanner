@@ -90,6 +90,20 @@ export function ResultsScreen({ route, navigation }: Props) {
                       : ""
               }`}
             />
+
+            <Pressable
+              onPress={() => navigation.navigate("Correction", { classification })}
+              style={styles.correctionLink}
+            >
+              <Text style={styles.correctionLinkText}>This isn't right? Suggest a correction</Text>
+            </Pressable>
+
+            {classification.source === "correction" && classification.sources && classification.sources.length > 0 && (
+              <Text style={styles.note}>
+                Verified via: {classification.sources.map((s) => s.title).join(", ")}
+              </Text>
+            )}
+
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
           </View>
         )}
@@ -312,6 +326,8 @@ const styles = StyleSheet.create({
   tabButtonText: { color: "#8e8e93", fontSize: 13, fontWeight: "600" },
   tabButtonTextActive: { color: "#fff" },
   content: { flex: 1 },
+  correctionLink: { marginBottom: 14 },
+  correctionLinkText: { color: "#8e8e93", fontSize: 13, textDecorationLine: "underline" },
   row: { marginBottom: 14 },
   rowLabel: { color: "#8e8e93", fontSize: 12, textTransform: "uppercase" },
   rowValue: { color: "#fff", fontSize: 18, fontWeight: "600", marginTop: 2 },

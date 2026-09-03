@@ -5,4 +5,5 @@ export type RootStackParamList = {
   Preview: { photoUri: string };
   BarcodeScan: undefined;
   Results: { classification: ClassificationResult };
+  Correction: { classification: ClassificationResult };
 };
