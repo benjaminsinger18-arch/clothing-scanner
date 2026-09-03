@@ -18,6 +18,10 @@ export interface ClassificationResult {
   brandConfidence: BrandConfidence;
   /** Which model produced this result — useful for debugging escalation logic. */
   model: "claude-haiku-4-5" | "claude-sonnet-5";
+  /** True when Claude's first pass came back "unrecognized" and Google Cloud Vision's
+   * web/label detection supplied a hint that let a second Claude pass identify the
+   * item after all. Absent/false when no fallback was needed (or it didn't help). */
+  visionAssisted?: boolean;
 }
 
 export interface PriceListing {

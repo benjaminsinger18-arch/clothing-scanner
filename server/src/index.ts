@@ -41,6 +41,12 @@ app.listen(port, () => {
   if (!process.env.SERPAPI_KEY) {
     console.warn("[server] SERPAPI_KEY is not set — SerpApi data (cross-retailer pricing, reviews) will be unavailable.");
   }
+  if (!process.env.GOOGLE_VISION_API_KEY) {
+    console.warn(
+      "[server] GOOGLE_VISION_API_KEY is not set — /classify will skip the Vision fallback and just return " +
+        "\"unrecognized\" for items Claude alone can't identify."
+    );
+  }
   if (!process.env.APP_SHARED_SECRET) {
     console.warn(
       "[server] APP_SHARED_SECRET is not set — all endpoints are open with no auth. " +
