@@ -46,8 +46,19 @@ export interface ClassificationResult {
   /** How this whole classification was produced. Absent/"photo" = today's default:
    * AI visual judgment on a captured image. "barcode" = every field came from a
    * UPCitemdb match plus a text-only normalization pass (see classifyFromBarcode
-   * in claudeClient.ts) — no image was ever looked at for this result. */
-  source?: "photo" | "barcode";
+   * in claudeClient.ts) — no image was ever looked at for this result. "correction"
+   * = the user disputed a prior (wrong) classification and typed what it actually
+   * is; that correction was verified against a real web search before being
+   * structured into this result (see verifyCorrection in claudeClient.ts) — the
+   * strongest provenance in this list, since it's both user-asserted and
+   * independently checked, not just visual inference or a database lookup. */
+  source?: "photo" | "barcode" | "correction";
+  /** Present only when source === "correction" and the verification search
+   * actually surfaced usable results: up to 3 web sources (deduped by URL) that
+   * corroborated the corrected classification, so the app can show its work
+   * rather than asking the user to trust a bare re-guess. Absent whenever source
+   * isn't "correction", or when it is but the research turned up nothing citable. */
+  sources?: { title: string; url: string }[];
 }
 
 export interface PriceListing {
@@ -124,6 +135,15 @@ export interface OutfitSuggestionsRequestBody {
   style: string;
   brandGuess: string | null;
   brandConfidence: BrandConfidence;
+}
+
+/** Body shape for POST /correct-classification — the user's free-text correction
+ * plus the full original (disputed) classification, sent along so the
+ * verification pass has context for what it's correcting rather than starting
+ * from nothing. */
+export interface CorrectionRequestBody {
+  correctionText: string;
+  original: ClassificationResult;
 }
 
 export interface ApiErrorBody {

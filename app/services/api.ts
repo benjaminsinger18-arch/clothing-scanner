@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import type {
   ClassificationResult,
   ClassifyRequestBody,
+  CorrectionRequestBody,
   OutfitSuggestionsRequestBody,
   OutfitSuggestionsResult,
   PriceSearchResult,
@@ -122,6 +123,41 @@ export async function lookupBarcode(code: string): Promise<ClassificationResult>
     // common/expected outcome for clothing barcodes, not a generic failure.
     // BarcodeScanScreen branches on this to show a dedicated message.
     throw new ApiError(json?.error ?? "barcode_lookup_failed", json?.reason);
+  }
+
+  return json.classification as ClassificationResult;
+}
+
+export async function submitCorrection(
+  correctionText: string,
+  original: ClassificationResult
+): Promise<ClassificationResult> {
+  if (!API_URL) {
+    throw new ApiError(
+      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
+    );
+  }
+
+  const body: CorrectionRequestBody = { correctionText, original };
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/correct-classification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(
+      "Could not reach the backend",
+      `Check that the server is running and EXPO_API_URL (${API_URL}) is reachable from your phone`
+    );
+  }
+
+  const json = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new ApiError(json?.error ?? "correction_failed", json?.reason);
   }
 
   return json.classification as ClassificationResult;

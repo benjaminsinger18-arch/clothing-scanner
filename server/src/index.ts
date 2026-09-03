@@ -5,6 +5,7 @@ import { classifyRouter } from "./routes/classify.js";
 import { outfitSuggestionsRouter } from "./routes/outfitSuggestions.js";
 import { priceSearchRouter } from "./routes/priceSearch.js";
 import { barcodeLookupRouter } from "./routes/barcodeLookup.js";
+import { correctionRouter } from "./routes/correction.js";
 import { sharedSecretAuth } from "./lib/sharedSecretAuth.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(classifyRouter);
 app.use(priceSearchRouter);
 app.use(outfitSuggestionsRouter);
 app.use(barcodeLookupRouter);
+app.use(correctionRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[server] unhandled error:", err);

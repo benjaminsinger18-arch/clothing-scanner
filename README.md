@@ -65,6 +65,26 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   trial tier is capped at 100 requests/day *shared across all anonymous callers*,
   not just this app — the backend throttles its own usage to 80/day to leave
   headroom for others on that same pool.
+- Correction ✅ — a "This isn't right? Suggest a correction" link on the Results
+  screen (Overview tab) lets the user type free text describing what the item
+  actually is. Unlike just re-guessing, the backend verifies it: Claude runs a
+  real **web search** (Anthropic's server-side `web_search` tool) to confirm the
+  correction before structuring it into the same classification shape every other
+  path produces (`POST /correct-classification`) — brand/garment details are
+  trusted from that verified research, not the user's unverified claim alone or a
+  blind re-guess. Up to 3 corroborating sources are shown ("Verified via: ...")
+  when the search found citable results. This needed two separate Claude calls,
+  not one — Anthropic's docs confirm that forcing structured tool output in the
+  same call as web search preempts the search entirely, so this app can't combine
+  them the way `/classify`/`/barcode-lookup` combine schema-forcing with a single
+  call. **Note:** unlike every other feature here, this uses raw `fetch` against
+  Anthropic's REST API directly rather than the `@anthropic-ai/sdk` client the
+  rest of the backend uses — the installed SDK version predates this tool and
+  bumping it risked regressing the three existing Claude-dependent endpoints for
+  a feature that doesn't need the bump. Also has no free tier ($10 per 1,000
+  searches + token costs, same disclosure as Gemini) — but only runs when a user
+  explicitly submits a correction, not per-scan, so real volume/cost is tiny;
+  capped at 50/day as a pure runaway-cost circuit breaker.
 
 ## What's left (not built)
 
@@ -330,7 +350,12 @@ not configured, so `npm run dev` works with zero setup.
 
 ## Required API keys
 
-- `ANTHROPIC_API_KEY` — from https://console.anthropic.com/ (used for vision classification; required for the app to do anything at all)
+- `ANTHROPIC_API_KEY` — from https://console.anthropic.com/ (used for vision classification; required for the app to do anything at all).
+  Also powers the correction feature's web-search verification pass (`POST
+  /correct-classification`) — no separate key needed, but that endpoint draws on
+  Anthropic's `web_search` tool, billed at **$10 per 1,000 searches** plus normal
+  token costs, with no free tier. Only runs when a user submits a correction (not
+  per-scan), capped at 50/day in `rateLimitTracker.ts` as a runaway-cost guard.
 - `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` — from https://developer.ebay.com/:
   1. Sign up for a free developer account (individual, no business entity needed) —
      approval isn't always instant.
