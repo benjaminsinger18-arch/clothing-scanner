@@ -186,19 +186,25 @@ npx expo start --web
 1. Push this repo to GitHub (skip if already there).
 2. Go to https://vercel.com/new and import the repo. Vercel will detect the included
    `vercel.json` (repo root) automatically — leave the project's **Root Directory**
-   as the repo root, don't point it at `app/`, since the build needs to see the whole
-   npm workspace to link `@clothing-scanner/shared-types`.
-3. Before the first deploy, add these under **Settings → Environment Variables**
+   as the repo root, don't point it at `app/` (or `server/`), since the build needs
+   to see the whole npm workspace to link `@clothing-scanner/shared-types`.
+3. Under **Settings → General → Framework Preset**, make sure it's set to **Other**.
+   `vercel.json` sets `"framework": null` to force this, but if Vercel's
+   auto-detection picked something else before that file existed (e.g. it noticed
+   `express` — a `server/` dependency, hoisted into the root `node_modules` by the
+   npm workspace — and assumed this is a Node.js server project), the dashboard
+   setting can stick and override it; set it explicitly to be safe.
+4. Before the first deploy, add these under **Settings → Environment Variables**
    (same values as `app/.env` — see "Mobile app" setup above):
    - `EXPO_PUBLIC_API_URL` — your deployed Render backend URL.
    - `EXPO_PUBLIC_APP_SHARED_SECRET` — only if the backend has `APP_SHARED_SECRET` set.
 
    These get baked into the JS bundle at build time (that's how `EXPO_PUBLIC_*` vars
    work), so they must be set *before* the build runs, not after.
-4. Deploy. Vercel runs `vercel.json`'s `buildCommand` (builds `shared-types`, then
+5. Deploy. Vercel runs `vercel.json`'s `buildCommand` (builds `shared-types`, then
    `expo export --platform web` inside `app/`) and serves the static `app/dist`
    output, with a rewrite so client-side navigation doesn't 404 on refresh.
-5. Any push to the connected branch redeploys automatically.
+6. Any push to the connected branch redeploys automatically.
 
 This is genuinely a different runtime than the native app (React Native Web renders
 DOM instead of native views), so double-check the capture flow in a real mobile
