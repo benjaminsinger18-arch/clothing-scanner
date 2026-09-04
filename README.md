@@ -14,7 +14,7 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   originally also integrated eBay for a secondhand/resale price signal alongside
   retail; eBay was removed entirely — it was unreliably available — so SerpApi is
   now the sole price/listing source, and there's no resale-value estimate anymore.)
-  The low/high shown is trimmed in two layers (`computePriceRange` in
+  The low/high shown is narrowed in three steps (`computePriceRange` in
   `server/src/lib/priceMath.ts`), not a raw min/max: (1) IQR/Tukey fence
   outlier removal, for a search that's mostly one tight cluster plus a
   genuine-but-wildly-priced outlier or two (e.g. a $400+ heritage-line
@@ -22,11 +22,14 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   percentile trim of whatever survives step 1, for categories with no clean
   outlier at all — some brand+category searches (e.g. "Gucci belt") span a
   smooth, continuous range across genuinely different product tiers with no
-  gap to detect, which step 1 alone can't tighten. A very diverse category
-  will still show a wider range than a commodity item even after both steps
-  — that reflects real market diversity, not a bug, and squeezing it further
-  would misrepresent it. `similarItems`/reviews still show every listing
-  found, trimmed extremes included — only the summary range is affected.
+  gap to detect, which step 1 alone can't tighten; (3) a hard cap at ±25% of
+  the median (`MAX_RELATIVE_SPREAD`), which only ever narrows further and
+  guarantees a small, predictable gap even for a category diverse enough
+  that steps 1-2 alone still leave a wide-looking (if statistically honest)
+  range — a deliberate product decision, not a statistical one, prioritizing
+  a tight number over one that fully reflects real cross-model price spread.
+  `similarItems`/reviews still show every listing found, trimmed extremes
+  included — only the summary range is affected.
 - Phase 3 ✅ — review/rating snippets, sourced from the same SerpApi Google Shopping
   data as pricing.
 - Phase 4 ✅ — Outfit Matches asks Claude (text-only, cheap) for 3-5 complementary

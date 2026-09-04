@@ -19,12 +19,28 @@ function medianOf(sortedListings: PriceListing[]): number {
     : sortedListings[mid].price;
 }
 
+/** Hard ceiling on how far low/high are allowed to sit from the median,
+ * applied as a final step in computePriceRange after the statistical trims
+ * below. Those trims (outlier removal, then a percentile trim) still leave a
+ * wide-looking range for a genuinely diverse category — a designer-brand
+ * search across several real product tiers (canvas vs. exotic-leather belts,
+ * say) has no statistical outlier and no gap for a percentile trim to lean
+ * on, so the honest statistics still span most of the raw data. Capping
+ * relative to the median guarantees a tight, predictable range regardless —
+ * this intentionally overrides "statistically justified" width in favor of
+ * "small gap, always," a product decision (not a stats one) made after the
+ * two-layer trim alone still wasn't tight enough. 0.25 means low/high can
+ * each sit at most 25% away from the median, so the full displayed range
+ * never exceeds ~1.67x the low value (e.g. median $388 -> range capped to
+ * roughly [$291, $485] regardless of how wide the underlying listings are). */
+const MAX_RELATIVE_SPREAD = 0.25;
+
 /** Aggregates a set of listings into a low/median/high summary — the "estimated
  * market value" proxy described in the plan (not an appraisal). Returns undefined
  * when there's nothing priced to summarize.
  *
- * Two-layer trim, not a raw min/max — live-tested against real queries, since
- * one layer alone turned out insufficient:
+ * Three-step narrowing, not a raw min/max — live-tested against real queries,
+ * since each earlier step alone turned out insufficient on its own:
  *
  * 1. Gap-based outlier removal (standard IQR/Tukey fence method: exclude
  *    anything outside [Q1 - 1.5*IQR, Q3 + 1.5*IQR]). Catches a search that's
@@ -39,23 +55,23 @@ function medianOf(sortedListings: PriceListing[]): number {
  *    results smoothly span ~$100 canvas belts to ~$900+ exotic-leather ones,
  *    12 different real models with no gap between them, which step 1 alone
  *    can't and shouldn't touch (there's no statistical outlier to find; it's
- *    genuine cross-model price diversity). This step trims the tails of
- *    *any* distribution, clean or not, so a smoothly wide spread still gets
- *    reported as a tighter, more typical band instead of its full extremes.
- *    Left mild (10/90, not something like 25/75) so it doesn't meaningfully
- *    narrow an already-clean cluster's own natural bounds after step 1.
+ *    genuine cross-model price diversity).
+ * 3. Median-relative cap (MAX_RELATIVE_SPREAD above). Steps 1-2 are honest
+ *    statistics, and for a genuinely diverse category they still produce a
+ *    wide-looking range — not wrong, but wider than acceptable. This step
+ *    forcibly clamps low/high to within MAX_RELATIVE_SPREAD of the median,
+ *    guaranteeing a small, predictable gap for every category, statistically
+ *    justified or not. Only ever narrows what steps 1-2 produced, never
+ *    widens it.
  *
- * A genuinely diverse category (many product tiers under one brand) will
- * still show a wider range than a commodity item after both steps — that's
- * the market, not a bug, and narrowing it further would misrepresent it.
  * `similarItems`/`reviews` (built straight from the unfiltered listings
- * elsewhere) still show every listing including the trimmed extremes; only
- * the summary low/high/median is affected. Step 1 needs at least 4 points for
- * quartiles to mean anything; smaller samples skip straight to step 2 (which
- * itself is a no-op below 3 points, `percentile` on a 1-2 point array just
- * returns an endpoint). If step 1 would eliminate every point (a degenerate
- * all-outliers case), it falls back to the untrimmed set rather than showing
- * nothing. */
+ * elsewhere) still show every listing including whatever got trimmed at any
+ * step; only the summary low/high is affected — median is still the true
+ * median of the outlier-cleaned set from step 1, not adjusted by step 3.
+ * Step 1 needs at least 4 points for quartiles to mean anything; smaller
+ * samples skip straight to step 2. If step 1 would eliminate every point (a
+ * degenerate all-outliers case), it falls back to the untrimmed set rather
+ * than showing nothing. */
 export function computePriceRange(
   listings: PriceListing[]
 ): { low: number; median: number; high: number; currency: string } | undefined {
@@ -78,14 +94,19 @@ export function computePriceRange(
     }
   }
 
+  const median = medianOf(effective);
+
   const effectivePrices = effective.map((l) => l.price);
-  const low = percentile(effectivePrices, 0.1);
-  const high = percentile(effectivePrices, 0.9);
+  const trimmedLow = percentile(effectivePrices, 0.1);
+  const trimmedHigh = percentile(effectivePrices, 0.9);
+
+  const low = Math.max(trimmedLow, median * (1 - MAX_RELATIVE_SPREAD));
+  const high = Math.min(trimmedHigh, median * (1 + MAX_RELATIVE_SPREAD));
 
   return {
     low,
     high,
-    median: medianOf(effective),
+    median,
     currency: sorted[0].currency,
   };
 }
