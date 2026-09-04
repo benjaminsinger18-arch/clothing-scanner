@@ -30,8 +30,19 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   a tight number over one that fully reflects real cross-model price spread.
   `similarItems`/reviews still show every listing found, trimmed extremes
   included — only the summary range is affected.
-- Phase 3 ✅ — review/rating snippets, sourced from the same SerpApi Google Shopping
-  data as pricing.
+- Phase 3 ✅ — review/rating snippets, sourced from a much larger SerpApi
+  Google Shopping pool than what's actually displayed (`searchSerpApi` in
+  `server/src/services/serpApiClient.ts` requests up to 40 raw results via
+  SerpApi's `num` param; `similarItems` still shows 12 for browsing, but
+  `reviews` and `estimatedNewRange` are computed from the full 40-item pool).
+  Google Shopping doesn't guarantee a rating on every result, so filtering an
+  already-tiny pool (the old behavior — 12 requested, 12 kept) meant whether
+  any ratings survived was mostly luck, which is what caused reviews
+  availability to vary wildly scan to scan; a bigger pool gives the rating
+  filter far more to work with. `num` costs the same one SerpApi call against
+  quota regardless of how many results it returns (confirmed live). Reviews
+  are sorted by review count (ties broken by rating) so the most
+  socially-validated listings surface first.
 - Phase 4 ✅ — Outfit Matches asks Claude (text-only, cheap) for 3-5 complementary
   keyword phrases based on the identified item, then searches SerpApi for real
   purchasable items for the first suggestion (capped — see "Required API keys"
@@ -377,8 +388,11 @@ not configured, so `npm run dev` works with zero setup.
 - **No "estimated retail price" shown** — means SerpApi found nothing for that
   item; common for older/discontinued items, or if `SERPAPI_KEY` isn't configured
   yet.
-- **Reviews tab is empty** — expected for many items; not every Google Shopping
-  listing includes a rating.
+- **Reviews tab is empty or sparse** — possible for a niche/uncommon item even
+  with the larger 40-item search pool (see Phase 3 above); not every Google
+  Shopping listing includes a rating, and some categories genuinely have few
+  rated listings. If this is happening on common, popular items, something's
+  wrong — check the server console for SerpApi errors.
 
 ## Required API keys
 

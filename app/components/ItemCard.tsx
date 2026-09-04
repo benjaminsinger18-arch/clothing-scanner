@@ -36,7 +36,8 @@ export function ItemCard({ item }: { item: PriceListing }) {
           {item.condition ? <Text style={styles.meta}>{item.condition}</Text> : null}
           {typeof item.rating === "number" && (
             <Text style={styles.meta}>
-              ★ {item.rating.toFixed(1)} ({item.reviewCount ?? 0})
+              ★ {item.rating.toFixed(1)}
+              {typeof item.reviewCount === "number" ? ` (${item.reviewCount})` : ""}
             </Text>
           )}
         </View>

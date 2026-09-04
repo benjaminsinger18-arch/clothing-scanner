@@ -49,7 +49,14 @@ export interface SerpApiSearchResult {
   listings: PriceListing[];
 }
 
-async function runSearch(query: string, limit: number): Promise<SerpApiSearchResult> {
+/** `num` is how many raw results to request from SerpApi — NOT a display cap.
+ * Callers get back the full filtered set (up to `num`); deciding how much of
+ * it to actually show is the caller's job (see priceSearch.ts, which shows a
+ * 12-item slice but computes stats/reviews from the whole pool). Quota is
+ * metered per call (see recordSerpApiCall below), not per result count, so a
+ * larger `num` doesn't cost more against SERPAPI_MONTHLY_SOFT_CAP — confirmed
+ * live, not assumed (see the comment on searchSerpApi's `num` value). */
+async function runSearch(query: string, num: number): Promise<SerpApiSearchResult> {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) {
     // Not configured yet — degrade quietly rather than throwing, so callers get a
@@ -65,6 +72,7 @@ async function runSearch(query: string, limit: number): Promise<SerpApiSearchRes
   url.searchParams.set("q", query);
   url.searchParams.set("gl", "us");
   url.searchParams.set("hl", "en");
+  url.searchParams.set("num", String(num));
   url.searchParams.set("api_key", apiKey);
 
   try {
@@ -85,7 +93,9 @@ async function runSearch(query: string, limit: number): Promise<SerpApiSearchRes
 
     const listings: PriceListing[] = (json.shopping_results ?? [])
       .filter((item): item is RawShoppingResult & { extracted_price: number } => typeof item.extracted_price === "number")
-      .slice(0, limit)
+      // Defensive cap in case SerpApi ever returns more than requested — not a
+      // display-truncation step (see this function's doc comment above).
+      .slice(0, num)
       .map((item) => ({
         source: "serpapi" as const,
         title: item.title,
@@ -108,8 +118,17 @@ async function runSearch(query: string, limit: number): Promise<SerpApiSearchRes
   }
 }
 
+/** Requests a much larger pool than what's ever displayed (12 items in
+ * similarItems — see priceSearch.ts) specifically so the Reviews tab has
+ * more than a handful of listings to find a `rating` in. Google Shopping
+ * doesn't guarantee a rating on every result, so filtering an already-tiny
+ * pool (the old behavior: 12 requested, 12 kept) meant whether any ratings
+ * survived the filter was mostly luck — that was the actual root cause of
+ * "reviews availability varies wildly" reports, not a filtering bug. 40 is a
+ * deliberately large ask; SerpApi may return fewer if the query itself has
+ * few matches, which is fine — this is a request ceiling, not a promise. */
 export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiSearchResult> {
-  return runSearch(buildQuery(input), 12);
+  return runSearch(buildQuery(input), 40);
 }
 
 export interface SimpleSerpApiSearchResult {
