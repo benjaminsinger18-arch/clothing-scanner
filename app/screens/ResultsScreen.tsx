@@ -146,13 +146,14 @@ export function ResultsScreen({ route, navigation }: Props) {
       <ScrollView style={styles.content} contentContainerStyle={{ padding: theme.spacing.md }}>
         {tab === "Overview" && (
           <View>
-            <Row label="Garment" value={classification.garmentType} />
-            <Row label="Category" value={classification.category} />
-            <Row label="Color" value={classification.color} />
-            <Row label="Pattern" value={classification.pattern} />
-            <Row label="Style" value={classification.style} />
-            <Row label="Gender" value={GENDER_LABELS[classification.gender]} />
+            <Row icon="👕" label="Garment" value={classification.garmentType} />
+            <Row icon="🗂️" label="Category" value={classification.category} />
+            <Row icon="🎨" label="Color" value={classification.color} />
+            <Row icon="🔷" label="Pattern" value={classification.pattern} />
+            <Row icon="✨" label="Style" value={classification.style} />
+            <Row icon="🚻" label="Gender" value={GENDER_LABELS[classification.gender]} />
             <Row
+              icon="🏷️"
               label="Brand"
               value={classification.brandGuess ?? "Not identified"}
               hint={`confidence: ${classification.brandConfidence}${
@@ -184,7 +185,6 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Price Comparison" && (
           <View>
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
-            <Text style={styles.note}>Sorted low to high.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -199,7 +199,6 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Reviews" && (
           <View>
-            <Text style={styles.note}>Ratings shown where available — not every item has reviews yet.</Text>
             <ProviderDataBody
               items={pricing?.reviews ?? []}
               status={pricing?.status ?? null}
@@ -214,7 +213,6 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Similar Items" && (
           <View>
-            <Text style={styles.note}>Mostly retail, with secondhand marketplace listings mixed in — merchant and condition noted where known.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -229,9 +227,6 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Outfit Matches" && (
           <View>
-            <Text style={styles.note}>
-              AI-suggested pairings matched against real listings — more a style nudge than a stylist.
-            </Text>
             <OutfitBody
               outfits={outfits}
               loading={outfitsLoading}
@@ -422,10 +417,13 @@ function OutfitBody({
   );
 }
 
-function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Row({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={styles.rowLabelRow}>
+        <Text style={styles.rowIcon}>{icon}</Text>
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
       <Text style={styles.rowValue}>{value}</Text>
       {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
     </View>
@@ -444,6 +442,8 @@ const styles = StyleSheet.create({
   correctionLink: { marginBottom: 14 },
   correctionLinkText: { color: theme.colors.accent, fontSize: 13, textDecorationLine: "underline" },
   row: { marginBottom: 14 },
+  rowLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  rowIcon: { fontSize: 13 },
   rowLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
   rowValue: { color: theme.colors.textPrimary, fontSize: 18, fontFamily: theme.fonts.body.semiBold, marginTop: 2 },
   rowHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
