@@ -58,6 +58,10 @@ export function CaptureScreen({ navigation }: Props) {
       <Pressable style={styles.secondaryButton} onPress={pickPhoto}>
         <Text style={styles.secondaryButtonText}>Choose from Library</Text>
       </Pressable>
+
+      <Pressable style={styles.closetLink} onPress={() => navigation.navigate("Closet")}>
+        <Text style={styles.closetLinkText}>View My Closet</Text>
+      </Pressable>
     </View>
   );
 }
@@ -93,4 +97,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
+  closetLink: { marginTop: 4, padding: theme.spacing.sm },
+  closetLinkText: { color: theme.colors.accent, fontSize: 14, fontFamily: theme.fonts.body.medium },
 });

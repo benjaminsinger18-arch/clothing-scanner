@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { OutfitSuggestionsResult, DataSourceStatus, Gender, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { ItemCard } from "../components/ItemCard";
+import { ClosetItemCard } from "../components/ClosetItemCard";
 import { ErrorState } from "../components/ErrorState";
 import { GlowBackground } from "../components/GlowBackground";
 import { toErrorInfo } from "../lib/errors";
 import { getOutfitSuggestions, searchPrices } from "../services/api";
+import { addClosetItem, findClosetMatches, getClosetItems, type ClosetItem } from "../lib/closetStorage";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Results">;
@@ -90,6 +92,46 @@ export function ResultsScreen({ route, navigation }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // For the Outfit Matches tab's "from your closet" section — a snapshot of
+  // what's saved as of this screen loading, not kept live in sync with the
+  // Closet screen. A scan is a single, short-lived view; re-reading storage
+  // on every render (or subscribing to changes) would be effort spent on a
+  // staleness window nobody will notice within one screen visit.
+  const [closetItems, setClosetItems] = useState<ClosetItem[]>([]);
+  useEffect(() => {
+    getClosetItems()
+      .then(setClosetItems)
+      .catch((err) => console.warn("[ResultsScreen] Failed to load closet:", err));
+  }, []);
+
+  const closetMatches = useMemo(() => {
+    if (!outfits || outfits.suggestions.length === 0 || closetItems.length === 0) return [];
+    const seen = new Set<string>();
+    const matches: ClosetItem[] = [];
+    for (const suggestion of outfits.suggestions) {
+      for (const match of findClosetMatches(closetItems, suggestion.keywords, 3)) {
+        if (!seen.has(match.id)) {
+          seen.add(match.id);
+          matches.push(match);
+        }
+      }
+    }
+    return matches.slice(0, 6);
+  }, [outfits, closetItems]);
+
+  const [closetSaveState, setClosetSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const handleSaveToCloset = useCallback(async () => {
+    if (closetSaveState !== "idle") return;
+    setClosetSaveState("saving");
+    try {
+      await addClosetItem(classification, pricing?.estimatedNewRange);
+      setClosetSaveState("saved");
+    } catch (err) {
+      console.warn("[ResultsScreen] Failed to save to closet:", err);
+      setClosetSaveState("idle");
+    }
+  }, [classification, pricing, closetSaveState]);
 
   return (
     <View style={styles.container}>
@@ -190,10 +232,26 @@ export function ResultsScreen({ route, navigation }: Props) {
             <Text style={styles.note}>
               AI-suggested pairings matched against real listings — more a style nudge than a stylist.
             </Text>
-            <OutfitBody outfits={outfits} loading={outfitsLoading} error={outfitsError} onRetry={fetchOutfits} />
+            <OutfitBody
+              outfits={outfits}
+              loading={outfitsLoading}
+              error={outfitsError}
+              onRetry={fetchOutfits}
+              closetMatches={closetMatches}
+            />
           </View>
         )}
       </ScrollView>
+
+      <Pressable
+        style={[styles.saveClosetButton, closetSaveState !== "idle" && styles.saveClosetButtonDone]}
+        onPress={handleSaveToCloset}
+        disabled={closetSaveState !== "idle"}
+      >
+        <Text style={styles.saveClosetText}>
+          {closetSaveState === "saved" ? "Saved to Closet ✓" : closetSaveState === "saving" ? "Saving…" : "Save to Closet"}
+        </Text>
+      </Pressable>
 
       <Pressable style={styles.scanAgainButton} onPress={() => navigation.popToTop()}>
         <Text style={styles.scanAgainText}>Scan another item</Text>
@@ -279,11 +337,13 @@ function OutfitBody({
   loading,
   error,
   onRetry,
+  closetMatches,
 }: {
   outfits: OutfitSuggestionsResult | null;
   loading: boolean;
   error: { title: string; detail?: string } | null;
   onRetry: () => void;
+  closetMatches: ClosetItem[];
 }) {
   if (loading) {
     return <ActivityIndicator color={theme.colors.textPrimary} style={{ marginTop: 24 }} />;
@@ -308,6 +368,19 @@ function OutfitBody({
   }
   return (
     <>
+      {/* Closet-sourced matches are additive, not a replacement for the
+          AI-guessed shoppable groups below — silently omitted (no empty
+          state) when nothing in the closet matches, since an empty closet
+          or a genuine no-match is the common case and not worth calling
+          out as an error or gap. */}
+      {closetMatches.length > 0 && (
+        <View style={{ marginBottom: 20 }}>
+          <Text style={styles.groupLabel}>From your closet</Text>
+          {closetMatches.map((item) => (
+            <ClosetItemCard key={item.id} item={item} />
+          ))}
+        </View>
+      )}
       {outfits.suggestions.map((suggestion, i) => (
         <View key={i} style={{ marginBottom: 16 }}>
           <Text style={styles.groupLabel}>Pairs well with: {suggestion.keywords}</Text>
@@ -349,8 +422,19 @@ const styles = StyleSheet.create({
   rowHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
   note: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 14, fontStyle: "italic" },
   groupLabel: { color: theme.colors.textPrimary, fontSize: 14, fontFamily: theme.fonts.body.semiBold, marginBottom: 8 },
-  scanAgainButton: { margin: theme.spacing.md, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  scanAgainButton: { marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
   scanAgainText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  saveClosetButton: {
+    marginHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.surfaceAlt,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+  },
+  saveClosetButtonDone: { opacity: 0.6 },
+  saveClosetText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
   rangeBanner: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,

@@ -22,6 +22,7 @@ import { PreviewScreen } from "./screens/PreviewScreen";
 import { BarcodeScanScreen } from "./screens/BarcodeScanScreen";
 import { ResultsScreen } from "./screens/ResultsScreen";
 import { CorrectionScreen } from "./screens/CorrectionScreen";
+import { ClosetScreen } from "./screens/ClosetScreen";
 import { theme } from "./theme";
 
 // Held open until fonts finish loading (or fail) so the very first screen's Inter
@@ -70,6 +71,7 @@ export default function App() {
             <Stack.Screen name="BarcodeScan" component={BarcodeScanScreen} options={{ title: "Scan Barcode" }} />
             <Stack.Screen name="Results" component={ResultsScreen} options={{ title: "Results" }} />
             <Stack.Screen name="Correction" component={CorrectionScreen} options={{ title: "Correct This" }} />
+            <Stack.Screen name="Closet" component={ClosetScreen} options={{ title: "My Closet" }} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

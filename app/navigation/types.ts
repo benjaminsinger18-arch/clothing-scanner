@@ -14,4 +14,5 @@ export type RootStackParamList = {
     prefetchedOutfits?: Promise<OutfitSuggestionsResult>;
   };
   Correction: { classification: ClassificationResult };
+  Closet: undefined;
 };
