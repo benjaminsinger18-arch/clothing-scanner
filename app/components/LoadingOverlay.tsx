@@ -4,7 +4,7 @@ import { theme } from "../theme";
 export function LoadingOverlay({ message }: { message: string }) {
   return (
     <View style={styles.overlay}>
-      <ActivityIndicator size="large" color={theme.colors.textPrimary} />
+      <ActivityIndicator size="large" color={theme.colors.accent} />
       <Text style={styles.text}>{message}</Text>
     </View>
   );

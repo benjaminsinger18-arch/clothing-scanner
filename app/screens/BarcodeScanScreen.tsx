@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     left: theme.spacing.md,
     right: theme.spacing.md,
     backgroundColor: theme.colors.overlay(0.6),
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     padding: theme.spacing.md,
   },
   instructionText: { color: theme.colors.textPrimary, fontSize: 15, textAlign: "center" },
@@ -134,13 +134,12 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     marginTop: theme.spacing.sm,
+    backgroundColor: theme.colors.surfaceAlt,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: theme.radius.md,
     width: "100%",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
 });

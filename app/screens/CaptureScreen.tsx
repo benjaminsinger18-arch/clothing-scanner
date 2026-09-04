@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { ErrorState } from "../components/ErrorState";
+import { GlowBackground } from "../components/GlowBackground";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Capture">;
@@ -42,6 +43,7 @@ export function CaptureScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <GlowBackground />
       <Text style={styles.title}>Clothing Scanner</Text>
       <Text style={styles.subtitle}>Snap a photo and we'll tell you what it is, what it's worth, and what to pair it with.</Text>
 
@@ -61,11 +63,18 @@ export function CaptureScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background, alignItems: "center", justifyContent: "center", padding: theme.spacing.lg },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: theme.spacing.lg,
+    overflow: "hidden",
+  },
   title: { color: theme.colors.textPrimary, fontSize: 28, fontFamily: theme.fonts.display.bold, marginBottom: theme.spacing.sm },
   subtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: "center", marginBottom: theme.spacing.xl },
   primaryButton: {
-    backgroundColor: theme.colors.textPrimary,
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: theme.radius.md,
@@ -73,16 +82,15 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
-  primaryButtonText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  primaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
   secondaryButton: {
+    backgroundColor: theme.colors.surfaceAlt,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: theme.radius.md,
     marginBottom: 12,
     width: "100%",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
 });

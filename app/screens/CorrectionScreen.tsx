@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlignVertical: "top",
   },
-  submitButton: { marginTop: 20, backgroundColor: theme.colors.textPrimary, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  submitButton: { marginTop: 20, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
   submitButtonDisabled: { opacity: 0.4 },
-  submitButtonText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  submitButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
 });

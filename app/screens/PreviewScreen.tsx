@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   preview: { flex: 1 },
   buttonRow: { flexDirection: "row", padding: theme.spacing.md, gap: 12 },
-  primaryButton: { flex: 1, backgroundColor: theme.colors.textPrimary, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
-  primaryButtonText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
-  secondaryButton: { flex: 1, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center", borderWidth: 1, borderColor: theme.colors.border },
+  primaryButton: { flex: 1, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  primaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  secondaryButton: { flex: 1, backgroundColor: theme.colors.surfaceAlt, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
   secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
 });

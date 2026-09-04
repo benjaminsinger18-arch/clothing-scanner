@@ -50,7 +50,9 @@ const THUMB_SIZE = 64;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     padding: theme.spacing.md,
     marginBottom: 10,
   },

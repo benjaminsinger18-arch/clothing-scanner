@@ -5,6 +5,7 @@ import type { OutfitSuggestionsResult, DataSourceStatus, PriceListing, PriceSear
 import type { RootStackParamList } from "../navigation/types";
 import { ItemCard } from "../components/ItemCard";
 import { ErrorState } from "../components/ErrorState";
+import { GlowBackground } from "../components/GlowBackground";
 import { toErrorInfo } from "../lib/errors";
 import { getOutfitSuggestions, searchPrices } from "../services/api";
 import { theme } from "../theme";
@@ -177,6 +178,7 @@ function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | 
 
   return (
     <View style={styles.rangeBanner}>
+      <GlowBackground />
       <Text style={styles.rangeLabel}>Estimated retail price</Text>
       <Text style={styles.rangeValue}>
         ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
@@ -304,21 +306,27 @@ const styles = StyleSheet.create({
   tabBar: { maxHeight: 48, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
   tabBarContent: { paddingHorizontal: 12, alignItems: "center", gap: 8 },
   tabButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: theme.radius.pill },
-  tabButtonActive: { backgroundColor: theme.colors.surfaceAlt },
+  tabButtonActive: { backgroundColor: theme.colors.glow(0.18) },
   tabButtonText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
   tabButtonTextActive: { color: theme.colors.textPrimary },
   content: { flex: 1 },
   correctionLink: { marginBottom: 14 },
-  correctionLinkText: { color: theme.colors.textSecondary, fontSize: 13, textDecorationLine: "underline" },
+  correctionLinkText: { color: theme.colors.accent, fontSize: 13, textDecorationLine: "underline" },
   row: { marginBottom: 14 },
   rowLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
   rowValue: { color: theme.colors.textPrimary, fontSize: 18, fontFamily: theme.fonts.body.semiBold, marginTop: 2 },
   rowHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
   note: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 14, fontStyle: "italic" },
   groupLabel: { color: theme.colors.textPrimary, fontSize: 14, fontFamily: theme.fonts.body.semiBold, marginBottom: 8 },
-  scanAgainButton: { margin: theme.spacing.md, backgroundColor: theme.colors.textPrimary, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
-  scanAgainText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
-  rangeBanner: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.md, marginBottom: 14 },
+  scanAgainButton: { margin: theme.spacing.md, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  scanAgainText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  rangeBanner: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    marginBottom: 14,
+    overflow: "hidden",
+  },
   rangeLabel: { color: theme.colors.textSecondary, fontSize: 11, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label, marginBottom: 4 },
   rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
   rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
