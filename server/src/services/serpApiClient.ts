@@ -8,8 +8,19 @@
 
 import type { BrandConfidence, DataSourceStatus, PriceListing } from "@clothing-scanner/shared-types";
 import { canMakeSerpApiCall, recordSerpApiCall } from "../lib/rateLimitTracker.js";
+import { TtlCache } from "../lib/ttlCache.js";
 
 const SEARCH_URL = "https://serpapi.com/search.json";
+
+// Two different users scanning the same popular item (or one user rescanning)
+// produce the exact same query string, which previously always burned a fresh
+// call against the tightest quota in the app (SerpApi's 250/month free tier).
+// Retail prices don't move meaningfully within a few hours, so a short-lived
+// cache keyed on the literal query+size trades a small amount of staleness for
+// a real reduction in call volume. Deliberately short (not day/week-long) so
+// price data doesn't go stale for long if a listing's price does move.
+const SEARCH_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const searchCache = new TtlCache<SerpApiSearchResult>(SEARCH_CACHE_TTL_MS);
 
 export class SerpApiError extends Error {}
 export class SerpApiRateLimitError extends SerpApiError {}
@@ -57,6 +68,23 @@ export interface SerpApiSearchResult {
  * larger `num` doesn't cost more against SERPAPI_MONTHLY_SOFT_CAP — confirmed
  * live, not assumed (see the comment on searchSerpApi's `num` value). */
 async function runSearch(query: string, num: number): Promise<SerpApiSearchResult> {
+  const cacheKey = `${query.trim().toLowerCase()}::${num}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached;
+
+  const result = await runSearchUncached(query, num);
+  // Only cache genuine outcomes, not transient failure states — caching a
+  // rate-limited or unavailable result for hours would turn a temporary blip
+  // into a multi-hour outage for every subsequent identical query, which
+  // defeats the point of a short cache (avoiding wasted quota, not masking
+  // real failures).
+  if (result.status === "ok" || result.status === "no_results") {
+    searchCache.set(cacheKey, result);
+  }
+  return result;
+}
+
+async function runSearchUncached(query: string, num: number): Promise<SerpApiSearchResult> {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) {
     // Not configured yet — degrade quietly rather than throwing, so callers get a

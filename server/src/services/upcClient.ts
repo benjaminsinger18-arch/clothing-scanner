@@ -12,8 +12,18 @@
 // edge case — callers should treat it as such, not as a failure.
 
 import { canMakeUpcCall, recordUpcCall } from "../lib/rateLimitTracker.js";
+import { TtlCache } from "../lib/ttlCache.js";
 
 const LOOKUP_URL = "https://api.upcitemdb.com/prod/trial/lookup";
+
+// A UPC code's product record essentially never changes (unlike a price), and
+// this quota is the tightest of any provider in the app — 100 req/day *shared
+// across every anonymous trial user of UPCitemdb, not just this app's own
+// traffic*. A popular item scanned by more than one tester/user within a week
+// previously re-spent that shared quota on an identical lookup every time.
+// A week-long TTL is safe here in a way it wouldn't be for price data.
+const LOOKUP_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const lookupCache = new TtlCache<UpcLookupResult>(LOOKUP_CACHE_TTL_MS);
 
 export class UpcApiError extends Error {}
 
@@ -58,6 +68,21 @@ function cleanField(value: string | undefined): string | null {
 }
 
 export async function lookupUpc(code: string): Promise<UpcLookupResult> {
+  const cached = lookupCache.get(code);
+  if (cached) return cached;
+
+  const result = await lookupUpcUncached(code);
+  // Same reasoning as serpApiClient.ts's cache: only pin genuine outcomes
+  // ("found" or "not_found" are both real answers about this code), not
+  // transient failure states — a rate-limited or unavailable result caching
+  // for a week would turn a temporary blip into a week-long false negative.
+  if (result.status === "found" || result.status === "not_found") {
+    lookupCache.set(code, result);
+  }
+  return result;
+}
+
+async function lookupUpcUncached(code: string): Promise<UpcLookupResult> {
   if (!canMakeUpcCall()) {
     return { status: "rate_limited" };
   }
