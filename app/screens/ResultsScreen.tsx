@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { OutfitSuggestionsResult, DataSourceStatus, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
+import type { OutfitSuggestionsResult, DataSourceStatus, Gender, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { ItemCard } from "../components/ItemCard";
 import { ErrorState } from "../components/ErrorState";
@@ -14,6 +14,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Results">;
 
 const TABS = ["Overview", "Price Comparison", "Reviews", "Similar Items", "Outfit Matches"] as const;
 type Tab = (typeof TABS)[number];
+
+const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", unisex: "Unisex" };
 
 export function ResultsScreen({ route, navigation }: Props) {
   const { classification } = route.params;
@@ -79,6 +81,7 @@ export function ResultsScreen({ route, navigation }: Props) {
             <Row label="Color" value={classification.color} />
             <Row label="Pattern" value={classification.pattern} />
             <Row label="Style" value={classification.style} />
+            <Row label="Gender" value={GENDER_LABELS[classification.gender]} />
             <Row
               label="Brand"
               value={classification.brandGuess ?? "Not identified"}

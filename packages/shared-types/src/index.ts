@@ -3,6 +3,13 @@
 
 export type BrandConfidence = "none" | "low" | "medium" | "high";
 
+/** Who a garment is styled/cut for — drives gendered outfit-pairing suggestions
+ * (see OutfitSuggestionsRequestBody). "unisex" is a genuine category (the item is
+ * gender-neutral in styling), not a fallback for uncertainty — see
+ * classificationSchema.ts's field description for how models are instructed to
+ * use it. */
+export type Gender = "men" | "women" | "unisex";
+
 /** Sentinel garment_type value Claude returns when the photo isn't a recognizable
  * piece of clothing (wrong subject, unusable image, etc). The app should treat
  * this as "ask the user to retake the photo" rather than rendering results. */
@@ -14,6 +21,10 @@ export interface ClassificationResult {
   color: string;
   pattern: string;
   style: string;
+  /** Who this garment is styled/cut for — see the Gender type doc. Always present:
+   * every classification path (photo, Gemini rescue, barcode, correction) shares
+   * the same forced-schema tool, which requires this field. */
+  gender: Gender;
   brandGuess: string | null;
   brandConfidence: BrandConfidence;
   /** Which model produced this result — useful for debugging escalation logic.
@@ -125,13 +136,16 @@ export interface PriceSearchQuery {
 }
 
 /** Body shape for POST /outfit-suggestions — the classification fields needed to
- * describe the item to Claude for complementary-item suggestions. */
+ * describe the item to Claude for complementary-item suggestions. Includes `gender`
+ * so suggested pairings (and the keyword phrases used to search for them) come back
+ * correctly gendered rather than defaulting to ungendered/mixed results. */
 export interface OutfitSuggestionsRequestBody {
   garmentType: string;
   category: string;
   color: string;
   pattern: string;
   style: string;
+  gender: Gender;
   brandGuess: string | null;
   brandConfidence: BrandConfidence;
 }

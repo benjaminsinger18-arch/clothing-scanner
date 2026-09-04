@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { UNRECOGNIZED_GARMENT } from "@clothing-scanner/shared-types";
+import { UNRECOGNIZED_GARMENT, type Gender } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingOverlay } from "../components/LoadingOverlay";
@@ -10,6 +10,8 @@ import { submitCorrection } from "../services/api";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Correction">;
+
+const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", unisex: "Unisex" };
 
 export function CorrectionScreen({ route, navigation }: Props) {
   const { classification: original } = route.params;
@@ -50,6 +52,7 @@ export function CorrectionScreen({ route, navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.currentLabel}>Currently identified as</Text>
         <Text style={styles.currentValue}>
+          {original.gender !== "unisex" ? `${GENDER_LABELS[original.gender]} ` : ""}
           {original.color} {original.garmentType}
           {original.brandGuess ? ` (${original.brandGuess})` : ""}
         </Text>

@@ -22,6 +22,15 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   below for why only one). This is a heuristic, not a trained
   outfit-compatibility model (see plan's research notes — no accessible API for that
   exists) — good for casual pairing ideas, not a styling authority.
+- Gendered pairings ✅ — every classification now includes a `gender` field
+  ("men" | "women" | "unisex" — see `ClassificationResult` in
+  `packages/shared-types`), inferred from a visible wearer's apparent gender
+  presentation or, absent one, the garment's own cut/styling. Outfit Matches
+  passes this through to Claude's keyword-suggestion call, which bakes the
+  gender directly into each suggested phrase (e.g. "men's navy chino pants")
+  so the downstream SerpApi search comes back correctly gendered rather than a
+  mixed/ungendered result. Shown on the Results screen's Overview tab and
+  editable via the existing "Suggest a fix" correction flow if it's wrong.
 - `/price-search` and `/outfit-suggestions` both degrade gracefully without
   `SERPAPI_KEY` configured — `/classify` still works, just with no pricing/listing
   data and keyword-only outfit ideas.
@@ -172,7 +181,7 @@ isn't configured):
 ```
 curl -X POST http://localhost:3000/outfit-suggestions ^
   -H "Content-Type: application/json" ^
-  -d "{\"garmentType\":\"denim jacket\",\"category\":\"outerwear\",\"color\":\"blue\",\"pattern\":\"solid\",\"style\":\"casual\",\"brandGuess\":null,\"brandConfidence\":\"none\"}"
+  -d "{\"garmentType\":\"denim jacket\",\"category\":\"outerwear\",\"color\":\"blue\",\"pattern\":\"solid\",\"style\":\"casual\",\"gender\":\"men\",\"brandGuess\":null,\"brandConfidence\":\"none\"}"
 ```
 
 ### 2. Mobile app

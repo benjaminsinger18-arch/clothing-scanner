@@ -7,6 +7,7 @@ import {
   UNRECOGNIZED_GARMENT,
   type BrandConfidence,
   type ClassificationResult,
+  type Gender,
 } from "@clothing-scanner/shared-types";
 import type { SupportedMediaType } from "../lib/imageUtils.js";
 import { CLASSIFICATION_JSON_SCHEMA, CLASSIFICATION_PROMPT, type RawClassification } from "../lib/classificationSchema.js";
@@ -561,8 +562,11 @@ const outfitTool: Anthropic.Tool = {
             keywords: {
               type: "string",
               description:
-                'Short, search-friendly keyword phrase for the complementary item, e.g. "navy chino pants" ' +
-                'or "white leather sneakers" — not a full sentence, and not a restatement of the item itself.',
+                'Short, search-friendly keyword phrase for the complementary item, e.g. "men\'s navy chino ' +
+                'pants" or "women\'s white leather sneakers" — not a full sentence, and not a restatement ' +
+                "of the item itself. Include the gender in the phrase itself (as shown) whenever the item " +
+                "being paired with is gendered, so the downstream product search comes back correctly " +
+                'gendered — omit it only when suggesting a genuinely unisex item (e.g. "canvas tote bag").',
             },
           },
           required: ["keywords"],
@@ -579,6 +583,7 @@ export interface OutfitPairingInput {
   color: string;
   pattern: string;
   style: string;
+  gender: Gender;
   brandGuess: string | null;
   brandConfidence: BrandConfidence;
 }
@@ -589,10 +594,17 @@ function describeItem(input: OutfitPairingInput): string {
       ? ` (possibly ${input.brandGuess})`
       : "";
   const patternPart = input.pattern && input.pattern.toLowerCase() !== "none" ? `${input.pattern} ` : "";
-  return `${input.color} ${patternPart}${input.garmentType}${brandPart}, style: ${input.style}, category: ${input.category}`;
+  return `${input.color} ${patternPart}${input.garmentType}${brandPart}, style: ${input.style}, category: ${input.category}, styled for: ${input.gender}`;
 }
 
 async function callOutfitSuggestions(input: OutfitPairingInput): Promise<string[]> {
+  const genderInstruction =
+    input.gender === "unisex"
+      ? "This item is unisex/gender-neutral — suggest gender-neutral pairings, or lean toward whichever " +
+        "gendering reads most natural for the specific pairing item if a truly neutral option doesn't exist."
+      : `This item is styled for ${input.gender} — every suggested pairing item must match that (${input.gender}'s ` +
+        "cut/style), not a mix, since these are meant to complete one coherent outfit for one wearer.";
+
   const response = await getClient().messages.create({
     model: HAIKU_MODEL,
     max_tokens: 512,
@@ -603,6 +615,7 @@ async function callOutfitSuggestions(input: OutfitPairingInput): Promise<string[
         role: "user",
         content:
           `Suggest 3-5 clothing items that would pair well as an outfit with this item: ${describeItem(input)}. ` +
+          `${genderInstruction} ` +
           "Call report_outfit_suggestions with short, search-friendly keyword phrases suitable for a product search.",
       },
     ],

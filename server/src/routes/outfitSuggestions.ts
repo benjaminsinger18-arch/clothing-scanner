@@ -2,6 +2,7 @@ import { Router } from "express";
 import type {
   ApiErrorBody,
   BrandConfidence,
+  Gender,
   OutfitSuggestion,
   OutfitSuggestionsRequestBody,
   OutfitSuggestionsResult,
@@ -13,6 +14,7 @@ import { canMakeSerpApiOutfitCall, recordSerpApiOutfitCall } from "../lib/rateLi
 export const outfitSuggestionsRouter = Router();
 
 const VALID_BRAND_CONFIDENCE: BrandConfidence[] = ["none", "low", "medium", "high"];
+const VALID_GENDERS: Gender[] = ["men", "women", "unisex"];
 
 outfitSuggestionsRouter.post("/outfit-suggestions", async (req, res) => {
   const body = req.body as Partial<OutfitSuggestionsRequestBody>;
@@ -31,6 +33,12 @@ outfitSuggestionsRouter.post("/outfit-suggestions", async (req, res) => {
       ? body.brandConfidence
       : "none";
 
+  // Defaults to "unisex" rather than rejecting the request — every current app
+  // build always sends this (ClassificationResult.gender is required), but an
+  // older/stale client shouldn't hard-fail here, just get ungendered suggestions.
+  const gender: Gender =
+    typeof body.gender === "string" && (VALID_GENDERS as string[]).includes(body.gender) ? body.gender : "unisex";
+
   let keywordsList: string[];
   try {
     keywordsList = await suggestOutfitPairings({
@@ -39,6 +47,7 @@ outfitSuggestionsRouter.post("/outfit-suggestions", async (req, res) => {
       color: body.color,
       pattern: body.pattern,
       style: body.style,
+      gender,
       brandGuess: body.brandGuess ?? null,
       brandConfidence,
     });

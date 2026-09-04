@@ -176,6 +176,7 @@ export async function getOutfitSuggestions(classification: ClassificationResult)
     color: classification.color,
     pattern: classification.pattern,
     style: classification.style,
+    gender: classification.gender,
     brandGuess: classification.brandGuess,
     brandConfidence: classification.brandConfidence,
   };
