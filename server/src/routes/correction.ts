@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { ApiErrorBody, ClassificationResult, CorrectionRequestBody } from "@clothing-scanner/shared-types";
 import { verifyCorrection } from "../services/claudeClient.js";
+import { logCorrection } from "../lib/correctionLog.js";
 
 export const correctionRouter = Router();
 
@@ -30,9 +31,21 @@ correctionRouter.post("/correct-classification", async (req, res) => {
   const result = await verifyCorrection(text, body.original as ClassificationResult);
 
   switch (result.status) {
-    case "ok":
+    case "ok": {
+      try {
+        logCorrection({
+          timestamp: new Date().toISOString(),
+          original: body.original as ClassificationResult,
+          correctionText: text,
+          corrected: result.classification,
+          photoThumbnail: typeof body.photoThumbnail === "string" ? body.photoThumbnail : undefined,
+        });
+      } catch (err) {
+        console.warn("[correction] Failed to log correction:", err);
+      }
       res.json({ classification: result.classification });
       return;
+    }
     case "rate_limited": {
       const errorBody: ApiErrorBody = { error: "rate_limited", reason: "Correction verification quota reached for today" };
       res.status(429).json(errorBody);

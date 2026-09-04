@@ -394,6 +394,27 @@ not configured, so `npm run dev` works with zero setup.
   rated listings. If this is happening on common, popular items, something's
   wrong — check the server console for SerpApi errors.
 
+## Improving classification accuracy
+
+Claude's own weights can't be fine-tuned via the API, so accuracy work here means prompt/ensemble
+tuning — which first needs a way to measure whether a change actually helped. Two pieces of
+infrastructure exist for that:
+
+- **Correction log** (`server/data/corrections.jsonl`) — every time a user submits a correction via
+  the "Suggest a fix" flow (see "Correction" above) and it's successfully verified, the original
+  (wrong) classification, the user's correction text, the verified result, and the photo thumbnail
+  (if the client sent one) are appended as one JSON line (see `server/src/lib/correctionLog.ts`).
+  This is local-disk, gitignored, and **not persisted on a Render free-tier deploy** — no persistent
+  disk there by default, so it survives local dev restarts but is wiped on every Render
+  restart/redeploy. A good source of real-world misclassification examples to curate into the golden
+  eval set below.
+- **Eval harness** (`server/eval/`) — a hand-curated golden set of photos + expected classification
+  fields (`server/eval/golden/`, starts empty — see its own README for the format) and a runner
+  (`npm run eval --workspace=server`) that calls the real classification pipeline against each one and
+  reports per-field pass rates. Makes real Claude/Vision/Gemini calls (no mocking) — see
+  `server/eval/golden/README.md` for cost guidance and grading rules. This is a report, not a CI gate;
+  there's no CI in this repo yet.
+
 ## Required API keys
 
 - `ANTHROPIC_API_KEY` — from https://console.anthropic.com/ (used for vision classification; required for the app to do anything at all).
