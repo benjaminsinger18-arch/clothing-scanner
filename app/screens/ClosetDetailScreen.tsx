@@ -13,8 +13,12 @@ const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", 
 /** Read-only detail view of a saved closet entry — the snapshot taken at
  * save time (see closetStorage.ts), not a live re-fetch. Same
  * photo-to-the-right-of-the-rows layout as ResultsScreen's Overview tab,
- * duplicated locally rather than shared since this screen has no tabs, no
- * live pricing/outfit fetches, and a Remove action instead of Save. */
+ * duplicated locally rather than shared since this screen itself has no
+ * tabs, no live pricing/outfit fetches, and a Remove action instead of
+ * Save. "View Full Results" below hands off to the real ResultsScreen (all
+ * five tabs) for that live data, re-fetching pricing/outfits fresh since
+ * only the saved-at-the-time priceRange summary — not the full pricing/
+ * outfit results — is persisted per closet entry. */
 export function ClosetDetailScreen({ route, navigation }: Props) {
   const { item } = route.params;
   const { classification, priceRange, photoThumbnail, savedAt } = item;
@@ -75,6 +79,13 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
       <Text style={styles.savedAt}>Saved {new Date(savedAt).toLocaleDateString()}</Text>
 
       <Pressable
+        style={styles.viewResultsButton}
+        onPress={() => navigation.navigate("Results", { classification, photoThumbnail })}
+      >
+        <Text style={styles.viewResultsButtonText}>View Full Results</Text>
+      </Pressable>
+
+      <Pressable
         style={[styles.removeButton, removing && styles.removeButtonDisabled]}
         onPress={handleRemove}
         disabled={removing}
@@ -119,6 +130,8 @@ const styles = StyleSheet.create({
   rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
   rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
   savedAt: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: theme.spacing.lg },
+  viewResultsButton: { backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center", marginBottom: 12 },
+  viewResultsButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
   removeButton: { backgroundColor: theme.colors.surfaceAlt, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
   removeButtonDisabled: { opacity: 0.6 },
   removeButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
