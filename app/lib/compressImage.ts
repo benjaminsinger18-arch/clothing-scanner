@@ -71,3 +71,27 @@ export async function compressForUpload(uri: string): Promise<string> {
   }
   return last;
 }
+
+// Deliberately much smaller than the upload presets above — this thumbnail is
+// for on-screen display (Overview's photo, a saved Closet entry) and for
+// persisting into AsyncStorage, not for the classifier, so there's no reason
+// to spend the bytes upload quality needs. Kept small enough that a closet
+// full of saved items (see closetStorage.ts's MAX_CLOSET_ITEMS) stays well
+// under AsyncStorage's practical size ceiling.
+const THUMBNAIL_WIDTH = 160;
+const THUMBNAIL_COMPRESS = 0.4;
+
+/** Small JPEG thumbnail as a ready-to-render `data:` URI (unlike
+ * compressForUpload's bare base64) — usable directly as an <Image
+ * source={{ uri }}> value with no further wrapping. */
+export async function compressForThumbnail(uri: string): Promise<string> {
+  const result = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: THUMBNAIL_WIDTH } }], {
+    compress: THUMBNAIL_COMPRESS,
+    format: ImageManipulator.SaveFormat.JPEG,
+    base64: true,
+  });
+  if (!result.base64) {
+    throw new Error("Failed to encode thumbnail");
+  }
+  return `data:image/jpeg;base64,${result.base64}`;
+}

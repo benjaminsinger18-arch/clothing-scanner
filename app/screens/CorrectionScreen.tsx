@@ -15,7 +15,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Correction">;
 const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", unisex: "Unisex" };
 
 export function CorrectionScreen({ route, navigation }: Props) {
-  const { classification: original } = route.params;
+  const { classification: original, photoThumbnail } = route.params;
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ title: string; detail?: string } | null>(null);
@@ -40,7 +40,7 @@ export function CorrectionScreen({ route, navigation }: Props) {
       // replace("Results", ...): leaves the stale original Results one level back
       // in the stack rather than swapping it out too. Accepted, not engineered
       // around, per this codebase's existing simplicity bias.
-      navigation.replace("Results", { classification, ...prefetchResultsData(classification) });
+      navigation.replace("Results", { classification, photoThumbnail, ...prefetchResultsData(classification) });
     } catch (err) {
       setError(toErrorInfo(err, "Something went wrong while checking that."));
     } finally {

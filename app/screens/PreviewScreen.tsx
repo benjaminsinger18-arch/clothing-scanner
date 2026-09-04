@@ -5,7 +5,7 @@ import { UNRECOGNIZED_GARMENT } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { ErrorState } from "../components/ErrorState";
-import { compressForUpload } from "../lib/compressImage";
+import { compressForThumbnail, compressForUpload } from "../lib/compressImage";
 import { toErrorInfo } from "../lib/errors";
 import { prefetchResultsData } from "../lib/prefetchResults";
 import { classifyPhoto } from "../services/api";
@@ -33,13 +33,21 @@ export function PreviewScreen({ route, navigation }: Props) {
         return;
       }
 
+      // Best-effort — a thumbnail failure shouldn't block showing results for
+      // a successful classification, it just means Overview/Closet fall back
+      // to their no-photo placeholder for this scan.
+      const photoThumbnail = await compressForThumbnail(photoUri).catch((err) => {
+        console.warn("[PreviewScreen] Failed to build photo thumbnail:", err);
+        return undefined;
+      });
+
       // Kick off pricing/outfit fetches now, before navigating, instead of
       // waiting for ResultsScreen to mount and start them itself — the
       // screen-transition/mount cycle was otherwise dead time. This spinner's
       // wait is still just the classify call (pricing/outfit have their own
       // per-tab spinners on Results), it's only *when* those two fetches start
       // that's changing, not what's shown here.
-      navigation.replace("Results", { classification, ...prefetchResultsData(classification) });
+      navigation.replace("Results", { classification, photoThumbnail, ...prefetchResultsData(classification) });
     } catch (err) {
       setError(toErrorInfo(err, "Something went wrong while identifying this item."));
     } finally {

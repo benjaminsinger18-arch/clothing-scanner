@@ -5,13 +5,12 @@
 // without a server/auth rework. Revisit with a real backend + sync if this
 // ever needs to follow a user across devices.
 //
-// No photo/thumbnail is stored — PreviewScreen/BarcodeScanScreen don't
-// currently thread the captured image through to ResultsScreen (see
-// navigation/types.ts), and plumbing a base64 image into every saved entry
-// would risk hitting AsyncStorage's per-key size ceiling after a only a
-// handful of saves. A closet entry is identified by its classification
-// fields (garment/color/brand) instead, same as the rest of the app does
-// today.
+// Each entry carries a small photo thumbnail (see compressForThumbnail in
+// app/lib/compressImage.ts) — deliberately tiny (160px, low quality) since
+// AsyncStorage has a real per-key/total size ceiling and a closet can hold up
+// to MAX_CLOSET_ITEMS of these at once; see that constant's own comment for
+// the size math. Barcode-identified items never had a photo to begin with, so
+// this is always optional, not just "not loaded yet."
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { ClassificationResult, PriceRange } from "@clothing-scanner/shared-types";
@@ -24,14 +23,18 @@ export interface ClosetItem {
   /** Snapshot of the retail estimate at save time, if pricing had loaded yet —
    * absent rather than blocking the save on a slow/failed pricing fetch. */
   priceRange?: PriceRange;
+  /** A `data:` URI thumbnail of the actual scanned photo — see this file's
+   * top comment. Absent for barcode-identified items. */
+  photoThumbnail?: string;
 }
 
 const STORAGE_KEY = "closet:v1";
-// A generous ceiling, not an expected steady-state size — guards against
-// unbounded growth on a device that's never uninstalled, same defensive
-// posture as this app's other "cap it, don't let it grow forever" spots
-// (see e.g. TtlCache's maxEntries on the backend).
-const MAX_CLOSET_ITEMS = 300;
+// Lower than it might otherwise be specifically because entries now carry a
+// photo thumbnail (~5-20KB base64 each at 160px/0.4 quality) — 150 items
+// caps total storage at roughly 1.5-3MB, comfortably under AsyncStorage's
+// practical size ceiling (Android's default backing store is 6MB), unlike a
+// text-only entry which could safely support a much higher cap.
+const MAX_CLOSET_ITEMS = 150;
 
 async function readAll(): Promise<ClosetItem[]> {
   try {
@@ -59,7 +62,8 @@ export async function getClosetItems(): Promise<ClosetItem[]> {
 
 export async function addClosetItem(
   classification: ClassificationResult,
-  priceRange?: PriceRange
+  priceRange?: PriceRange,
+  photoThumbnail?: string
 ): Promise<ClosetItem> {
   const items = await readAll();
   const item: ClosetItem = {
@@ -67,6 +71,7 @@ export async function addClosetItem(
     savedAt: new Date().toISOString(),
     classification,
     priceRange,
+    photoThumbnail,
   };
   // New items are prepended, so trimming to the cap from the end always drops
   // the oldest ones.

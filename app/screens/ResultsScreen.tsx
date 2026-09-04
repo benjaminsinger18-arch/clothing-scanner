@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { OutfitSuggestionsResult, DataSourceStatus, Gender, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
@@ -20,7 +20,7 @@ type Tab = (typeof TABS)[number];
 const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", unisex: "Unisex" };
 
 export function ResultsScreen({ route, navigation }: Props) {
-  const { classification, prefetchedPricing, prefetchedOutfits } = route.params;
+  const { classification, prefetchedPricing, prefetchedOutfits, photoThumbnail } = route.params;
   const [tab, setTab] = useState<Tab>("Overview");
 
   const [pricing, setPricing] = useState<PriceSearchResult | null>(null);
@@ -125,13 +125,13 @@ export function ResultsScreen({ route, navigation }: Props) {
     if (closetSaveState !== "idle") return;
     setClosetSaveState("saving");
     try {
-      await addClosetItem(classification, pricing?.estimatedNewRange);
+      await addClosetItem(classification, pricing?.estimatedNewRange, photoThumbnail);
       setClosetSaveState("saved");
     } catch (err) {
       console.warn("[ResultsScreen] Failed to save to closet:", err);
       setClosetSaveState("idle");
     }
-  }, [classification, pricing, closetSaveState]);
+  }, [classification, pricing, closetSaveState, photoThumbnail]);
 
   return (
     <View style={styles.container}>
@@ -146,27 +146,39 @@ export function ResultsScreen({ route, navigation }: Props) {
       <ScrollView style={styles.content} contentContainerStyle={{ padding: theme.spacing.md }}>
         {tab === "Overview" && (
           <View>
-            <Row icon="👕" label="Garment" value={classification.garmentType} />
-            <Row icon="🗂️" label="Category" value={classification.category} />
-            <Row icon="🎨" label="Color" value={classification.color} />
-            <Row icon="🔷" label="Pattern" value={classification.pattern} />
-            <Row icon="✨" label="Style" value={classification.style} />
-            <Row icon="🚻" label="Gender" value={GENDER_LABELS[classification.gender]} />
-            <Row
-              icon="🏷️"
-              label="Brand"
-              value={classification.brandGuess ?? "Not identified"}
-              hint={`confidence: ${classification.brandConfidence}${
-                classification.brandSource === "vision-logo"
-                  ? " (via logo detection)"
-                  : classification.brandSource === "barcode"
-                    ? " (via barcode)"
-                    : ""
-              }`}
-            />
+            <View style={styles.overviewHeader}>
+              <View style={styles.overviewRows}>
+                <Row label="Garment" value={classification.garmentType} />
+                <Row label="Category" value={classification.category} />
+                <Row label="Color" value={classification.color} />
+                <Row label="Pattern" value={classification.pattern} />
+                <Row label="Style" value={classification.style} />
+                <Row label="Gender" value={GENDER_LABELS[classification.gender]} />
+                <Row
+                  label="Brand"
+                  value={classification.brandGuess ?? "Not identified"}
+                  hint={`confidence: ${classification.brandConfidence}${
+                    classification.brandSource === "vision-logo"
+                      ? " (via logo detection)"
+                      : classification.brandSource === "barcode"
+                        ? " (via barcode)"
+                        : ""
+                  }`}
+                />
+              </View>
+
+              {photoThumbnail ? (
+                <Image source={{ uri: photoThumbnail }} style={styles.overviewPhoto} resizeMode="cover" />
+              ) : (
+                // Barcode-identified items never had a garment photo to
+                // begin with — a plain placeholder box rather than nothing,
+                // so the layout doesn't visibly shift based on source.
+                <View style={styles.overviewPhotoPlaceholder} />
+              )}
+            </View>
 
             <Pressable
-              onPress={() => navigation.navigate("Correction", { classification })}
+              onPress={() => navigation.navigate("Correction", { classification, photoThumbnail })}
               style={styles.correctionLink}
             >
               <Text style={styles.correctionLinkText}>Doesn't look right? Suggest a fix</Text>
@@ -417,13 +429,10 @@ function OutfitBody({
   );
 }
 
-function Row({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
+function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <View style={styles.row}>
-      <View style={styles.rowLabelRow}>
-        <Text style={styles.rowIcon}>{icon}</Text>
-        <Text style={styles.rowLabel}>{label}</Text>
-      </View>
+      <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue}>{value}</Text>
       {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
     </View>
@@ -439,11 +448,21 @@ const styles = StyleSheet.create({
   tabButtonText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
   tabButtonTextActive: { color: theme.colors.textPrimary },
   content: { flex: 1 },
+  overviewHeader: { flexDirection: "row", gap: theme.spacing.md, marginBottom: 4 },
+  overviewRows: { flex: 1, minWidth: 0 },
+  overviewPhoto: { width: 96, height: 96, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
+  overviewPhotoPlaceholder: {
+    width: 96,
+    height: 96,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    flexShrink: 0,
+  },
   correctionLink: { marginBottom: 14 },
   correctionLinkText: { color: theme.colors.accent, fontSize: 13, textDecorationLine: "underline" },
   row: { marginBottom: 14 },
-  rowLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  rowIcon: { fontSize: 13 },
   rowLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
   rowValue: { color: theme.colors.textPrimary, fontSize: 18, fontFamily: theme.fonts.body.semiBold, marginTop: 2 },
   rowHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },

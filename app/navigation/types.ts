@@ -12,7 +12,13 @@ export type RootStackParamList = {
     classification: ClassificationResult;
     prefetchedPricing?: Promise<PriceSearchResult>;
     prefetchedOutfits?: Promise<OutfitSuggestionsResult>;
+    /** A small data: URI thumbnail of the actual scanned photo (see
+     * compressForThumbnail in app/lib/compressImage.ts) — absent for
+     * barcode-identified items, which never had a garment photo to begin
+     * with. Forwarded on to Correction (and back from it) so a re-submitted
+     * classification still shows the same photo. */
+    photoThumbnail?: string;
   };
-  Correction: { classification: ClassificationResult };
+  Correction: { classification: ClassificationResult; photoThumbnail?: string };
   Closet: undefined;
 };

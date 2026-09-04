@@ -1,18 +1,26 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { ClassificationResult } from "@clothing-scanner/shared-types";
 import type { ClosetItem } from "../lib/closetStorage";
 import { theme } from "../theme";
 
-/** No thumbnail — closet entries don't carry a photo (see closetStorage.ts's
- * doc comment on why), so the card leans on a short text description instead
- * of ItemCard's image+title layout. Used both by ClosetScreen (with a Remove
- * action) and ResultsScreen's Outfit Matches "from your closet" section
- * (without one — you can't remove an item from that context). */
+/** Same thumb+text row shape as ItemCard, but sourced from a locally-saved
+ * photo thumbnail (see closetStorage.ts) instead of a listing's remote image
+ * — falls back to a plain placeholder box for barcode-identified items,
+ * which never had a garment photo to begin with. Used both by ClosetScreen
+ * (with a Remove action) and ResultsScreen's Outfit Matches "from your
+ * closet" section (without one — you can't remove an item from that
+ * context). */
 export function ClosetItemCard({ item, onRemove }: { item: ClosetItem; onRemove?: () => void }) {
-  const { classification, priceRange } = item;
+  const { classification, priceRange, photoThumbnail } = item;
 
   return (
     <View style={styles.card}>
+      {photoThumbnail ? (
+        <Image source={{ uri: photoThumbnail }} style={styles.thumb} resizeMode="cover" />
+      ) : (
+        <View style={styles.thumbPlaceholder} />
+      )}
+
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={2}>
           {describeItem(classification)}
@@ -37,6 +45,8 @@ function describeItem(c: ClassificationResult): string {
   return [c.color, c.garmentType].filter(Boolean).join(" ");
 }
 
+const THUMB_SIZE = 56;
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
@@ -49,6 +59,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  thumb: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
+  thumbPlaceholder: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
   textCol: { flex: 1, minWidth: 0 },
   title: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold, textTransform: "capitalize" },
   meta: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 4 },
