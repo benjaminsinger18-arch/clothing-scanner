@@ -9,6 +9,7 @@
 import type { BrandConfidence, DataSourceStatus, PriceListing } from "@clothing-scanner/shared-types";
 import { canMakeSerpApiCall, recordSerpApiCall } from "../lib/rateLimitTracker.js";
 import { TtlCache } from "../lib/ttlCache.js";
+import { applyAffiliateTag } from "../lib/affiliateLinks.js";
 
 const SEARCH_URL = "https://serpapi.com/search.json";
 
@@ -129,11 +130,12 @@ async function runSearchUncached(query: string, num: number): Promise<SerpApiSea
         title: item.title,
         price: item.extracted_price,
         currency: "USD",
-        url: item.product_link ?? item.link ?? "",
+        url: applyAffiliateTag(item.product_link ?? item.link ?? ""),
         imageUrl: item.thumbnail,
         condition: item.condition,
         rating: item.rating,
         reviewCount: item.reviews,
+        merchant: item.source,
       }));
 
     return { status: listings.length > 0 ? "ok" : "no_results", listings };
@@ -199,6 +201,26 @@ function filterToRelevantCategory(listings: PriceListing[], garmentType: string)
 
   const relevant = listings.filter((item) => titleWords(item.title).some((w) => candidates.has(w)));
   return relevant.length > 0 ? relevant : listings;
+}
+
+/** Known resale/secondhand marketplaces, matched against a listing's
+ * `merchant` field (the raw `source` SerpApi reports, e.g. "Poshmark",
+ * "eBay") to split one search's results into retail vs. resale subsets — see
+ * shared-types' PriceSearchResult.estimatedResaleRange doc comment for why
+ * this exists. Google Shopping results are dominated by ordinary retailers,
+ * but secondhand marketplaces do show up mixed in for plenty of categories
+ * (especially anything with brand recognition — the resale market is exactly
+ * where that matters most), so this needs no separate query or extra quota:
+ * it's a partition of the same pool searchSerpApi already fetches. Matched
+ * as a case-insensitive substring of the merchant name rather than an exact
+ * match, since SerpApi's `source` string sometimes includes extra context
+ * (e.g. "Poshmark - username" has been observed live). */
+const RESALE_MARKETPLACES = ["poshmark", "thredup", "therealreal", "the realreal", "depop", "ebay", "grailed", "vestiaire"];
+
+export function isResaleListing(listing: PriceListing): boolean {
+  if (!listing.merchant) return false;
+  const merchant = listing.merchant.toLowerCase();
+  return RESALE_MARKETPLACES.some((name) => merchant.includes(name));
 }
 
 /** Requests a much larger pool than what's ever displayed (12 items in

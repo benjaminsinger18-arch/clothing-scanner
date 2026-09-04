@@ -80,6 +80,15 @@ export interface PriceListing {
   condition?: string;
   rating?: number;
   reviewCount?: number;
+  /** The actual seller/storefront name from the underlying Google Shopping
+   * result (e.g. "Nordstrom", "Poshmark", "eBay") — distinct from `source`
+   * above, which identifies the data *provider* (always "serpapi" today) not
+   * the merchant. Used server-side to split a single search's results into
+   * retail vs. resale-marketplace subsets (see serpApiClient.ts's
+   * RESALE_MARKETPLACE_DOMAINS) — kept on the type so the app can also show
+   * "via Poshmark" style provenance if useful. Absent if SerpApi didn't
+   * report one for this result. */
+  merchant?: string;
 }
 
 export type DataSourceStatus = "ok" | "rate_limited" | "unavailable" | "no_results";
@@ -93,13 +102,24 @@ export interface PriceRange {
 
 export interface PriceSearchResult {
   status: DataSourceStatus;
-  /** Aggregated from Google Shopping listings (via SerpApi) — these are retailer/
-   * new-item listings, not a secondhand market signal, so this is a retail price
-   * estimate. There's no resale/secondhand price estimate anymore: eBay was the
-   * only source that could support one, and it's been removed from this app
-   * entirely (it was unreliably available) rather than faked from data that can't
-   * actually support a resale-value estimate. Undefined when nothing was found. */
+  /** Aggregated from the subset of Google Shopping listings (via SerpApi) whose
+   * merchant isn't a known resale marketplace — see estimatedResaleRange below.
+   * Falls back to the full listing pool if that subset is empty (a search
+   * dominated by resale-marketplace results shouldn't report no retail estimate
+   * at all). Undefined when nothing was found. */
   estimatedNewRange?: PriceRange;
+  /** Same query's results, but only the subset whose `merchant` (PriceListing)
+   * matched a known resale marketplace (Poshmark, ThredUp, The RealReal, Depop,
+   * eBay, Grailed — see serpApiClient.ts's RESALE_MARKETPLACE_DOMAINS). This
+   * app previously had a resale-value signal via a dedicated eBay integration
+   * that was removed entirely for being unreliably available (see git history);
+   * this reintroduces one without a new vendor dependency, by recognizing
+   * resale marketplaces that already show up mixed into ordinary Google
+   * Shopping results. Undefined when too few resale-sourced listings turned up
+   * to make a range meaningful (see priceSearch.ts's MIN_RESALE_SAMPLE) — this
+   * is expected to be the common case for many searches, not a
+   * bug; resale coverage varies a lot by category. */
+  estimatedResaleRange?: PriceRange;
   similarItems: PriceListing[];
   reviews: PriceListing[];
 }

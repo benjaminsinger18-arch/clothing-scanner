@@ -214,7 +214,7 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Similar Items" && (
           <View>
-            <Text style={styles.note}>Retail listings, with condition noted where known.</Text>
+            <Text style={styles.note}>Mostly retail, with secondhand marketplace listings mixed in — merchant and condition noted where known.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -263,16 +263,43 @@ export function ResultsScreen({ route, navigation }: Props) {
 function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | null; loading: boolean }) {
   if (loading) return null;
   const newRange = pricing?.estimatedNewRange;
-  if (!newRange) return null;
+  const resaleRange = pricing?.estimatedResaleRange;
+  if (!newRange && !resaleRange) return null;
+
+  // Only meaningful when both ranges are present — a resale-only result (rare,
+  // but possible if the retail estimate had to fall back to nothing) has
+  // nothing to compare against.
+  const resaleSavingsPct =
+    newRange && resaleRange && newRange.median > 0
+      ? Math.round((1 - resaleRange.median / newRange.median) * 100)
+      : null;
 
   return (
-    <View style={styles.rangeBanner}>
-      <GlowBackground />
-      <Text style={styles.rangeLabel}>Estimated retail price</Text>
-      <Text style={styles.rangeValue}>
-        ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
-        <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
-      </Text>
+    <View>
+      {newRange && (
+        <View style={styles.rangeBanner}>
+          <GlowBackground />
+          <Text style={styles.rangeLabel}>Estimated retail price</Text>
+          <Text style={styles.rangeValue}>
+            ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
+            <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
+          </Text>
+        </View>
+      )}
+      {resaleRange && (
+        <View style={styles.resaleBanner}>
+          <Text style={styles.rangeLabel}>Estimated resale value</Text>
+          <Text style={styles.resaleValue}>
+            ${resaleRange.low.toFixed(2)} – ${resaleRange.high.toFixed(2)}{" "}
+            <Text style={styles.rangeMedian}>(median ${resaleRange.median.toFixed(2)})</Text>
+          </Text>
+          {resaleSavingsPct !== null && resaleSavingsPct > 0 && (
+            <Text style={styles.note}>
+              Roughly {resaleSavingsPct}% less than buying new, based on secondhand marketplace listings (Poshmark, eBay, and similar).
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -445,4 +472,13 @@ const styles = StyleSheet.create({
   rangeLabel: { color: theme.colors.textSecondary, fontSize: 11, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label, marginBottom: 4 },
   rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
   rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
+  resaleBanner: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: 14,
+  },
+  resaleValue: { color: theme.colors.textPrimary, fontSize: 18, fontFamily: theme.fonts.display.bold },
 });

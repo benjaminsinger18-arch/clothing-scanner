@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { ApiErrorBody, BrandConfidence, PriceSearchResult } from "@clothing-scanner/shared-types";
-import { searchSerpApi, type SerpApiSearchInput } from "../services/serpApiClient.js";
+import { isResaleListing, searchSerpApi, type SerpApiSearchInput } from "../services/serpApiClient.js";
 import { combineStatus, computePriceRange } from "../lib/priceMath.js";
 
 export const priceSearchRouter = Router();
@@ -14,6 +14,15 @@ const VALID_BRAND_CONFIDENCE: BrandConfidence[] = ["none", "low", "medium", "hig
 // are computed from the full pool, not this slice.
 const SIMILAR_ITEMS_DISPLAY_LIMIT = 12;
 const REVIEWS_DISPLAY_LIMIT = 12;
+
+// Below this many resale-marketplace listings, computePriceRange's own
+// low/median/high would technically run (it only needs 1) but wouldn't mean
+// anything — one or two secondhand listings tell you almost nothing about
+// resale value for the category as a whole. No such floor exists for the
+// retail estimate because that's the pool's dominant case, not a thin slice
+// of it; resale coverage is expected to vary a lot and often be genuinely
+// thin (see estimatedResaleRange's doc comment in shared-types).
+const MIN_RESALE_SAMPLE = 3;
 
 priceSearchRouter.get("/price-search", async (req, res) => {
   const { garmentType, category, color, brandGuess, brandConfidence } = req.query;
@@ -42,8 +51,10 @@ priceSearchRouter.get("/price-search", async (req, res) => {
   // blocked the other), giving a resale-value estimate (from eBay's all-condition
   // listings) alongside a retail estimate. eBay's been removed from this app
   // entirely — it was unreliably available — so SerpApi (Google Shopping) is now
-  // the sole source: a retail/new-item price estimate only, no resale counterpart,
-  // since Google Shopping listings can't support one.
+  // the sole source. It still supports a resale estimate, though: see
+  // isResaleListing below, which recognizes secondhand marketplaces (including
+  // eBay itself) that show up mixed into ordinary Google Shopping results,
+  // without a second query or a second vendor dependency.
   const serpResult = await searchSerpApi(input);
 
   // Sourced from the FULL pool, not the similarItems slice below — this is the
@@ -57,11 +68,17 @@ priceSearchRouter.get("/price-search", async (req, res) => {
     .sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0) || (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, REVIEWS_DISPLAY_LIMIT);
 
+  const resaleListings = serpResult.listings.filter(isResaleListing);
+  const retailListings = serpResult.listings.filter((item) => !isResaleListing(item));
+
   const result: PriceSearchResult = {
     status: combineStatus([serpResult.status], serpResult.listings.length),
-    // Computed from the full pool too — a bigger sample makes computePriceRange's
-    // outlier/percentile/median-cap statistics more robust, not just a reviews fix.
-    estimatedNewRange: computePriceRange(serpResult.listings),
+    // Prefer the retail-only subset so a resale listing mixed into the pool
+    // doesn't drag down what's meant to be a new/retail estimate; falls back
+    // to the full pool on the rare search where every result happens to be
+    // resale-sourced, rather than reporting no retail estimate at all.
+    estimatedNewRange: computePriceRange(retailListings.length > 0 ? retailListings : serpResult.listings),
+    estimatedResaleRange: resaleListings.length >= MIN_RESALE_SAMPLE ? computePriceRange(resaleListings) : undefined,
     similarItems: serpResult.listings.slice(0, SIMILAR_ITEMS_DISPLAY_LIMIT),
     reviews,
   };

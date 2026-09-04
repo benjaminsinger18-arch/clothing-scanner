@@ -33,6 +33,7 @@ export function ItemCard({ item }: { item: PriceListing }) {
           <View style={styles.row}>
             <Text style={styles.price}>{item.price > 0 ? `$${item.price.toFixed(2)}` : "—"}</Text>
           </View>
+          {item.merchant ? <Text style={styles.meta}>{item.merchant}</Text> : null}
           {item.condition ? <Text style={styles.meta}>{item.condition}</Text> : null}
           {typeof item.rating === "number" && (
             <Text style={styles.meta}>
