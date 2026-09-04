@@ -14,13 +14,19 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   originally also integrated eBay for a secondhand/resale price signal alongside
   retail; eBay was removed entirely — it was unreliably available — so SerpApi is
   now the sole price/listing source, and there's no resale-value estimate anymore.)
-  The low/high shown is outlier-trimmed (`computePriceRange` in
-  `server/src/lib/priceMath.ts` — standard IQR/Tukey fence method), not a raw
-  min/max: a brand+garment search routinely surfaces a genuine but wildly
-  priced outlier alongside the ordinary cluster (e.g. a $400+ heritage-line
-  reissue next to a run of $60-80 regular jackets), which used to blow the
-  range wide open. `similarItems`/reviews still show every listing found,
-  outliers included — only the summary range is trimmed.
+  The low/high shown is trimmed in two layers (`computePriceRange` in
+  `server/src/lib/priceMath.ts`), not a raw min/max: (1) IQR/Tukey fence
+  outlier removal, for a search that's mostly one tight cluster plus a
+  genuine-but-wildly-priced outlier or two (e.g. a $400+ heritage-line
+  reissue next to a run of $60-80 regular jackets); (2) a mild 10th/90th-
+  percentile trim of whatever survives step 1, for categories with no clean
+  outlier at all — some brand+category searches (e.g. "Gucci belt") span a
+  smooth, continuous range across genuinely different product tiers with no
+  gap to detect, which step 1 alone can't tighten. A very diverse category
+  will still show a wider range than a commodity item even after both steps
+  — that reflects real market diversity, not a bug, and squeezing it further
+  would misrepresent it. `similarItems`/reviews still show every listing
+  found, trimmed extremes included — only the summary range is affected.
 - Phase 3 ✅ — review/rating snippets, sourced from the same SerpApi Google Shopping
   data as pricing.
 - Phase 4 ✅ — Outfit Matches asks Claude (text-only, cheap) for 3-5 complementary
