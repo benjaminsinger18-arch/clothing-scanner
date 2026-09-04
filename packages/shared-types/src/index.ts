@@ -177,6 +177,12 @@ export interface OutfitSuggestionsRequestBody {
 export interface CorrectionRequestBody {
   correctionText: string;
   original: ClassificationResult;
+  /** Optional ~160px JPEG data-URI thumbnail of the photo being corrected (see
+   * compressForThumbnail in app/lib/compressImage.ts), threaded through from
+   * CorrectionScreen. Persisted server-side alongside the correction (see
+   * correctionLog.ts) purely for future review/eval-set curation — never
+   * required, and absent just means the logged entry has no image. */
+  photoThumbnail?: string;
 }
 
 export interface ApiErrorBody {

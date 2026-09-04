@@ -26,7 +26,7 @@ export function CorrectionScreen({ route, navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const classification = await submitCorrection(trimmed, original);
+      const classification = await submitCorrection(trimmed, original, photoThumbnail);
 
       if (classification.garmentType === UNRECOGNIZED_GARMENT) {
         setError({

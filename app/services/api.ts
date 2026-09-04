@@ -149,7 +149,8 @@ export async function lookupBarcode(code: string): Promise<ClassificationResult>
 
 export async function submitCorrection(
   correctionText: string,
-  original: ClassificationResult
+  original: ClassificationResult,
+  photoThumbnail?: string
 ): Promise<ClassificationResult> {
   if (!API_URL) {
     throw new ApiError(
@@ -157,7 +158,7 @@ export async function submitCorrection(
     );
   }
 
-  const body: CorrectionRequestBody = { correctionText, original };
+  const body: CorrectionRequestBody = { correctionText, original, photoThumbnail };
 
   let response: Response;
   try {
