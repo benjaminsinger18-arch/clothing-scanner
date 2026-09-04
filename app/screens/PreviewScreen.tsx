@@ -7,6 +7,7 @@ import { LoadingOverlay } from "../components/LoadingOverlay";
 import { ErrorState } from "../components/ErrorState";
 import { compressForUpload } from "../lib/compressImage";
 import { toErrorInfo } from "../lib/errors";
+import { prefetchResultsData } from "../lib/prefetchResults";
 import { classifyPhoto } from "../services/api";
 import { theme } from "../theme";
 
@@ -32,11 +33,13 @@ export function PreviewScreen({ route, navigation }: Props) {
         return;
       }
 
-      // Navigate as soon as classification is back — pricing/outfit fetches
-      // happen on ResultsScreen with their own per-tab spinners, so this
-      // spinner's wait is just the classify call, not classify + whichever
-      // of those two finishes last.
-      navigation.replace("Results", { classification });
+      // Kick off pricing/outfit fetches now, before navigating, instead of
+      // waiting for ResultsScreen to mount and start them itself — the
+      // screen-transition/mount cycle was otherwise dead time. This spinner's
+      // wait is still just the classify call (pricing/outfit have their own
+      // per-tab spinners on Results), it's only *when* those two fetches start
+      // that's changing, not what's shown here.
+      navigation.replace("Results", { classification, ...prefetchResultsData(classification) });
     } catch (err) {
       setError(toErrorInfo(err, "Something went wrong while identifying this item."));
     } finally {

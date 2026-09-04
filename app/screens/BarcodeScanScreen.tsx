@@ -7,6 +7,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { toErrorInfo } from "../lib/errors";
+import { prefetchResultsData } from "../lib/prefetchResults";
 import { ApiError, lookupBarcode } from "../services/api";
 import { theme } from "../theme";
 
@@ -39,7 +40,7 @@ export function BarcodeScanScreen({ navigation }: Props) {
         return;
       }
 
-      navigation.replace("Results", { classification });
+      navigation.replace("Results", { classification, ...prefetchResultsData(classification) });
     } catch (err) {
       if (err instanceof ApiError && err.message === "not_found") {
         setError({

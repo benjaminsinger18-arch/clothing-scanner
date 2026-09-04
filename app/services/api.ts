@@ -29,6 +29,21 @@ function authHeaders(): Record<string, string> {
   return APP_SHARED_SECRET ? { "X-App-Secret": APP_SHARED_SECRET } : {};
 }
 
+/** Logs each call's round-trip time (__DEV__ only) so a slow scan can be
+ * attributed to a specific network call rather than guessed at — see
+ * compressImage.ts's matching client-side log for the other half of the
+ * picture (compression time happens before any of these calls start). */
+async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  const startedAt = Date.now();
+  try {
+    return await fn();
+  } finally {
+    if (__DEV__) {
+      console.log(`[api] ${label}: ${Date.now() - startedAt}ms`);
+    }
+  }
+}
+
 export async function classifyPhoto(imageBase64: string): Promise<ClassificationResult> {
   if (!API_URL) {
     throw new ApiError(
@@ -40,11 +55,13 @@ export async function classifyPhoto(imageBase64: string): Promise<Classification
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/classify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify(body),
-    });
+    response = await timed("classifyPhoto", () =>
+      fetch(`${API_URL}/classify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body),
+      })
+    );
   } catch {
     throw new ApiError(
       "Could not reach the backend",
@@ -80,7 +97,9 @@ export async function searchPrices(classification: ClassificationResult): Promis
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/price-search?${params.toString()}`, { headers: authHeaders() });
+    response = await timed("searchPrices", () =>
+      fetch(`${API_URL}/price-search?${params.toString()}`, { headers: authHeaders() })
+    );
   } catch {
     throw new ApiError(
       "Could not reach the backend",
@@ -183,11 +202,13 @@ export async function getOutfitSuggestions(classification: ClassificationResult)
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/outfit-suggestions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify(body),
-    });
+    response = await timed("getOutfitSuggestions", () =>
+      fetch(`${API_URL}/outfit-suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body),
+      })
+    );
   } catch {
     throw new ApiError(
       "Could not reach the backend",

@@ -6,6 +6,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { toErrorInfo } from "../lib/errors";
+import { prefetchResultsData } from "../lib/prefetchResults";
 import { submitCorrection } from "../services/api";
 import { theme } from "../theme";
 
@@ -39,7 +40,7 @@ export function CorrectionScreen({ route, navigation }: Props) {
       // replace("Results", ...): leaves the stale original Results one level back
       // in the stack rather than swapping it out too. Accepted, not engineered
       // around, per this codebase's existing simplicity bias.
-      navigation.replace("Results", { classification });
+      navigation.replace("Results", { classification, ...prefetchResultsData(classification) });
     } catch (err) {
       setError(toErrorInfo(err, "Something went wrong while checking that."));
     } finally {

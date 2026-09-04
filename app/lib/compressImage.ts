@@ -31,11 +31,20 @@ const PRESETS: { width: number; compress: number }[] = [
 /** Resizes/re-encodes as JPEG and returns base64 (no data: URL prefix) ready
  * to send to the backend. Tries presets from largest to smallest, stopping
  * as soon as one fits under TARGET_BASE64_BYTES; falls back to the smallest
- * preset's output if none do (best effort rather than failing the upload). */
+ * preset's output if none do (best effort rather than failing the upload).
+ *
+ * Logs total time and which preset index was used (__DEV__ only — this file
+ * has no other logging today, and this is meant as a diagnostic for tuning
+ * PRESETS/TARGET_BASE64_BYTES against real device numbers, not a production
+ * metric). Each pass re-decodes the full original from scratch (see PRESETS'
+ * comment), so falling through to a second/third pass is real, visible added
+ * latency worth being able to see, not just guess at. */
 export async function compressForUpload(uri: string): Promise<string> {
+  const startedAt = Date.now();
   let last: string | undefined;
 
-  for (const preset of PRESETS) {
+  for (let i = 0; i < PRESETS.length; i++) {
+    const preset = PRESETS[i];
     const result = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: preset.width } }], {
       compress: preset.compress,
       format: ImageManipulator.SaveFormat.JPEG,
@@ -47,12 +56,18 @@ export async function compressForUpload(uri: string): Promise<string> {
     }
     last = result.base64;
     if (result.base64.length <= TARGET_BASE64_BYTES) {
+      if (__DEV__) {
+        console.log(`[compressImage] ${Date.now() - startedAt}ms, preset ${i} (${preset.width}px/${preset.compress})`);
+      }
       return result.base64;
     }
   }
 
   if (!last) {
     throw new Error("Failed to encode photo for upload");
+  }
+  if (__DEV__) {
+    console.log(`[compressImage] ${Date.now() - startedAt}ms, fell through to smallest preset`);
   }
   return last;
 }

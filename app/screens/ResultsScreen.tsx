@@ -18,7 +18,7 @@ type Tab = (typeof TABS)[number];
 const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", unisex: "Unisex" };
 
 export function ResultsScreen({ route, navigation }: Props) {
-  const { classification } = route.params;
+  const { classification, prefetchedPricing, prefetchedOutfits } = route.params;
   const [tab, setTab] = useState<Tab>("Overview");
 
   const [pricing, setPricing] = useState<PriceSearchResult | null>(null);
@@ -39,8 +39,25 @@ export function ResultsScreen({ route, navigation }: Props) {
   }, [classification]);
 
   useEffect(() => {
-    fetchPricing();
-  }, [fetchPricing]);
+    // Prefer an already-in-flight prefetched request (see prefetchResultsData in
+    // app/lib/prefetchResults.ts — set by whichever screen navigated here) over
+    // starting a fresh one now that we've mounted; falls back to fetchPricing
+    // when nothing was prefetched (e.g. hot-reloaded straight onto this screen).
+    // Deliberately run once on mount only, not on every fetchPricing identity
+    // change — a stale prefetched promise should never be re-awaited on re-render,
+    // and the per-tab "Try again" buttons call fetchPricing directly for retries.
+    if (prefetchedPricing) {
+      setPricingLoading(true);
+      setPricingError(null);
+      prefetchedPricing
+        .then(setPricing)
+        .catch((err) => setPricingError(toErrorInfo(err, "Couldn't load pricing")))
+        .finally(() => setPricingLoading(false));
+    } else {
+      fetchPricing();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [outfits, setOutfits] = useState<OutfitSuggestionsResult | null>(null);
   const [outfitsLoading, setOutfitsLoading] = useState(true);
@@ -60,8 +77,19 @@ export function ResultsScreen({ route, navigation }: Props) {
   }, [classification]);
 
   useEffect(() => {
-    fetchOutfits();
-  }, [fetchOutfits]);
+    // Same prefetch-first pattern as the pricing effect above.
+    if (prefetchedOutfits) {
+      setOutfitsLoading(true);
+      setOutfitsError(null);
+      prefetchedOutfits
+        .then(setOutfits)
+        .catch((err) => setOutfitsError(toErrorInfo(err, "Couldn't load outfit ideas")))
+        .finally(() => setOutfitsLoading(false));
+    } else {
+      fetchOutfits();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={styles.container}>

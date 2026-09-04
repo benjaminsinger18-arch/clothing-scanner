@@ -100,18 +100,22 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 ## What's left (not built)
 
 Phase 5 polish is now done:
-- Staged loading text — `PreviewScreen` kicks off pricing + outfit-suggestion
-  fetches in parallel right after classification (not after navigating to
-  Results), and the loading overlay tracks real progress: "Identifying item…"
-  → "Finding prices…" → "Finding outfit matches…" (flips as soon as pricing,
-  usually the quicker call, resolves). `ResultsScreen` renders the prefetched
-  data instantly instead of showing a second round of spinners; per-tab "Try
-  again" still refetches just that tab on error.
-- Image-compression tuning — `compressForUpload` now tries a few width/quality
-  presets (1024px/0.8 down to 600px/0.5) and stops at the first one whose
-  base64 payload fits a ~700KB budget, instead of a single fixed pass. Most
+- Prefetched results — `PreviewScreen` (and `BarcodeScanScreen`/
+  `CorrectionScreen`, which reach Results the same way) kicks off pricing +
+  outfit-suggestion fetches (`app/lib/prefetchResults.ts`) the instant
+  classification resolves, passed to `ResultsScreen` via navigation params
+  instead of waiting for it to mount and start them itself — closes a real gap
+  where that work only started after the screen-transition animation finished.
+  `ResultsScreen` still shows its own per-tab loading spinners while those
+  fetches resolve (there's no multi-stage loading text on the classify
+  spinner itself, just "Identifying item…"); per-tab "Try again" refetches
+  fresh rather than reusing a stale prefetched promise.
+- Image-compression tuning — `compressForUpload` tries a few width/quality
+  presets (1280px/0.8 down to 600px/0.5) and stops at the first one whose
+  base64 payload fits a 1.2MB budget, instead of a single fixed pass. Most
   photos still take the first (highest-quality) pass unchanged; only unusually
-  large originals fall through to smaller presets.
+  large originals fall through to smaller presets. Logs total time + which
+  preset was used (dev builds only).
 - Production build (EAS Build) — config is in place (`app/eas.json`, plus
   `bundleIdentifier`/`package` in `app/app.json`); see "Building a
   distributable binary (EAS)" below. Actually running a build needs your own

@@ -22,6 +22,11 @@ const GEMINI_MODEL_LABEL = "gemini-3.1-pro";
 const CLASSIFY_TOOL_NAME = "report_classification";
 const OUTFIT_TOOL_NAME = "report_outfit_suggestions";
 
+// Diagnostic-only, not a metrics pipeline — gated so a production deploy's logs
+// stay quiet by default. Logs call-duration timing (see classifyImage) so a
+// slow scan can be attributed to a specific stage instead of guessed at.
+const LOG_TIMING = process.env.NODE_ENV !== "production";
+
 export class ClassificationError extends Error {}
 
 let anthropic: Anthropic | null = null;
@@ -38,6 +43,15 @@ function getClient(): Anthropic {
   return anthropic;
 }
 
+// Prompt caching (cache_control on this tool + outfitTool below) was tried and
+// dropped: live-verified via logCacheUsage below that cache_creation_input_tokens
+// stayed 0 across repeated calls, meaning this schema (~200-300 tokens) never
+// clears Anthropic's minimum cacheable block size (2048 tokens for Haiku, which
+// classifyFromBarcode/verifyCorrection/suggestOutfitPairings all use; 1024 for
+// Sonnet, which classifyImage uses — still comfortably above this schema's
+// size). Caching only the image-adjacent message content wouldn't help either,
+// since the image differs every request and caching is prefix-based. Not worth
+// re-attempting unless this schema grows substantially.
 const classifyTool: Anthropic.Tool = {
   name: CLASSIFY_TOOL_NAME,
   description: "Report the structured classification of a piece of clothing shown in a photo.",
@@ -86,7 +100,6 @@ async function callClaude(model: string, opts: ClassifyOptions): Promise<RawClas
       },
     ],
   });
-
   const toolUse = response.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === CLASSIFY_TOOL_NAME
   );
@@ -176,13 +189,22 @@ function applyVisionBrandSignal(
  * Both degrade silently and independently if unconfigured/erroring — with
  * neither available, this is exactly Claude-alone behavior.
  */
+
 export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
   // Vision starts immediately, in parallel — cheap enough to always run. Gemini
   // does NOT start here anymore (see the latency note above) — it's only called
   // further down, and only on the unrecognized path.
+  const visionStartedAt = Date.now();
   const visionPromise = getVisionSignal(opts.imageBase64).catch(() => null);
+  if (LOG_TIMING) {
+    visionPromise.then(() => console.log(`[claudeClient] Vision: ${Date.now() - visionStartedAt}ms`));
+  }
 
+  const claudeStartedAt = Date.now();
   const first = await callClaudeWithRetry(SONNET_MODEL, opts);
+  if (LOG_TIMING) {
+    console.log(`[claudeClient] Sonnet (first pass): ${Date.now() - claudeStartedAt}ms`);
+  }
 
   if (first.garmentType !== UNRECOGNIZED_GARMENT) {
     // Common path: Claude already has an answer. Await the concurrently-started
@@ -288,7 +310,6 @@ async function callBarcodeClassification(item: UpcItem): Promise<RawClassificati
       },
     ],
   });
-
   const toolUse = response.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === CLASSIFY_TOOL_NAME
   );
@@ -471,7 +492,6 @@ async function callCorrectionStructuring(
       },
     ],
   });
-
   const toolUse = response.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === CLASSIFY_TOOL_NAME
   );
@@ -620,7 +640,6 @@ async function callOutfitSuggestions(input: OutfitPairingInput): Promise<string[
       },
     ],
   });
-
   const toolUse = response.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === OUTFIT_TOOL_NAME
   );
