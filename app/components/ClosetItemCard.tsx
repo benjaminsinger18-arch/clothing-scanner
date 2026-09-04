@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 import type { ClassificationResult } from "@clothing-scanner/shared-types";
 import type { ClosetItem } from "../lib/closetStorage";
 import { theme } from "../theme";
@@ -7,14 +7,32 @@ import { theme } from "../theme";
  * photo thumbnail (see closetStorage.ts) instead of a listing's remote image
  * — falls back to a plain placeholder box for barcode-identified items,
  * which never had a garment photo to begin with. Used both by ClosetScreen
- * (with a Remove action) and ResultsScreen's Outfit Matches "from your
- * closet" section (without one — you can't remove an item from that
- * context). */
-export function ClosetItemCard({ item, onRemove }: { item: ClosetItem; onRemove?: () => void }) {
+ * (tappable, with a Remove action — opens ClosetDetailScreen) and
+ * ResultsScreen's Outfit Matches "from your closet" section (neither —
+ * that's a read-only glance at what you own, not a place to manage it). */
+export function ClosetItemCard({
+  item,
+  onPress,
+  onRemove,
+}: {
+  item: ClosetItem;
+  onPress?: () => void;
+  onRemove?: () => void;
+}) {
   const { classification, priceRange, photoThumbnail } = item;
 
-  return (
-    <View style={styles.card}>
+  // Stops the tap from also reaching the row's own onPress — react-native-web
+  // renders Pressable as a real DOM element whose click bubbles like any
+  // other, unlike native RN's responder system where the innermost view
+  // already wins outright. Without this, tapping Remove on web would also
+  // navigate into the detail screen it just removed the item from.
+  function handleRemove(e: GestureResponderEvent) {
+    e.stopPropagation();
+    onRemove?.();
+  }
+
+  const content = (
+    <>
       {photoThumbnail ? (
         <Image source={{ uri: photoThumbnail }} style={styles.thumb} resizeMode="cover" />
       ) : (
@@ -33,12 +51,21 @@ export function ClosetItemCard({ item, onRemove }: { item: ClosetItem; onRemove?
         ) : null}
       </View>
       {onRemove ? (
-        <Pressable onPress={onRemove} hitSlop={8} style={styles.removeButton}>
+        <Pressable onPress={handleRemove} hitSlop={8} style={styles.removeButton}>
           <Text style={styles.removeButtonText}>Remove</Text>
         </Pressable>
       ) : null}
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+        {content}
+      </Pressable>
+    );
+  }
+  return <View style={styles.card}>{content}</View>;
 }
 
 function describeItem(c: ClassificationResult): string {
@@ -59,6 +86,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  cardPressed: { opacity: 0.7 },
   thumb: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
   thumbPlaceholder: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
   textCol: { flex: 1, minWidth: 0 },

@@ -1,4 +1,5 @@
 import type { ClassificationResult, OutfitSuggestionsResult, PriceSearchResult } from "@clothing-scanner/shared-types";
+import type { ClosetItem } from "../lib/closetStorage";
 
 export type RootStackParamList = {
   Capture: undefined;
@@ -21,4 +22,9 @@ export type RootStackParamList = {
   };
   Correction: { classification: ClassificationResult; photoThumbnail?: string };
   Closet: undefined;
+  /** The full saved entry, passed directly rather than just an id — same
+   * pattern as Results/Correction passing a whole classification through nav
+   * params — so this screen needs no extra AsyncStorage read of its own for
+   * the common case of "I just tapped this from the list I already loaded." */
+  ClosetDetail: { item: ClosetItem };
 };
