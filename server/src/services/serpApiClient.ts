@@ -118,6 +118,61 @@ async function runSearch(query: string, num: number): Promise<SerpApiSearchResul
   }
 }
 
+/** Small synonym table for garment-type head nouns whose real listing titles
+ * commonly use a different word — e.g. a bag is almost never literally titled
+ * "... Bag" alone, it's usually "... Tote"/"... Satchel"/"... Crossbody". Only
+ * covers categories where this is common; anything else falls back to
+ * requiring the literal head noun itself, which works fine for e.g. "jacket"
+ * or "sweater" where real titles do use the word directly. Confirmed live
+ * that SerpApi's raw response has no structured category field to check
+ * instead (only title/source/price/rating/etc) — this is a best-effort
+ * lexical heuristic, not a guarantee. It won't catch every mismatch (a
+ * cross-category product whose title happens to use one of these synonym
+ * words as a modifier rather than its actual type — e.g. a boot literally
+ * titled "... Tote Boot" — will still slip through a "bag" search, since
+ * "tote" genuinely appears in its title), but it does reliably exclude the
+ * much more common case: a result sharing no real vocabulary with the
+ * searched category at all. */
+const CATEGORY_SYNONYMS: Record<string, string[]> = {
+  bag: ["tote", "purse", "handbag", "satchel", "hobo", "crossbody", "clutch"],
+  "t-shirt": ["tee", "shirt"],
+  tee: ["t-shirt", "shirt"],
+  sneakers: ["shoes", "trainers"],
+  shoes: ["sneakers", "trainers", "loafers", "boots"],
+  sweater: ["jumper", "pullover", "cardigan"],
+  jacket: ["coat"],
+  pants: ["trousers", "jeans", "chinos"],
+};
+
+function titleWords(title: string): string[] {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** Drops listings whose title shares no real vocabulary with the searched
+ * garment type — see CATEGORY_SYNONYMS' doc comment for the exact matching
+ * approach and its known limits. Matches on garmentType's last word (its head
+ * noun — "denim jacket" -> "jacket") rather than the whole phrase, since
+ * modifiers like "denim"/"graphic"/"chino" routinely don't appear verbatim in
+ * an otherwise-correct listing's title. Falls back to the unfiltered set if
+ * this would eliminate everything, same defensive pattern computePriceRange
+ * uses for its own outlier trimming — an unusual garmentType wording not
+ * matching any title verbatim is more likely a false negative in this
+ * heuristic than every single result genuinely being wrong-category. */
+function filterToRelevantCategory(listings: PriceListing[], garmentType: string): PriceListing[] {
+  const gtWords = garmentType.toLowerCase().split(/\s+/).filter(Boolean);
+  const headNoun = gtWords[gtWords.length - 1];
+  if (!headNoun) return listings;
+
+  const candidates = new Set([headNoun, ...(CATEGORY_SYNONYMS[headNoun] ?? [])]);
+
+  const relevant = listings.filter((item) => titleWords(item.title).some((w) => candidates.has(w)));
+  return relevant.length > 0 ? relevant : listings;
+}
+
 /** Requests a much larger pool than what's ever displayed (12 items in
  * similarItems — see priceSearch.ts) specifically so the Reviews tab has
  * more than a handful of listings to find a `rating` in. Google Shopping
@@ -126,9 +181,16 @@ async function runSearch(query: string, num: number): Promise<SerpApiSearchResul
  * survived the filter was mostly luck — that was the actual root cause of
  * "reviews availability varies wildly" reports, not a filtering bug. 40 is a
  * deliberately large ask; SerpApi may return fewer if the query itself has
- * few matches, which is fine — this is a request ceiling, not a promise. */
+ * few matches, which is fine — this is a request ceiling, not a promise.
+ * Widening the pool this much surfaces a second problem, though — deeper
+ * results drift further off-topic (Google's own relevance ranking degrades
+ * past the first page), so the result is passed through
+ * filterToRelevantCategory before being returned, applying once here so
+ * similarItems/reviews/estimatedNewRange in priceSearch.ts all benefit,
+ * not just whichever one a caller happens to be building. */
 export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiSearchResult> {
-  return runSearch(buildQuery(input), 40);
+  const result = await runSearch(buildQuery(input), 40);
+  return { ...result, listings: filterToRelevantCategory(result.listings, input.garmentType) };
 }
 
 export interface SimpleSerpApiSearchResult {
