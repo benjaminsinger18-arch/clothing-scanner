@@ -21,10 +21,12 @@ export function computePriceRange(
   };
 }
 
-/** Reduces multiple providers' individual statuses (eBay, SerpApi, ...) into one
- * overall status for the response. Any actual data found beats an individual
- * provider's failure — a partial result is still useful — so status only reports
- * trouble when there's truly nothing to show. */
+/** Reduces one or more providers' individual statuses into one overall status for
+ * the response. Any actual data found beats an individual provider's failure — a
+ * partial result is still useful — so status only reports trouble when there's
+ * truly nothing to show. Still takes an array (not a single status) even though
+ * SerpApi is the only price/listing provider left, so a second one could be added
+ * later without reshaping this function. */
 export function combineStatus(statuses: DataSourceStatus[], totalListings: number): DataSourceStatus {
   if (totalListings > 0) return "ok";
   if (statuses.length > 0 && statuses.every((s) => s === "rate_limited")) return "rate_limited";

@@ -3,17 +3,6 @@ import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native"
 import type { PriceListing } from "@clothing-scanner/shared-types";
 import { theme } from "../theme";
 
-// Presentation-only label for PriceListing.source — the raw value stays "ebay" |
-// "serpapi" internally (it's an identifier, not display copy), but a shopper has
-// no idea what "serpapi" means. eBay and Google Shopping are both consumer brand
-// names worth showing as-is (a shopper cares whether a listing is resale vs.
-// retail and from where); "serpapi" is just the plumbing vendor behind the
-// Google Shopping data, not something to surface.
-const SOURCE_LABELS: Record<PriceListing["source"], string> = {
-  ebay: "eBay",
-  serpapi: "Google Shopping",
-};
-
 export function ItemCard({ item }: { item: PriceListing }) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = item.imageUrl;
@@ -43,9 +32,6 @@ export function ItemCard({ item }: { item: PriceListing }) {
           </Text>
           <View style={styles.row}>
             <Text style={styles.price}>{item.price > 0 ? `$${item.price.toFixed(2)}` : "—"}</Text>
-            <View style={styles.sourceChip}>
-              <Text style={styles.sourceText}>{SOURCE_LABELS[item.source]}</Text>
-            </View>
           </View>
           {item.condition ? <Text style={styles.meta}>{item.condition}</Text> : null}
           {typeof item.rating === "number" && (
@@ -87,12 +73,5 @@ const styles = StyleSheet.create({
   title: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold, marginBottom: 6 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   price: { color: theme.colors.accent, fontSize: 16, fontFamily: theme.fonts.body.bold },
-  sourceChip: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: theme.radius.pill,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 2,
-  },
-  sourceText: { color: theme.colors.textSecondary, fontSize: 12 },
   meta: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 4 },
 });

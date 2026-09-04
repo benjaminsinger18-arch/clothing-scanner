@@ -1,5 +1,8 @@
-// SerpApi Google Shopping integration — cross-retailer price comparison plus
-// whatever rating/review-count data Google Shopping bundles per listing.
+// SerpApi Google Shopping integration — the sole price/listing data source in this
+// app (eBay was removed entirely; it was unreliably available). Powers /price-search
+// (structured query from classification fields) and, capped, the first suggestion
+// of /outfit-suggestions (plain keyword query) — see searchSerpApi vs
+// searchSerpApiByKeywords below.
 // Docs: https://serpapi.com/shopping-results
 // Free tier: 250 searches/month (see rateLimitTracker's SERPAPI_MONTHLY_SOFT_CAP).
 
@@ -46,11 +49,11 @@ export interface SerpApiSearchResult {
   listings: PriceListing[];
 }
 
-export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiSearchResult> {
+async function runSearch(query: string, limit: number): Promise<SerpApiSearchResult> {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) {
-    // Not configured yet — degrade quietly rather than throwing, same as ebayClient
-    // does for missing credentials, so /price-search still returns whatever eBay has.
+    // Not configured yet — degrade quietly rather than throwing, so callers get a
+    // clean "unavailable" status instead of an unhandled exception.
     return { status: "unavailable", listings: [] };
   }
   if (!canMakeSerpApiCall()) {
@@ -59,7 +62,7 @@ export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiS
 
   const url = new URL(SEARCH_URL);
   url.searchParams.set("engine", "google_shopping");
-  url.searchParams.set("q", buildQuery(input));
+  url.searchParams.set("q", query);
   url.searchParams.set("gl", "us");
   url.searchParams.set("hl", "en");
   url.searchParams.set("api_key", apiKey);
@@ -82,7 +85,7 @@ export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiS
 
     const listings: PriceListing[] = (json.shopping_results ?? [])
       .filter((item): item is RawShoppingResult & { extracted_price: number } => typeof item.extracted_price === "number")
-      .slice(0, 12)
+      .slice(0, limit)
       .map((item) => ({
         source: "serpapi" as const,
         title: item.title,
@@ -103,4 +106,23 @@ export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiS
     console.error("[serpApiClient] search failed:", err);
     return { status: "unavailable", listings: [] };
   }
+}
+
+export async function searchSerpApi(input: SerpApiSearchInput): Promise<SerpApiSearchResult> {
+  return runSearch(buildQuery(input), 12);
+}
+
+export interface SimpleSerpApiSearchResult {
+  status: DataSourceStatus;
+  listings: PriceListing[];
+}
+
+/** Direct keyword search, no structured-input query building — used by
+ * server/src/routes/outfitSuggestions.ts, where the input is already a
+ * search-ready phrase (e.g. "navy chino pants") rather than classification
+ * fields. Only ever called for a single, capped slot per request — see the
+ * caller for why (protecting /price-search's share of the shared SerpApi
+ * quota). */
+export async function searchSerpApiByKeywords(query: string, limit = 4): Promise<SimpleSerpApiSearchResult> {
+  return runSearch(query, limit);
 }

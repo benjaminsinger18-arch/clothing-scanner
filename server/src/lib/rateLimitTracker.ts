@@ -23,22 +23,6 @@ function resetIfNewPeriod(counter: Counter, currentKey: string): void {
   }
 }
 
-// --- eBay: Browse API documents a ~5,000 calls/day application-level limit; leave
-// headroom since each "scan" can trigger more than one call (resale + new-condition
-// searches, plus a widen-retry on empty results). ---
-const EBAY_DAILY_SOFT_CAP = 4500;
-const ebayCounter: Counter = { count: 0, periodKey: todayKey() };
-
-export function canMakeEbayCall(): boolean {
-  resetIfNewPeriod(ebayCounter, todayKey());
-  return ebayCounter.count < EBAY_DAILY_SOFT_CAP;
-}
-
-export function recordEbayCall(): void {
-  resetIfNewPeriod(ebayCounter, todayKey());
-  ebayCounter.count += 1;
-}
-
 // --- SerpApi: free tier is 250 searches/month. Leave meaningful headroom since this
 // is the tightest quota in the stack — see README for the "~80-100 scans/month"
 // estimate this cap is meant to protect. ---
@@ -130,19 +114,46 @@ export function recordWebSearchCall(): void {
   webSearchCounter.count += 1;
 }
 
+// --- SerpApi (outfit-suggestions slice): a dedicated sub-cap, checked in addition
+// to the shared SERPAPI_MONTHLY_SOFT_CAP above, protecting /price-search's usage
+// from being crowded out by outfit-suggestions' own SerpApi usage — the two
+// features share one external 250/month quota. server/src/routes/outfitSuggestions.ts
+// only ever searches the *first* suggestion per request (worked out in that file's
+// own comment — searching all 3-5 would add 240-500 calls/month on top of
+// /price-search's own ~80-100/month, blowing through both the 220 soft cap and the
+// real 250 hard cap), so worst case here is ~1 call/scan, ~80-100/month. 100 leaves
+// a little slack over that, keeping the combined total (160-200/month) safely under
+// the shared 220/month soft cap. ---
+const SERPAPI_OUTFIT_MONTHLY_SOFT_CAP = 100;
+const serpApiOutfitCounter: Counter = { count: 0, periodKey: monthKey() };
+
+export function canMakeSerpApiOutfitCall(): boolean {
+  resetIfNewPeriod(serpApiOutfitCounter, monthKey());
+  return serpApiOutfitCounter.count < SERPAPI_OUTFIT_MONTHLY_SOFT_CAP;
+}
+
+export function recordSerpApiOutfitCall(): void {
+  resetIfNewPeriod(serpApiOutfitCounter, monthKey());
+  serpApiOutfitCounter.count += 1;
+}
+
 export function getUsageSnapshot() {
-  resetIfNewPeriod(ebayCounter, todayKey());
   resetIfNewPeriod(serpApiCounter, monthKey());
   resetIfNewPeriod(visionCounter, monthKey());
   resetIfNewPeriod(geminiCounter, todayKey());
   resetIfNewPeriod(upcCounter, todayKey());
   resetIfNewPeriod(webSearchCounter, todayKey());
+  resetIfNewPeriod(serpApiOutfitCounter, monthKey());
   return {
-    ebay: { count: ebayCounter.count, cap: EBAY_DAILY_SOFT_CAP, period: "day" as const },
     serpapi: { count: serpApiCounter.count, cap: SERPAPI_MONTHLY_SOFT_CAP, period: "month" as const },
     vision: { count: visionCounter.count, cap: VISION_MONTHLY_SOFT_CAP, period: "month" as const },
     gemini: { count: geminiCounter.count, cap: GEMINI_DAILY_SOFT_CAP, period: "day" as const },
     upc: { count: upcCounter.count, cap: UPC_DAILY_SOFT_CAP, period: "day" as const },
     webSearch: { count: webSearchCounter.count, cap: WEB_SEARCH_DAILY_SOFT_CAP, period: "day" as const },
+    serpapiOutfit: {
+      count: serpApiOutfitCounter.count,
+      cap: SERPAPI_OUTFIT_MONTHLY_SOFT_CAP,
+      period: "month" as const,
+    },
   };
 }

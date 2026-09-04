@@ -8,10 +8,6 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: EBAY_CLIENT_ID
-        sync: false
-      - key: EBAY_CLIENT_SECRET
-        sync: false
       - key: SERPAPI_KEY
         sync: false
       - key: GOOGLE_VISION_API_KEY

@@ -19,7 +19,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Everything below costs real money per request (Claude/eBay/SerpApi calls) —
+// Everything below costs real money per request (Claude/SerpApi calls) —
 // gate it behind the shared-secret check.
 app.use(sharedSecretAuth);
 app.use(classifyRouter);
@@ -39,11 +39,12 @@ app.listen(port, () => {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn("[server] ANTHROPIC_API_KEY is not set — /classify will fail until server/.env is configured.");
   }
-  if (!process.env.EBAY_CLIENT_ID || !process.env.EBAY_CLIENT_SECRET) {
-    console.warn("[server] EBAY_CLIENT_ID/EBAY_CLIENT_SECRET are not set — eBay data will be unavailable in /price-search.");
-  }
   if (!process.env.SERPAPI_KEY) {
-    console.warn("[server] SERPAPI_KEY is not set — SerpApi data (cross-retailer pricing, reviews) will be unavailable.");
+    console.warn(
+      "[server] SERPAPI_KEY is not set — /price-search will return no pricing data at all (SerpApi/Google " +
+        "Shopping is now the only price/listing source in this app — eBay was removed entirely), and Outfit " +
+        "Matches (/outfit-suggestions) will show keyword ideas with no purchasable items."
+    );
   }
   if (!process.env.GOOGLE_VISION_API_KEY) {
     console.warn(

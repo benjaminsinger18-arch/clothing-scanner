@@ -60,7 +60,7 @@ export interface ClassificationResult {
 }
 
 export interface PriceListing {
-  source: "ebay" | "serpapi";
+  source: "serpapi";
   title: string;
   price: number;
   currency: string;
@@ -82,11 +82,12 @@ export interface PriceRange {
 
 export interface PriceSearchResult {
   status: DataSourceStatus;
-  /** Aggregated from all-condition eBay listings — mostly secondhand, so this is a
-   * resale/secondhand market value, NOT a retail/brand-new price estimate. */
-  estimatedResaleRange?: PriceRange;
-  /** Aggregated from eBay listings filtered to new/new-with-tags condition only.
-   * Undefined when no new listings were found for this item. */
+  /** Aggregated from Google Shopping listings (via SerpApi) — these are retailer/
+   * new-item listings, not a secondhand market signal, so this is a retail price
+   * estimate. There's no resale/secondhand price estimate anymore: eBay was the
+   * only source that could support one, and it's been removed from this app
+   * entirely (it was unreliably available) rather than faked from data that can't
+   * actually support a resale-value estimate. Undefined when nothing was found. */
   estimatedNewRange?: PriceRange;
   similarItems: PriceListing[];
   reviews: PriceListing[];

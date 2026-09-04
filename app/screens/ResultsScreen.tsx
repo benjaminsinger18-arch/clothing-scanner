@@ -110,7 +110,7 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Price Comparison" && (
           <View>
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
-            <Text style={styles.note}>Sorted low to high, combining resale and retail listings.</Text>
+            <Text style={styles.note}>Sorted low to high.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -140,7 +140,7 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Similar Items" && (
           <View>
-            <Text style={styles.note}>Listings from resale and retail sources, with condition noted where known.</Text>
+            <Text style={styles.note}>Retail listings, with condition noted where known.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -173,32 +173,15 @@ export function ResultsScreen({ route, navigation }: Props) {
 function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | null; loading: boolean }) {
   if (loading) return null;
   const newRange = pricing?.estimatedNewRange;
-  const resaleRange = pricing?.estimatedResaleRange;
-  if (!newRange && !resaleRange) return null;
+  if (!newRange) return null;
 
   return (
     <View style={styles.rangeBanner}>
-      {newRange && (
-        <View style={resaleRange ? { marginBottom: 10 } : undefined}>
-          <Text style={styles.rangeLabel}>Estimated retail price</Text>
-          <Text style={styles.rangeValue}>
-            ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
-            <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
-          </Text>
-        </View>
-      )}
-      {resaleRange && (
-        <View>
-          <Text style={styles.rangeLabel}>Estimated resale value</Text>
-          <Text style={styles.rangeValue}>
-            ${resaleRange.low.toFixed(2)} – ${resaleRange.high.toFixed(2)}{" "}
-            <Text style={styles.rangeMedian}>(median ${resaleRange.median.toFixed(2)})</Text>
-          </Text>
-        </View>
-      )}
-      {!newRange && (
-        <Text style={styles.rangeCaveat}>No retail listings found — this is likely a resale-only price.</Text>
-      )}
+      <Text style={styles.rangeLabel}>Estimated retail price</Text>
+      <Text style={styles.rangeValue}>
+        ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
+        <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
+      </Text>
     </View>
   );
 }
@@ -255,8 +238,9 @@ function ProviderDataBody({
 }
 
 /** Renders the Outfit Matches tab: Claude-suggested keyword groups, each with real
- * eBay listings underneath. Groups with zero items still show (so the suggestion
- * itself is visible) with a small inline note rather than being silently dropped. */
+ * listings underneath where available. Groups with zero items still show (so the
+ * suggestion itself is visible) with a small inline note rather than being silently
+ * dropped. */
 function OutfitBody({
   outfits,
   loading,
@@ -338,5 +322,4 @@ const styles = StyleSheet.create({
   rangeLabel: { color: theme.colors.textSecondary, fontSize: 11, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label, marginBottom: 4 },
   rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
   rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
-  rangeCaveat: { color: theme.colors.textSecondary, fontSize: 12, fontStyle: "italic" },
 });

@@ -1,6 +1,5 @@
 import { Router } from "express";
-import type { ApiErrorBody, BrandConfidence, PriceListing, PriceSearchResult } from "@clothing-scanner/shared-types";
-import { searchEbay, type EbaySearchInput } from "../services/ebayClient.js";
+import type { ApiErrorBody, BrandConfidence, PriceSearchResult } from "@clothing-scanner/shared-types";
 import { searchSerpApi, type SerpApiSearchInput } from "../services/serpApiClient.js";
 import { combineStatus, computePriceRange } from "../lib/priceMath.js";
 
@@ -20,7 +19,7 @@ priceSearchRouter.get("/price-search", async (req, res) => {
     return;
   }
 
-  const input: EbaySearchInput & SerpApiSearchInput = {
+  const input: SerpApiSearchInput = {
     garmentType,
     category,
     color,
@@ -31,24 +30,20 @@ priceSearchRouter.get("/price-search", async (req, res) => {
         : "none",
   };
 
-  // Independent providers, queried in parallel — one failing (missing key, rate
-  // limit, network error) never blocks the other's data from coming back.
-  const [ebayResult, serpResult] = await Promise.all([searchEbay(input), searchSerpApi(input)]);
+  // eBay used to run alongside SerpApi here (parallel providers, one failing never
+  // blocked the other), giving a resale-value estimate (from eBay's all-condition
+  // listings) alongside a retail estimate. eBay's been removed from this app
+  // entirely — it was unreliably available — so SerpApi (Google Shopping) is now
+  // the sole source: a retail/new-item price estimate only, no resale counterpart,
+  // since Google Shopping listings can't support one.
+  const serpResult = await searchSerpApi(input);
 
-  // eBay's all-condition listings skew secondhand -> resale value.
-  // eBay's new-condition listings + SerpApi's Google Shopping results are both
-  // predominantly new/retail -> combined "new" price estimate.
-  const newListings: PriceListing[] = [...ebayResult.newListings, ...serpResult.listings];
-  const combinedSimilarItems: PriceListing[] = [...ebayResult.listings, ...serpResult.listings].sort(
-    (a, b) => a.price - b.price
-  );
-  const reviews: PriceListing[] = serpResult.listings.filter((item) => typeof item.rating === "number");
+  const reviews = serpResult.listings.filter((item) => typeof item.rating === "number");
 
   const result: PriceSearchResult = {
-    status: combineStatus([ebayResult.status, serpResult.status], combinedSimilarItems.length),
-    estimatedResaleRange: computePriceRange(ebayResult.listings),
-    estimatedNewRange: computePriceRange(newListings),
-    similarItems: combinedSimilarItems,
+    status: combineStatus([serpResult.status], serpResult.listings.length),
+    estimatedNewRange: computePriceRange(serpResult.listings),
+    similarItems: serpResult.listings,
     reviews,
   };
 

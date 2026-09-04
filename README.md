@@ -9,22 +9,22 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 
 **Status:**
 - Phase 1 ✅ — image capture + Claude vision classification, end-to-end.
-- Phase 2 ✅ — real eBay Browse API listings power Similar Items / Price Comparison.
-- Phase 3 ✅ — SerpApi (Google Shopping) adds cross-retailer new/retail pricing and
-  review/rating snippets, merged alongside eBay's data. Two price ranges are shown:
-  an **estimated new/retail price** (eBay new-condition listings + Google Shopping)
-  and an **estimated resale value** (all eBay listings, which skew secondhand) — kept
-  separate rather than blended into one misleading number.
+- Phase 2 ✅ — SerpApi (Google Shopping) listings power Similar Items / Price
+  Comparison, with a single **estimated retail price** range shown. (This app
+  originally also integrated eBay for a secondhand/resale price signal alongside
+  retail; eBay was removed entirely — it was unreliably available — so SerpApi is
+  now the sole price/listing source, and there's no resale-value estimate anymore.)
+- Phase 3 ✅ — review/rating snippets, sourced from the same SerpApi Google Shopping
+  data as pricing.
 - Phase 4 ✅ — Outfit Matches asks Claude (text-only, cheap) for 3-5 complementary
-  keyword phrases based on the identified item, then searches eBay for real
-  purchasable items per suggestion. This is a heuristic, not a trained
+  keyword phrases based on the identified item, then searches SerpApi for real
+  purchasable items for the first suggestion (capped — see "Required API keys"
+  below for why only one). This is a heuristic, not a trained
   outfit-compatibility model (see plan's research notes — no accessible API for that
   exists) — good for casual pairing ideas, not a styling authority.
-- `/price-search` and `/outfit-suggestions` merge/degrade per-provider — **eBay and
-  SerpApi work independently**, so if you're waiting on eBay approval you can still
-  set up `SERPAPI_KEY` now and get real Google Shopping data while eBay shows as
-  unavailable. Outfit Matches only needs `ANTHROPIC_API_KEY` + eBay (SerpApi is
-  intentionally skipped there — see "Required API keys" below).
+- `/price-search` and `/outfit-suggestions` both degrade gracefully without
+  `SERPAPI_KEY` configured — `/classify` still works, just with no pricing/listing
+  data and keyword-only outfit ideas.
 - Vision ensemble ✅ — `/classify` now runs **Google Cloud Vision** (web, label, and
   logo detection) in parallel with every single classification call, not just as a
   fallback for outright failures. Used for (1) **brand augmentation** — a detected
@@ -159,14 +159,15 @@ curl -X POST http://localhost:3000/classify ^
   -d "{\"imageBase64\": \"<base64 jpeg data>\"}"
 ```
 
-Test the price search directly (works with either or both of eBay/SerpApi configured):
+Test the price search directly (requires `SERPAPI_KEY`; returns no listings without it):
 
 ```
 curl "http://localhost:3000/price-search?garmentType=denim%20jacket&category=outerwear&color=blue&brandGuess=Levi%27s&brandConfidence=medium"
 ```
 
-Test outfit suggestions directly (requires `ANTHROPIC_API_KEY`; eBay optional — falls
-back to keyword-only suggestions with no purchasable items if eBay isn't configured):
+Test outfit suggestions directly (requires `ANTHROPIC_API_KEY`; `SERPAPI_KEY`
+optional — falls back to keyword-only suggestions with no purchasable items if it
+isn't configured):
 
 ```
 curl -X POST http://localhost:3000/outfit-suggestions ^
@@ -281,12 +282,12 @@ somewhere else, two things need to be reachable over the internet instead:
 1. Push this repo to GitHub (already done if you're reading this from there).
 2. Go to https://dashboard.render.com/ → **New** → **Blueprint** → connect this repo.
    Render reads `render.yaml` and creates the web service automatically.
-3. In the Render dashboard, set the `ANTHROPIC_API_KEY` / `EBAY_CLIENT_ID` /
-   `EBAY_CLIENT_SECRET` / `SERPAPI_KEY` / `GOOGLE_VISION_API_KEY` / `GEMINI_API_KEY`
-   env vars (they're marked `sync: false` in the blueprint, so Render prompts for
-   them rather than expecting them in the repo — `GOOGLE_VISION_API_KEY` and
-   `GEMINI_API_KEY` can both be left blank, they're optional; remember Gemini has
-   no free tier if you do set it, see "Required API keys" below).
+3. In the Render dashboard, set the `ANTHROPIC_API_KEY` / `SERPAPI_KEY` /
+   `GOOGLE_VISION_API_KEY` / `GEMINI_API_KEY` env vars (they're marked `sync: false`
+   in the blueprint, so Render prompts for them rather than expecting them in the
+   repo — `GOOGLE_VISION_API_KEY` and `GEMINI_API_KEY` can both be left blank,
+   they're optional; remember Gemini has no free tier if you do set it, see
+   "Required API keys" below).
 4. Once deployed, Render gives you a stable URL like
    `https://clothing-scanner-server.onrender.com`. Put that in **both** your and your
    friend's `app/.env` as `EXPO_API_URL` (instead of the LAN IP).
@@ -313,7 +314,7 @@ hosted app, it's your dev server, just reachable remotely.
 
 Once the backend is deployed publicly (e.g. Render), its URL is no longer private —
 anyone who finds it can hit `/classify`, `/price-search`, or `/outfit-suggestions`,
-each of which costs real money (Claude/eBay/SerpApi calls). Set `APP_SHARED_SECRET`
+each of which costs real money (Claude/SerpApi calls). Set `APP_SHARED_SECRET`
 on the server to a long random string, and `EXPO_APP_SHARED_SECRET` in
 `app/.env` to the *same* value — the app sends it as an `X-App-Secret` header, and
 the server rejects any request to a paid endpoint without it (`/health` stays open,
@@ -344,11 +345,11 @@ not configured, so `npm run dev` works with zero setup.
   and restart `expo start` after editing `.env`.
 - **"Couldn't identify a clothing item"** — expected behavior for non-clothing or very
   unclear photos; retake with a single garment filling most of the frame in good light.
-- **No "estimated new/retail price" shown, only resale** — means neither eBay's
-  new-condition search nor SerpApi found anything; common for older/discontinued
-  items, or if `SERPAPI_KEY` isn't configured yet.
+- **No "estimated retail price" shown** — means SerpApi found nothing for that
+  item; common for older/discontinued items, or if `SERPAPI_KEY` isn't configured
+  yet.
 - **Reviews tab is empty** — expected for many items; not every Google Shopping
-  listing includes a rating, and eBay listings never do.
+  listing includes a rating.
 
 ## Required API keys
 
@@ -358,20 +359,16 @@ not configured, so `npm run dev` works with zero setup.
   Anthropic's `web_search` tool, billed at **$10 per 1,000 searches** plus normal
   token costs, with no free tier. Only runs when a user submits a correction (not
   per-scan), capped at 50/day in `rateLimitTracker.ts` as a runaway-cost guard.
-- `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` — from https://developer.ebay.com/:
-  1. Sign up for a free developer account (individual, no business entity needed) —
-     approval isn't always instant.
-  2. Create an application keyset under **Application Keys** — you'll get a "Client ID" (App ID)
-     and "Client Secret" (Cert ID) pair.
-  3. **Use the production keyset, not sandbox** — sandbox returns fake catalog data, not real
-     listings, which defeats the point of price estimation.
-  4. Paste both values into `server/.env`.
-
-  The backend handles OAuth token exchange/caching itself (client-credentials grant) —
-  no further eBay-side setup needed.
 - `SERPAPI_KEY` — from https://serpapi.com/ (sign up, key is issued immediately, no
-  approval wait). Free tier is 250 searches/month; the backend proactively throttles
-  at 220/month to leave headroom (see `server/src/lib/rateLimitTracker.ts`).
+  approval wait). This is the sole price/listing data source in the app (an earlier
+  version also integrated eBay; it was removed entirely for being unreliably
+  available). Free tier is 250 searches/month; the backend proactively throttles at
+  220/month to leave headroom (see `server/src/lib/rateLimitTracker.ts`). It's the
+  tightest quota in the app, shared between `/price-search` (~80-100 calls/month at
+  this project's usage estimate) and a dedicated, smaller slice reserved for Outfit
+  Matches (capped to the *first* suggested keyword phrase only, not all 3-5 — see
+  the comments in `server/src/routes/outfitSuggestions.ts` and
+  `rateLimitTracker.ts` for the arithmetic behind that cap).
 - `GOOGLE_VISION_API_KEY` — optional, from https://console.cloud.google.com/:
   1. Create (or pick) a project, then enable the **Cloud Vision API** for it.
   2. **Credentials** → **Create Credentials** → **API key**. No OAuth/service-account
@@ -395,7 +392,6 @@ not configured, so `npm run dev` works with zero setup.
   entirely — `/classify` still works with Claude (+ Vision) alone, just without
   Gemini's brand cross-validation or its unrecognized-item rescue pass.
 
-`/price-search` merges whichever of eBay/SerpApi are configured — either can be
-missing and the endpoint still returns whatever data the other provides
-(`status: "unavailable"` only when *neither* source works). Check the server console
-on startup for a reminder of which keys are missing.
+`/price-search` returns `status: "unavailable"` when `SERPAPI_KEY` isn't configured
+(there's no other source to fall back to). Check the server console on startup for
+a reminder of which keys are missing.
