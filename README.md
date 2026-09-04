@@ -14,6 +14,13 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   originally also integrated eBay for a secondhand/resale price signal alongside
   retail; eBay was removed entirely — it was unreliably available — so SerpApi is
   now the sole price/listing source, and there's no resale-value estimate anymore.)
+  The low/high shown is outlier-trimmed (`computePriceRange` in
+  `server/src/lib/priceMath.ts` — standard IQR/Tukey fence method), not a raw
+  min/max: a brand+garment search routinely surfaces a genuine but wildly
+  priced outlier alongside the ordinary cluster (e.g. a $400+ heritage-line
+  reissue next to a run of $60-80 regular jackets), which used to blow the
+  range wide open. `similarItems`/reviews still show every listing found,
+  outliers included — only the summary range is trimmed.
 - Phase 3 ✅ — review/rating snippets, sourced from the same SerpApi Google Shopping
   data as pricing.
 - Phase 4 ✅ — Outfit Matches asks Claude (text-only, cheap) for 3-5 complementary
