@@ -7,6 +7,7 @@ import { ErrorState } from "../components/ErrorState";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { toErrorInfo } from "../lib/errors";
 import { submitCorrection } from "../services/api";
+import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Correction">;
 
@@ -26,8 +27,8 @@ export function CorrectionScreen({ route, navigation }: Props) {
 
       if (classification.garmentType === UNRECOGNIZED_GARMENT) {
         setError({
-          title: "Couldn't verify that correction",
-          detail: "The research didn't turn up enough to confirm it. Try adding more detail — brand, exact style name, material.",
+          title: "Couldn't confirm that",
+          detail: "We couldn't find enough to confirm it — try adding more detail, like the brand or material.",
         });
         return;
       }
@@ -38,7 +39,7 @@ export function CorrectionScreen({ route, navigation }: Props) {
       // around, per this codebase's existing simplicity bias.
       navigation.replace("Results", { classification });
     } catch (err) {
-      setError(toErrorInfo(err, "Something went wrong while verifying your correction."));
+      setError(toErrorInfo(err, "Something went wrong while checking that."));
     } finally {
       setLoading(false);
     }
@@ -53,12 +54,12 @@ export function CorrectionScreen({ route, navigation }: Props) {
           {original.brandGuess ? ` (${original.brandGuess})` : ""}
         </Text>
 
-        <Text style={styles.prompt}>What is it actually?</Text>
+        <Text style={styles.prompt}>What's it actually?</Text>
         <TextInput
           style={styles.input}
           multiline
           placeholder={'e.g. "This is a Patagonia Better Sweater fleece, not a generic jacket" — brand, exact model, material, anything you know'}
-          placeholderTextColor="#8e8e93"
+          placeholderTextColor={theme.colors.textSecondary}
           value={text}
           onChangeText={setText}
           editable={!loading}
@@ -71,31 +72,37 @@ export function CorrectionScreen({ route, navigation }: Props) {
           onPress={handleSubmit}
           disabled={!text.trim() || loading}
         >
-          <Text style={styles.submitButtonText}>Verify Correction</Text>
+          <Text style={styles.submitButtonText}>Verify Online</Text>
         </Pressable>
       </ScrollView>
 
-      {loading ? <LoadingOverlay message="Verifying your correction…" /> : null}
+      {loading ? <LoadingOverlay message="Double-checking online…" /> : null}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  content: { padding: 16 },
-  currentLabel: { color: "#8e8e93", fontSize: 12, textTransform: "uppercase" },
-  currentValue: { color: "#fff", fontSize: 16, fontWeight: "600", marginTop: 4, marginBottom: 20 },
-  prompt: { color: "#fff", fontSize: 15, fontWeight: "600", marginBottom: 8 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.md },
+  currentLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
+  currentValue: {
+    color: theme.colors.textPrimary,
+    fontSize: 16,
+    fontFamily: theme.fonts.display.semiBold,
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  prompt: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold, marginBottom: theme.spacing.sm },
   input: {
     minHeight: 120,
-    backgroundColor: "#1c1c1e",
-    borderRadius: 10,
-    padding: 12,
-    color: "#fff",
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    color: theme.colors.textPrimary,
     fontSize: 15,
     textAlignVertical: "top",
   },
-  submitButton: { marginTop: 20, backgroundColor: "#fff", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
+  submitButton: { marginTop: 20, backgroundColor: theme.colors.textPrimary, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
   submitButtonDisabled: { opacity: 0.4 },
-  submitButtonText: { color: "#000", fontSize: 16, fontWeight: "700" },
+  submitButtonText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
 });

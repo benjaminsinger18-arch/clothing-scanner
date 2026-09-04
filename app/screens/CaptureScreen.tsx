@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { ErrorState } from "../components/ErrorState";
+import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Capture">;
 
@@ -14,7 +15,7 @@ export function CaptureScreen({ navigation }: Props) {
     setError(null);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      setError("Camera permission is required to take a photo.");
+      setError("We need camera access to take a photo.");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.9 });
@@ -27,7 +28,7 @@ export function CaptureScreen({ navigation }: Props) {
     setError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError("Photo library permission is required to choose a photo.");
+      setError("We need photo library access to choose one.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -42,7 +43,7 @@ export function CaptureScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Clothing Scanner</Text>
-      <Text style={styles.subtitle}>Photograph a piece of clothing to identify it, estimate its value, and find outfit matches.</Text>
+      <Text style={styles.subtitle}>Snap a photo and we'll tell you what it is, what it's worth, and what to pair it with.</Text>
 
       {error ? <ErrorState title={error} /> : null}
 
@@ -60,11 +61,28 @@ export function CaptureScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", alignItems: "center", justifyContent: "center", padding: 24 },
-  title: { color: "#fff", fontSize: 28, fontWeight: "700", marginBottom: 8 },
-  subtitle: { color: "#8e8e93", fontSize: 15, textAlign: "center", marginBottom: 32 },
-  primaryButton: { backgroundColor: "#fff", paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginBottom: 12, width: "100%", alignItems: "center" },
-  primaryButtonText: { color: "#000", fontSize: 16, fontWeight: "700" },
-  secondaryButton: { paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginBottom: 12, width: "100%", alignItems: "center", borderWidth: 1, borderColor: "#3a3a3c" },
-  secondaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  container: { flex: 1, backgroundColor: theme.colors.background, alignItems: "center", justifyContent: "center", padding: theme.spacing.lg },
+  title: { color: theme.colors.textPrimary, fontSize: 28, fontFamily: theme.fonts.display.bold, marginBottom: theme.spacing.sm },
+  subtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: "center", marginBottom: theme.spacing.xl },
+  primaryButton: {
+    backgroundColor: theme.colors.textPrimary,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    marginBottom: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  primaryButtonText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  secondaryButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    marginBottom: 12,
+    width: "100%",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
 });

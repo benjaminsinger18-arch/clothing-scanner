@@ -8,6 +8,7 @@ import { ErrorState } from "../components/ErrorState";
 import { compressForUpload } from "../lib/compressImage";
 import { toErrorInfo } from "../lib/errors";
 import { classifyPhoto } from "../services/api";
+import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preview">;
 
@@ -25,8 +26,8 @@ export function PreviewScreen({ route, navigation }: Props) {
 
       if (classification.garmentType === UNRECOGNIZED_GARMENT) {
         setError({
-          title: "Couldn't identify a clothing item in that photo",
-          detail: "Try a clearer, well-lit photo with a single garment filling most of the frame.",
+          title: "We couldn't quite make out an item in that photo",
+          detail: "Try a clearer, well-lit shot with the item filling the frame.",
         });
         return;
       }
@@ -37,7 +38,7 @@ export function PreviewScreen({ route, navigation }: Props) {
       // of those two finishes last.
       navigation.replace("Results", { classification });
     } catch (err) {
-      setError(toErrorInfo(err, "Something went wrong while identifying the item."));
+      setError(toErrorInfo(err, "Something went wrong while identifying this item."));
     } finally {
       setLoading(false);
     }
@@ -64,11 +65,11 @@ export function PreviewScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   preview: { flex: 1 },
-  buttonRow: { flexDirection: "row", padding: 16, gap: 12 },
-  primaryButton: { flex: 1, backgroundColor: "#fff", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  primaryButtonText: { color: "#000", fontSize: 16, fontWeight: "700" },
-  secondaryButton: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center", borderWidth: 1, borderColor: "#3a3a3c" },
-  secondaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  buttonRow: { flexDirection: "row", padding: theme.spacing.md, gap: 12 },
+  primaryButton: { flex: 1, backgroundColor: theme.colors.textPrimary, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  primaryButtonText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  secondaryButton: { flex: 1, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center", borderWidth: 1, borderColor: theme.colors.border },
+  secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
 });

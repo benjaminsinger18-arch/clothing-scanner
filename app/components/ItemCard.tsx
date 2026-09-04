@@ -1,6 +1,18 @@
 import { useState } from "react";
 import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import type { PriceListing } from "@clothing-scanner/shared-types";
+import { theme } from "../theme";
+
+// Presentation-only label for PriceListing.source — the raw value stays "ebay" |
+// "serpapi" internally (it's an identifier, not display copy), but a shopper has
+// no idea what "serpapi" means. eBay and Google Shopping are both consumer brand
+// names worth showing as-is (a shopper cares whether a listing is resale vs.
+// retail and from where); "serpapi" is just the plumbing vendor behind the
+// Google Shopping data, not something to surface.
+const SOURCE_LABELS: Record<PriceListing["source"], string> = {
+  ebay: "eBay",
+  serpapi: "Google Shopping",
+};
 
 export function ItemCard({ item }: { item: PriceListing }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -31,7 +43,9 @@ export function ItemCard({ item }: { item: PriceListing }) {
           </Text>
           <View style={styles.row}>
             <Text style={styles.price}>{item.price > 0 ? `$${item.price.toFixed(2)}` : "—"}</Text>
-            <Text style={styles.source}>{item.source}</Text>
+            <View style={styles.sourceChip}>
+              <Text style={styles.sourceText}>{SOURCE_LABELS[item.source]}</Text>
+            </View>
           </View>
           {item.condition ? <Text style={styles.meta}>{item.condition}</Text> : null}
           {typeof item.rating === "number" && (
@@ -49,9 +63,9 @@ const THUMB_SIZE = 64;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#1c1c1e",
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
     marginBottom: 10,
   },
   cardPressed: { opacity: 0.7 },
@@ -59,20 +73,26 @@ const styles = StyleSheet.create({
   thumb: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
-    borderRadius: 8,
-    backgroundColor: "#2c2c2e",
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   thumbPlaceholder: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
-    borderRadius: 8,
-    backgroundColor: "#2c2c2e",
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceAlt,
     flexShrink: 0,
   },
   textCol: { flex: 1, minWidth: 0 },
-  title: { color: "#fff", fontSize: 15, fontWeight: "600", marginBottom: 6 },
+  title: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold, marginBottom: 6 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  price: { color: "#4ade80", fontSize: 16, fontWeight: "700" },
-  source: { color: "#8e8e93", fontSize: 12, textTransform: "uppercase" },
-  meta: { color: "#8e8e93", fontSize: 12, marginTop: 4 },
+  price: { color: theme.colors.accent, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  sourceChip: {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+  },
+  sourceText: { color: theme.colors.textSecondary, fontSize: 12 },
+  meta: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 4 },
 });

@@ -7,6 +7,7 @@ import { ItemCard } from "../components/ItemCard";
 import { ErrorState } from "../components/ErrorState";
 import { toErrorInfo } from "../lib/errors";
 import { getOutfitSuggestions, searchPrices } from "../services/api";
+import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Results">;
 
@@ -28,7 +29,7 @@ export function ResultsScreen({ route, navigation }: Props) {
       const result = await searchPrices(classification);
       setPricing(result);
     } catch (err) {
-      setPricingError(toErrorInfo(err, "Failed to load pricing"));
+      setPricingError(toErrorInfo(err, "Couldn't load pricing"));
     } finally {
       setPricingLoading(false);
     }
@@ -49,7 +50,7 @@ export function ResultsScreen({ route, navigation }: Props) {
       const result = await getOutfitSuggestions(classification);
       setOutfits(result);
     } catch (err) {
-      setOutfitsError(toErrorInfo(err, "Failed to load outfit suggestions"));
+      setOutfitsError(toErrorInfo(err, "Couldn't load outfit ideas"));
     } finally {
       setOutfitsLoading(false);
     }
@@ -69,7 +70,7 @@ export function ResultsScreen({ route, navigation }: Props) {
         ))}
       </ScrollView>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ padding: 16 }}>
+      <ScrollView style={styles.content} contentContainerStyle={{ padding: theme.spacing.md }}>
         {tab === "Overview" && (
           <View>
             <Row label="Garment" value={classification.garmentType} />
@@ -78,8 +79,8 @@ export function ResultsScreen({ route, navigation }: Props) {
             <Row label="Pattern" value={classification.pattern} />
             <Row label="Style" value={classification.style} />
             <Row
-              label="Brand guess"
-              value={classification.brandGuess ?? "Not confidently identified"}
+              label="Brand"
+              value={classification.brandGuess ?? "Not identified"}
               hint={`confidence: ${classification.brandConfidence}${
                 classification.brandSource === "vision-logo"
                   ? " (via logo detection)"
@@ -93,7 +94,7 @@ export function ResultsScreen({ route, navigation }: Props) {
               onPress={() => navigation.navigate("Correction", { classification })}
               style={styles.correctionLink}
             >
-              <Text style={styles.correctionLinkText}>This isn't right? Suggest a correction</Text>
+              <Text style={styles.correctionLinkText}>Doesn't look right? Suggest a fix</Text>
             </Pressable>
 
             {classification.source === "correction" && classification.sources && classification.sources.length > 0 && (
@@ -109,7 +110,7 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Price Comparison" && (
           <View>
             <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
-            <Text style={styles.note}>Sorted low to high — mix of secondhand (eBay) and new/retail (eBay + Google Shopping).</Text>
+            <Text style={styles.note}>Sorted low to high, combining resale and retail listings.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -124,7 +125,7 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Reviews" && (
           <View>
-            <Text style={styles.note}>Ratings sourced from Google Shopping listings where available — not all items have reviews.</Text>
+            <Text style={styles.note}>Ratings shown where available — not every item has reviews yet.</Text>
             <ProviderDataBody
               items={pricing?.reviews ?? []}
               status={pricing?.status ?? null}
@@ -139,7 +140,7 @@ export function ResultsScreen({ route, navigation }: Props) {
 
         {tab === "Similar Items" && (
           <View>
-            <Text style={styles.note}>Combined eBay + Google Shopping listings — condition shown per item where known.</Text>
+            <Text style={styles.note}>Listings from resale and retail sources, with condition noted where known.</Text>
             <ProviderDataBody
               items={pricing?.similarItems ?? []}
               status={pricing?.status ?? null}
@@ -155,8 +156,7 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Outfit Matches" && (
           <View>
             <Text style={styles.note}>
-              AI-suggested pairings (Claude), matched against live eBay listings — a heuristic, not a
-              trained styling model.
+              AI-suggested pairings matched against real listings — more a style nudge than a stylist.
             </Text>
             <OutfitBody outfits={outfits} loading={outfitsLoading} error={outfitsError} onRetry={fetchOutfits} />
           </View>
@@ -180,7 +180,7 @@ function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | 
     <View style={styles.rangeBanner}>
       {newRange && (
         <View style={resaleRange ? { marginBottom: 10 } : undefined}>
-          <Text style={styles.rangeLabel}>Estimated new/retail price (eBay new-condition + Google Shopping)</Text>
+          <Text style={styles.rangeLabel}>Estimated retail price</Text>
           <Text style={styles.rangeValue}>
             ${newRange.low.toFixed(2)} – ${newRange.high.toFixed(2)}{" "}
             <Text style={styles.rangeMedian}>(median ${newRange.median.toFixed(2)})</Text>
@@ -189,7 +189,7 @@ function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | 
       )}
       {resaleRange && (
         <View>
-          <Text style={styles.rangeLabel}>Estimated resale value (secondhand eBay listings)</Text>
+          <Text style={styles.rangeLabel}>Estimated resale value</Text>
           <Text style={styles.rangeValue}>
             ${resaleRange.low.toFixed(2)} – ${resaleRange.high.toFixed(2)}{" "}
             <Text style={styles.rangeMedian}>(median ${resaleRange.median.toFixed(2)})</Text>
@@ -197,7 +197,7 @@ function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchResult | 
         </View>
       )}
       {!newRange && (
-        <Text style={styles.rangeCaveat}>No new/retail listings found — this is likely a used-market price only.</Text>
+        <Text style={styles.rangeCaveat}>No retail listings found — this is likely a resale-only price.</Text>
       )}
     </View>
   );
@@ -225,19 +225,19 @@ function ProviderDataBody({
   emptyDetail: string;
 }) {
   if (loading) {
-    return <ActivityIndicator color="#fff" style={{ marginTop: 24 }} />;
+    return <ActivityIndicator color={theme.colors.textPrimary} style={{ marginTop: 24 }} />;
   }
   if (error) {
     return <ErrorState title={error.title} detail={error.detail} onRetry={onRetry} />;
   }
   if (status === "unavailable" || status === null) {
-    return <ErrorState title="Pricing temporarily unavailable" detail="Providers didn't respond — try again." onRetry={onRetry} />;
+    return <ErrorState title="Couldn't load pricing right now" detail="Give it another moment and try again." onRetry={onRetry} />;
   }
   if (status === "rate_limited") {
     return (
       <ErrorState
-        title="Request limit reached"
-        detail="The app proactively throttles to stay under provider quotas — try again later."
+        title="We've hit today's limit"
+        detail="Try again a little later."
         onRetry={onRetry}
       />
     );
@@ -269,19 +269,19 @@ function OutfitBody({
   onRetry: () => void;
 }) {
   if (loading) {
-    return <ActivityIndicator color="#fff" style={{ marginTop: 24 }} />;
+    return <ActivityIndicator color={theme.colors.textPrimary} style={{ marginTop: 24 }} />;
   }
   if (error) {
     return <ErrorState title={error.title} detail={error.detail} onRetry={onRetry} />;
   }
   if (!outfits || outfits.status === "unavailable") {
-    return <ErrorState title="Outfit suggestions temporarily unavailable" detail="Couldn't reach Claude — try again." onRetry={onRetry} />;
+    return <ErrorState title="Couldn't load outfit ideas right now" detail="Give it another moment and try again." onRetry={onRetry} />;
   }
   if (outfits.status === "rate_limited") {
     return (
       <ErrorState
-        title="Request limit reached"
-        detail="The app proactively throttles to stay under provider quotas — try again later."
+        title="We've hit today's limit"
+        detail="Try again a little later."
         onRetry={onRetry}
       />
     );
@@ -295,7 +295,7 @@ function OutfitBody({
         <View key={i} style={{ marginBottom: 16 }}>
           <Text style={styles.groupLabel}>Pairs well with: {suggestion.keywords}</Text>
           {suggestion.items.length === 0 ? (
-            <Text style={styles.note}>No purchasable items found for this suggestion right now.</Text>
+            <Text style={styles.note}>No matching items found right now.</Text>
           ) : (
             suggestion.items.map((item, j) => <ItemCard key={j} item={item} />)
           )}
@@ -316,27 +316,27 @@ function Row({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  tabBar: { maxHeight: 48, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#2c2c2e" },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  tabBar: { maxHeight: 48, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
   tabBarContent: { paddingHorizontal: 12, alignItems: "center", gap: 8 },
-  tabButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16 },
-  tabButtonActive: { backgroundColor: "#2c2c2e" },
-  tabButtonText: { color: "#8e8e93", fontSize: 13, fontWeight: "600" },
-  tabButtonTextActive: { color: "#fff" },
+  tabButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: theme.radius.pill },
+  tabButtonActive: { backgroundColor: theme.colors.surfaceAlt },
+  tabButtonText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
+  tabButtonTextActive: { color: theme.colors.textPrimary },
   content: { flex: 1 },
   correctionLink: { marginBottom: 14 },
-  correctionLinkText: { color: "#8e8e93", fontSize: 13, textDecorationLine: "underline" },
+  correctionLinkText: { color: theme.colors.textSecondary, fontSize: 13, textDecorationLine: "underline" },
   row: { marginBottom: 14 },
-  rowLabel: { color: "#8e8e93", fontSize: 12, textTransform: "uppercase" },
-  rowValue: { color: "#fff", fontSize: 18, fontWeight: "600", marginTop: 2 },
-  rowHint: { color: "#8e8e93", fontSize: 12, marginTop: 2 },
-  note: { color: "#8e8e93", fontSize: 12, marginBottom: 14, fontStyle: "italic" },
-  groupLabel: { color: "#fff", fontSize: 14, fontWeight: "600", marginBottom: 8 },
-  scanAgainButton: { margin: 16, backgroundColor: "#fff", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  scanAgainText: { color: "#000", fontSize: 16, fontWeight: "700" },
-  rangeBanner: { backgroundColor: "#1c1c1e", borderRadius: 10, padding: 12, marginBottom: 14 },
-  rangeLabel: { color: "#8e8e93", fontSize: 11, textTransform: "uppercase", marginBottom: 4 },
-  rangeValue: { color: "#4ade80", fontSize: 18, fontWeight: "700" },
-  rangeMedian: { color: "#8e8e93", fontSize: 13, fontWeight: "400" },
-  rangeCaveat: { color: "#8e8e93", fontSize: 12, fontStyle: "italic" },
+  rowLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
+  rowValue: { color: theme.colors.textPrimary, fontSize: 18, fontFamily: theme.fonts.body.semiBold, marginTop: 2 },
+  rowHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
+  note: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 14, fontStyle: "italic" },
+  groupLabel: { color: theme.colors.textPrimary, fontSize: 14, fontFamily: theme.fonts.body.semiBold, marginBottom: 8 },
+  scanAgainButton: { margin: theme.spacing.md, backgroundColor: theme.colors.textPrimary, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  scanAgainText: { color: theme.colors.background, fontSize: 16, fontFamily: theme.fonts.body.bold },
+  rangeBanner: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.md, marginBottom: 14 },
+  rangeLabel: { color: theme.colors.textSecondary, fontSize: 11, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label, marginBottom: 4 },
+  rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
+  rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
+  rangeCaveat: { color: theme.colors.textSecondary, fontSize: 12, fontStyle: "italic" },
 });
