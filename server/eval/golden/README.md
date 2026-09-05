@@ -1,8 +1,14 @@
 # Golden eval set
 
-Starts empty (`labels.json` is `[]`) — this is a placeholder you fill in yourself with real
-photos, not a pre-populated dataset. `npm run eval --workspace=server` prints "no golden entries"
-and exits cleanly against the empty set.
+Seeded with 10 openly-licensed stock photos from Wikimedia Commons (see `ATTRIBUTIONS.md` for
+license/author per file) spanning tops, bottoms, outerwear, and dresses. **These are a supplement,
+not a replacement for real phone photos** — they're clean/museum/product-style photography, not the
+messy real-world phone photos (odd lighting, wrinkled fabric, cluttered backgrounds) the app actually
+has to handle. Treat a good score against this set as "didn't obviously break," not "definitely
+accurate on your real usage" — add your own real photos alongside these over time.
+
+Footwear, most accessories, activewear, and underwear/sleepwear have no entries yet (Wikimedia
+rate-limited the download partway through) — see `ATTRIBUTIONS.md`'s "still missing" section.
 
 ## Adding an entry
 

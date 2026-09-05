@@ -1,1 +1,112 @@
-[]
+[
+  {
+    "filename": "aclu-constitution-tee.jpg",
+    "expected": {
+      "garmentType": "graphic t-shirt",
+      "category": "tops",
+      "color": "gray",
+      "pattern": "graphic print",
+      "gender": "unisex",
+      "brandGuess": "Bayside"
+    }
+  },
+  {
+    "filename": "damien-hirst-butterfly-hoodie.jpg",
+    "expected": {
+      "garmentType": "hooded dress",
+      "category": "dresses",
+      "color": "multicolor",
+      "pattern": "novelty print",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "win-patterned-sweater.jpg",
+    "expected": {
+      "garmentType": "sweater",
+      "category": "tops",
+      "color": "red, white, and navy",
+      "pattern": "striped",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "dickies-carpenter-jeans.jpg",
+    "expected": {
+      "garmentType": "carpenter jeans",
+      "category": "bottoms",
+      "color": "khaki",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "Dickies"
+    }
+  },
+  {
+    "filename": "levis-501xx-jeans-front.jpg",
+    "expected": {
+      "garmentType": "jeans",
+      "category": "bottoms",
+      "color": "dark blue",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "Levi's"
+    }
+  },
+  {
+    "filename": "plaid-shorts.jpg",
+    "expected": {
+      "garmentType": "shorts",
+      "category": "bottoms",
+      "color": "brown",
+      "pattern": "plaid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "blue-tailored-jacket.jpg",
+    "expected": {
+      "garmentType": "blazer",
+      "category": "outerwear",
+      "color": "navy blue",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "blue-denim-jacket.jpg",
+    "expected": {
+      "garmentType": "jacket",
+      "category": "outerwear",
+      "color": "blue and black",
+      "pattern": "color block",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "bomber-jacket.jpg",
+    "expected": {
+      "garmentType": "bomber jacket",
+      "category": "outerwear",
+      "color": "blue",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "ankara-print-dress.jpg",
+    "expected": {
+      "garmentType": "dress",
+      "category": "dresses",
+      "color": "pink and yellow",
+      "pattern": "floral",
+      "gender": "women",
+      "brandGuess": null
+    }
+  }
+]
