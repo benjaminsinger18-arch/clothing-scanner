@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { ApiErrorBody, ClassifyRequestBody } from "@clothing-scanner/shared-types";
 import { classifyImage, ClassificationError } from "../services/claudeClient.js";
 import { ImageValidationError, inferMediaType, validateImageBase64 } from "../lib/imageUtils.js";
+import { logClassification } from "../lib/classificationLog.js";
 
 export const classifyRouter = Router();
 
@@ -22,6 +23,11 @@ classifyRouter.post("/classify", async (req, res) => {
 
   try {
     const classification = await classifyImage({ imageBase64, mediaType });
+    try {
+      logClassification({ timestamp: new Date().toISOString(), trigger: "classify", result: classification });
+    } catch (err) {
+      console.warn("[/classify] Failed to log classification:", err);
+    }
     res.json({ classification });
   } catch (err) {
     console.error("[/classify] classification failed:", err);

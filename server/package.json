@@ -11,7 +11,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "eval": "tsx eval/runEval.ts"
+    "eval": "tsx eval/runEval.ts",
+    "summarize": "tsx eval/summarizeClassifications.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",

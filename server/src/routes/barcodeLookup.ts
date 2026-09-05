@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { ApiErrorBody } from "@clothing-scanner/shared-types";
 import { lookupUpc } from "../services/upcClient.js";
 import { classifyFromBarcode, ClassificationError } from "../services/claudeClient.js";
+import { logClassification } from "../lib/classificationLog.js";
 
 export const barcodeLookupRouter = Router();
 
@@ -44,6 +45,11 @@ barcodeLookupRouter.get("/barcode-lookup", async (req, res) => {
 
   try {
     const classification = await classifyFromBarcode(lookup.item);
+    try {
+      logClassification({ timestamp: new Date().toISOString(), trigger: "barcode-lookup", result: classification });
+    } catch (err) {
+      console.warn("[/barcode-lookup] Failed to log classification:", err);
+    }
     res.json({ classification });
   } catch (err) {
     console.error("[/barcode-lookup] normalization failed:", err);
