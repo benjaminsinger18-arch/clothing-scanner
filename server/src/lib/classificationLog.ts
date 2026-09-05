@@ -14,17 +14,20 @@
 //
 // Same known limitation as correctionLog.ts: no persistent disk on Render's
 // free tier by default — this survives local dev restarts but is wiped on
-// every Render restart/redeploy. Reliable today only for local usage.
+// every Render restart/redeploy, UNLESS bucket sync is configured (see
+// bucketSync.ts), in which case this file is restored from a Hugging Face
+// Storage Bucket at startup and re-synced there after every write.
 
 import { mkdirSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ClassificationResult } from "@clothing-scanner/shared-types";
+import { syncToBucket } from "./bucketSync.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // server/src/lib -> server/data (same directory correctionLog.ts writes into)
 const LOG_DIR = join(__dirname, "..", "..", "data");
-const LOG_FILE = join(LOG_DIR, "classifications.jsonl");
+export const LOG_FILE = join(LOG_DIR, "classifications.jsonl");
 
 export interface ClassificationLogEntry {
   timestamp: string; // ISO 8601
@@ -45,4 +48,5 @@ export interface ClassificationLogEntry {
 export function logClassification(entry: ClassificationLogEntry): void {
   mkdirSync(LOG_DIR, { recursive: true });
   appendFileSync(LOG_FILE, JSON.stringify(entry) + "\n", "utf8");
+  syncToBucket(LOG_FILE, "classifications.jsonl");
 }
