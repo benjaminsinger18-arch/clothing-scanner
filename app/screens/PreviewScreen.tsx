@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { UNRECOGNIZED_GARMENT } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { ErrorState } from "../components/ErrorState";
@@ -23,12 +22,12 @@ export function PreviewScreen({ route, navigation }: Props) {
     setError(null);
     try {
       const base64 = await compressForUpload(photoUri);
-      const classification = await classifyPhoto(base64);
+      const classifications = await classifyPhoto(base64);
 
-      if (classification.garmentType === UNRECOGNIZED_GARMENT) {
+      if (classifications.length === 0) {
         setError({
-          title: "We couldn't quite make out an item in that photo",
-          detail: "Try a clearer, well-lit shot with the item filling the frame.",
+          title: "We couldn't quite make out any clothing items in that photo",
+          detail: "Try a clearer, well-lit shot with the items filling the frame.",
         });
         return;
       }
@@ -47,7 +46,12 @@ export function PreviewScreen({ route, navigation }: Props) {
       // wait is still just the classify call (pricing/outfit have their own
       // per-tab spinners on Results), it's only *when* those two fetches start
       // that's changing, not what's shown here.
-      navigation.replace("Results", { classification, photoThumbnail, ...prefetchResultsData(classification) });
+      navigation.replace("Results", {
+        classifications,
+        initialIndex: 0,
+        photoThumbnail,
+        ...prefetchResultsData(classifications[0]),
+      });
     } catch (err) {
       setError(toErrorInfo(err, "Something went wrong while identifying this item."));
     } finally {

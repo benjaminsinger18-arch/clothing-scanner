@@ -73,3 +73,72 @@ export interface RawClassification {
   brandGuess: string | null;
   brandConfidence: BrandConfidence;
 }
+
+// --- Multi-item extension ---------------------------------------------------
+// Used only by the main photo-scan path (classifyImage in claudeClient.ts) via a
+// second tool, report_clothing_items — classifyFromBarcode and the correction
+// flow's structuring call keep using CLASSIFICATION_JSON_SCHEMA/classifyTool
+// above completely untouched, since a barcode match or a user's typed correction
+// is always genuinely one item, never several.
+//
+// Per-field shape (color/pattern/style/gender/brandGuess/brandConfidence) is
+// identical to the single-item schema, so it's spread in rather than redefined —
+// only garmentType/category get multi-item-aware wording. category.enum is
+// reused BY REFERENCE (not copied), so fashionClipClient.ts's startup check
+// against CLASSIFICATION_JSON_SCHEMA.properties.category.enum can never drift
+// out of sync with what this schema accepts.
+const MULTI_ITEM_ITEM_SCHEMA = {
+  type: "object",
+  properties: {
+    ...CLASSIFICATION_JSON_SCHEMA.properties,
+    garmentType: {
+      type: "string",
+      description:
+        `Specific garment type, e.g. "denim jacket", "graphic t-shirt", "chino pants". This is one ` +
+        `of possibly several distinct wearable items visible in the photo — describe just this one item.`,
+    },
+    category: {
+      type: "string",
+      enum: CLASSIFICATION_JSON_SCHEMA.properties.category.enum,
+      description: "Broad category this specific item belongs to — pick the single best fit for this item.",
+    },
+  },
+  required: CLASSIFICATION_JSON_SCHEMA.required,
+} as const;
+
+export const MULTI_ITEM_TOOL_NAME = "report_clothing_items";
+
+export const MULTI_ITEM_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    items: {
+      type: "array",
+      description:
+        "One entry per distinct, clearly visible wearable clothing item in the photo (top, bottoms, " +
+        "outerwear/jacket, dress, footwear, hat/bag-type accessory, activewear, or underwear/sleepwear " +
+        "item), including layered items worn together — list a jacket AND the shirt visible underneath " +
+        "it as two separate entries when both are visible. List the single most visually prominent/" +
+        "primary item of the outfit FIRST, then the rest in any reasonable order. Do NOT include belts " +
+        "or jewelry (rings, necklaces, bracelets, watches, earrings) as entries, even if clearly visible " +
+        "— skip those specifically; they should never appear in this list. If nothing recognizable and " +
+        "wearable is visible in the photo at all, return an empty array.",
+      items: MULTI_ITEM_ITEM_SCHEMA,
+    },
+  },
+  required: ["items"],
+} as const;
+
+/** Same core instructions as CLASSIFICATION_PROMPT, plus the one addition that
+ * actually matters for multi-item: look for every distinct garment, not just the
+ * most prominent one. Kept as an extension rather than a rewrite so the two
+ * prompts can't drift apart on the shared guidance (color judgment, brand
+ * honesty, gender consideration) that applies identically either way. */
+export const MULTI_ITEM_PROMPT =
+  CLASSIFICATION_PROMPT +
+  " This photo may show a whole outfit rather than a single item — look for every distinct wearable " +
+  "garment visible and report each as its own entry (see report_clothing_items' schema for exactly " +
+  "what to include/exclude).";
+
+export interface RawMultiItemClassification {
+  items: RawClassification[];
+}

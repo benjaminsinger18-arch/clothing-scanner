@@ -32,7 +32,10 @@ export interface ClassificationLogEntry {
    * intentionally excluded — those already get their own, richer entry in
    * corrections.jsonl (original guess + correction text + verified result). */
   trigger: "classify" | "barcode-lookup";
-  result: ClassificationResult;
+  /** "classify" logs the full per-scan array (possibly empty — see classifyImage
+   * in claudeClient.ts) since one photo can now report several items; "barcode-lookup"
+   * still logs a single result, a barcode match always being exactly one product. */
+  result: ClassificationResult | ClassificationResult[];
 }
 
 /** Appends one JSON line. Synchronous for the same reason as correctionLog.ts's
