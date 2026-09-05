@@ -25,17 +25,24 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | blue-denim-jacket.jpg | Blauw denim jasje, objectnr 68398.JPG | CC BY-SA 3.0 | Philo Wagner (?) | [link](https://commons.wikimedia.org/wiki/File:Blauw_denim_jasje,_objectnr_68398.JPG) |
 | bomber-jacket.jpg | Bomber jacket.jpg | Public domain | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Bomber_jacket.jpg) |
 | ankara-print-dress.jpg | A BEAUTIFUL Ankara dress.jpg | CC BY-SA 4.0 | ItunuIjila | [link](https://commons.wikimedia.org/wiki/File:A_BEAUTIFUL_Ankara_dress.jpg) |
+| skechers-sneakers.jpg | Skechers Energy 2 - Cruise Control.jpg | CC BY-SA 4.0 | RBCt11 | [link](https://commons.wikimedia.org/wiki/File:Skechers_Energy_2_-_Cruise_Control.jpg) |
+| chelsea-boots.jpg | 78 chelsea boots.jpg | CC BY 4.0 | Free open sources aholaS | [link](https://commons.wikimedia.org/wiki/File:78_chelsea_boots.jpg) |
+| teva-sandal.jpg | A Teva sandal in the street.jpg | CC BY-SA 4.0 | Peachyeung316 | [link](https://commons.wikimedia.org/wiki/File:A_Teva_sandal_in_the_street.jpg) |
+| baseball-cap.jpg | Advanced Computer Techniques baseball cap.jpg | CC BY-SA 4.0 | Jonathan Schilling | [link](https://commons.wikimedia.org/wiki/File:Advanced_Computer_Techniques_baseball_cap.jpg) |
+| cashmere-scarf.jpg | 100% Kaschmir Wool Schal Beispiel.jpg | CC BY-SA 4.0 | kaschmirprodukte.de | [link](https://commons.wikimedia.org/wiki/File:100%25_Kaschmir_Wool_Schal_Beispiel.jpg) |
+| leather-belt.jpg | Belt individual equipment ALICE.jpg | CC BY 3.0 | Tupek | [link](https://commons.wikimedia.org/wiki/File:Belt_individual_equipment_ALICE.jpg) |
+| eastpak-backpack.jpg | Eastpak Sugarbush backpack black.jpg | CC BY-SA 4.0 | Ubcule | [link](https://commons.wikimedia.org/wiki/File:Eastpak_Sugarbush_backpack_black.jpg) |
+| tracksuit-bottoms.jpg | Tracksuit bottoms.jpg | CC BY 3.0 | RyanDiller | [link](https://commons.wikimedia.org/wiki/File:Tracksuit_bottoms.jpg) |
+| tracksuit-jacket.jpg | Tracksuit jacket.jpg | CC BY 3.0 | RyanDiller | [link](https://commons.wikimedia.org/wiki/File:Tracksuit_jacket.jpg) |
+| bathrobe.jpg | BathrobeHungup.jpg | CC BY-SA 3.0 | GlassCobra | [link](https://commons.wikimedia.org/wiki/File:BathrobeHungup.jpg) |
 
-## Still missing (blocked by Wikimedia rate limiting, not yet retried)
+## Notes on this batch
 
-These categories have no golden entry yet — footwear, most accessories, activewear, and
-underwear/sleepwear are underrepresented as a result:
+Two originally-selected candidates (`Belt (clothing).jpg` and the original `Bathrobe.jpg`) turned
+out, on inspection, to be hand-drawn ink illustrations rather than real photos — wrong fit for a
+photo-classification eval set, so they were swapped for `Belt_individual_equipment_ALICE.jpg` (a
+real photo of a military web belt) and `BathrobeHungup.jpg` respectively. Always view a candidate
+before trusting its filename/title.
 
-- Sneakers, boots, sandals (footwear)
-- Baseball cap, scarf, belt, backpack (accessories)
-- Tracksuit top/bottoms (activewear)
-- Bathrobe (underwear-sleepwear)
-
-Candidate URLs + license metadata for all of these were already found and are safe to re-fetch —
-see the "Adding an entry" section in `README.md` if picking this back up, or ask for the download to
-be retried once Wikimedia's rate limit has cooled off.
+All 8 categories (tops, bottoms, outerwear, dresses, footwear, accessories, activewear,
+underwear-sleepwear) now have at least one entry — the previous "still missing" gap is closed.

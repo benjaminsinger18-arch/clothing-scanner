@@ -420,9 +420,10 @@ infrastructure exist for that:
   usage-pattern stats from it: unrecognized rate, how often Gemini's rescue pass or Vision's
   brand-fill signal fires, brand confidence distribution.
 - **Eval harness** (`server/eval/`) — a golden set of expected classification fields
-  (`server/eval/golden/`, seeded with 10 openly-licensed Wikimedia Commons stock photos — see its
-  own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos are a supplement to
-  real phone photos, not a replacement) and a runner (`npm run eval --workspace=server`) that calls
+  (`server/eval/golden/`, seeded with 20 openly-licensed Wikimedia Commons stock photos covering all
+  8 categories — see its own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos
+  are a supplement to real phone photos, not a replacement) and a runner
+  (`npm run eval --workspace=server`) that calls
   the real classification pipeline against each one and reports per-field pass rates. Makes real
   Claude/Vision/Gemini calls (no mocking) — see `server/eval/golden/README.md` for cost guidance and
   grading rules. This is a report, not a CI gate; there's no CI in this repo yet.

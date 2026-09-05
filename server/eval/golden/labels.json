@@ -108,5 +108,115 @@
       "gender": "women",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "skechers-sneakers.jpg",
+    "expected": {
+      "garmentType": "sneakers",
+      "category": "footwear",
+      "color": "black and gray",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Skechers"
+    }
+  },
+  {
+    "filename": "chelsea-boots.jpg",
+    "expected": {
+      "garmentType": "Chelsea boots",
+      "category": "footwear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "teva-sandal.jpg",
+    "expected": {
+      "garmentType": "sport sandals",
+      "category": "footwear",
+      "color": "black and green",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Teva"
+    }
+  },
+  {
+    "filename": "baseball-cap.jpg",
+    "expected": {
+      "garmentType": "trucker cap",
+      "category": "accessories",
+      "color": "white and black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "cashmere-scarf.jpg",
+    "expected": {
+      "garmentType": "scarf",
+      "category": "accessories",
+      "color": "blue",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "leather-belt.jpg",
+    "expected": {
+      "garmentType": "web belt",
+      "category": "accessories",
+      "color": "olive green",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "eastpak-backpack.jpg",
+    "expected": {
+      "garmentType": "backpack",
+      "category": "accessories",
+      "color": "black and tan",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Eastpak"
+    }
+  },
+  {
+    "filename": "tracksuit-bottoms.jpg",
+    "expected": {
+      "garmentType": "track pants",
+      "category": "activewear",
+      "color": "black and gold",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "Nike"
+    }
+  },
+  {
+    "filename": "tracksuit-jacket.jpg",
+    "expected": {
+      "garmentType": "track jacket",
+      "category": "activewear",
+      "color": "black and gold",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "Nike"
+    }
+  },
+  {
+    "filename": "bathrobe.jpg",
+    "expected": {
+      "garmentType": "bathrobe",
+      "category": "underwear-sleepwear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
   }
 ]
