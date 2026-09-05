@@ -13,6 +13,7 @@ import type { SupportedMediaType } from "../lib/imageUtils.js";
 import { CLASSIFICATION_JSON_SCHEMA, CLASSIFICATION_PROMPT, type RawClassification } from "../lib/classificationSchema.js";
 import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 import { classifyWithGemini } from "./geminiClient.js";
+import { getFashionClipCategoryHint } from "./fashionClipClient.js";
 import type { UpcItem } from "./upcClient.js";
 import { canMakeWebSearchCall, recordWebSearchCall } from "../lib/rateLimitTracker.js";
 
@@ -242,13 +243,41 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   }
 
   const retried = await callClaudeWithRetry(SONNET_MODEL, { ...opts, hint: hintText });
-  const merged = applyVisionBrandSignal(retried, vision);
+  if (retried.garmentType !== UNRECOGNIZED_GARMENT) {
+    const merged = applyVisionBrandSignal(retried, vision);
+    return { ...merged, model: "claude-sonnet-5", visionAssisted: true };
+  }
+
+  // Claude, Gemini, AND the Vision-hint retry have all now failed — genuinely rare
+  // (three misses deep), so one more attempt here costs nothing on the common path.
+  // Fashion-CLIP is a differently-trained model asked a much narrower question
+  // (broad category only, see fashionClipClient.ts) — a real chance at a fresh
+  // signal none of the above had, not just a repeat of the same hint that already
+  // didn't work. FASHION_CLIP_MIN_SCORE requires it to clearly stand out from the
+  // ~0.125 baseline an 8-way random guess would score, so a genuinely uncertain
+  // Fashion-CLIP result doesn't push Claude toward a confident-but-wrong answer.
+  const fashionClip = await getFashionClipCategoryHint(opts.imageBase64);
+  if (!fashionClip || fashionClip.score < FASHION_CLIP_MIN_SCORE) {
+    return { ...retried, model: "claude-sonnet-5", visionAssisted: false };
+  }
+
+  const finalRetry = await callClaudeWithRetry(SONNET_MODEL, {
+    ...opts,
+    hint: `${fashionClip.phrase} (per a separate fashion-focused image classifier)`,
+  });
+  const merged = applyVisionBrandSignal(finalRetry, vision);
   return {
     ...merged,
     model: "claude-sonnet-5",
-    visionAssisted: retried.garmentType !== UNRECOGNIZED_GARMENT,
+    fashionClipAssisted: finalRetry.garmentType !== UNRECOGNIZED_GARMENT,
   };
 }
+
+// An 8-way zero-shot guess scores ~0.125 on average if genuinely uncertain between
+// candidates — require clearly better than that before feeding it to Claude as a
+// hint, so a coin-flip Fashion-CLIP result doesn't nudge an honest "unrecognized"
+// into a confident-but-wrong guess.
+const FASHION_CLIP_MIN_SCORE = 0.35;
 
 /**
  * Normalizes a UPCitemdb barcode match into a full ClassificationResult. Text-only

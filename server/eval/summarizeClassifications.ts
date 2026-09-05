@@ -55,8 +55,10 @@ function main() {
 
   const geminiRescued = results.filter((r) => r.model === "gemini-3.1-pro").length;
   const visionAssisted = results.filter((r) => r.visionAssisted === true).length;
+  const fashionClipAssisted = results.filter((r) => r.fashionClipAssisted === true).length;
   console.log(`Gemini rescue used: ${pct(geminiRescued, total)}`);
   console.log(`Vision-hint retry resolved it: ${pct(visionAssisted, total)}`);
+  console.log(`Fashion-CLIP last-resort retry resolved it: ${pct(fashionClipAssisted, total)}`);
 
   const brandSourceCounts = new Map<string, number>();
   for (const r of results) {

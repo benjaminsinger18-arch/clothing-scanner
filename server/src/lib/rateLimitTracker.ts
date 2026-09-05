@@ -137,6 +137,27 @@ export function recordSerpApiOutfitCall(): void {
   serpApiOutfitCounter.count += 1;
 }
 
+// --- Fashion-CLIP (Hugging Face Inference API): like Gemini/web-search above, sized
+// as a runaway-cost/abuse circuit breaker rather than free-tier protection — HF's
+// hosted Inference API free tier is itself rate-limited per-account, so this cap
+// mostly exists to fail fast with a clear reason instead of hammering HF once their
+// own limit is hit. Unlike Vision (called every scan) this only fires on the rare
+// last-resort path in classifyImage (Claude + Gemini + Vision-hint retry all already
+// failed), so realistic volume is a small fraction of total scans — this cap should
+// essentially never be reached in practice. ---
+const FASHION_CLIP_DAILY_SOFT_CAP = 100;
+const fashionClipCounter: Counter = { count: 0, periodKey: todayKey() };
+
+export function canMakeFashionClipCall(): boolean {
+  resetIfNewPeriod(fashionClipCounter, todayKey());
+  return fashionClipCounter.count < FASHION_CLIP_DAILY_SOFT_CAP;
+}
+
+export function recordFashionClipCall(): void {
+  resetIfNewPeriod(fashionClipCounter, todayKey());
+  fashionClipCounter.count += 1;
+}
+
 export function getUsageSnapshot() {
   resetIfNewPeriod(serpApiCounter, monthKey());
   resetIfNewPeriod(visionCounter, monthKey());
@@ -144,6 +165,7 @@ export function getUsageSnapshot() {
   resetIfNewPeriod(upcCounter, todayKey());
   resetIfNewPeriod(webSearchCounter, todayKey());
   resetIfNewPeriod(serpApiOutfitCounter, monthKey());
+  resetIfNewPeriod(fashionClipCounter, todayKey());
   return {
     serpapi: { count: serpApiCounter.count, cap: SERPAPI_MONTHLY_SOFT_CAP, period: "month" as const },
     vision: { count: visionCounter.count, cap: VISION_MONTHLY_SOFT_CAP, period: "month" as const },
@@ -155,5 +177,6 @@ export function getUsageSnapshot() {
       cap: SERPAPI_OUTFIT_MONTHLY_SOFT_CAP,
       period: "month" as const,
     },
+    fashionClip: { count: fashionClipCounter.count, cap: FASHION_CLIP_DAILY_SOFT_CAP, period: "day" as const },
   };
 }
