@@ -44,7 +44,7 @@ async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   }
 }
 
-export async function classifyPhoto(imageBase64: string): Promise<ClassificationResult> {
+export async function classifyPhoto(imageBase64: string): Promise<ClassificationResult[]> {
   if (!API_URL) {
     throw new ApiError(
       "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
@@ -75,7 +75,7 @@ export async function classifyPhoto(imageBase64: string): Promise<Classification
     throw new ApiError(json?.error ?? "classification_failed", json?.reason);
   }
 
-  return json.classification as ClassificationResult;
+  return json.classifications as ClassificationResult[];
 }
 
 export async function searchPrices(classification: ClassificationResult): Promise<PriceSearchResult> {

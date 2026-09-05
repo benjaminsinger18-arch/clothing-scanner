@@ -40,7 +40,11 @@ export function BarcodeScanScreen({ navigation }: Props) {
         return;
       }
 
-      navigation.replace("Results", { classification, ...prefetchResultsData(classification) });
+      navigation.replace("Results", {
+        classifications: [classification],
+        initialIndex: 0,
+        ...prefetchResultsData(classification),
+      });
     } catch (err) {
       if (err instanceof ApiError && err.message === "not_found") {
         setError({

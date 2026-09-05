@@ -38,10 +38,14 @@ function main() {
     return;
   }
 
-  const total = entries.length;
-  const results: ClassificationResult[] = entries.map((e) => e.result);
+  const total = entries.length; // total SCANS, not total items — a "classify" scan can log 0-N items
+  // Flatten to one entry per detected item across all scans, for the per-item stats
+  // below (brand source/confidence, rescue flags). A "classify" scan that found
+  // nothing contributes zero entries here, not a placeholder — that's what the
+  // zero-items rate below measures instead.
+  const results: ClassificationResult[] = entries.flatMap((e) => e.result);
 
-  console.log(`Total logged classifications: ${total}`);
+  console.log(`Total logged scans: ${total} (${results.length} total detected item(s) across them)`);
 
   const byTrigger = new Map<string, number>();
   for (const e of entries) byTrigger.set(e.trigger, (byTrigger.get(e.trigger) ?? 0) + 1);
@@ -50,8 +54,12 @@ function main() {
     console.log(`  ${trigger}: ${pct(count, total)}`);
   }
 
-  const unrecognized = results.filter((r) => r.garmentType === "unrecognized").length;
-  console.log(`\nUnrecognized rate: ${pct(unrecognized, total)}`);
+  const classifyEntries = entries.filter((e) => e.trigger === "classify");
+  const zeroItemScans = classifyEntries.filter((e) => Array.isArray(e.result) && e.result.length === 0).length;
+  console.log(`\nZero-items rate (photo scans that found nothing at all): ${pct(zeroItemScans, classifyEntries.length)}`);
+  const itemCounts = classifyEntries.map((e) => (Array.isArray(e.result) ? e.result.length : 1));
+  const avgItems = itemCounts.length === 0 ? 0 : itemCounts.reduce((a, b) => a + b, 0) / itemCounts.length;
+  console.log(`Average items detected per photo scan: ${avgItems.toFixed(2)}`);
 
   const geminiRescued = results.filter((r) => r.model === "gemini-3.1-pro").length;
   const visionAssisted = results.filter((r) => r.visionAssisted === true).length;

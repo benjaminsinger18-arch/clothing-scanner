@@ -3,16 +3,19 @@
 // matches ClassificationResult's shape.
 
 import Anthropic from "@anthropic-ai/sdk";
-import {
-  UNRECOGNIZED_GARMENT,
-  type BrandConfidence,
-  type ClassificationResult,
-  type Gender,
-} from "@clothing-scanner/shared-types";
+import { type BrandConfidence, type ClassificationResult, type Gender } from "@clothing-scanner/shared-types";
 import type { SupportedMediaType } from "../lib/imageUtils.js";
-import { CLASSIFICATION_JSON_SCHEMA, CLASSIFICATION_PROMPT, type RawClassification } from "../lib/classificationSchema.js";
+import {
+  CLASSIFICATION_JSON_SCHEMA,
+  CLASSIFICATION_PROMPT,
+  MULTI_ITEM_JSON_SCHEMA,
+  MULTI_ITEM_PROMPT,
+  MULTI_ITEM_TOOL_NAME,
+  type RawClassification,
+  type RawMultiItemClassification,
+} from "../lib/classificationSchema.js";
 import { getVisionSignal, type VisionSignal } from "./visionClient.js";
-import { classifyWithGemini } from "./geminiClient.js";
+import { classifyMultiItemWithGemini } from "./geminiClient.js";
 import { getFashionClipCategoryHint } from "./fashionClipClient.js";
 import type { UpcItem } from "./upcClient.js";
 import { canMakeWebSearchCall, recordWebSearchCall } from "../lib/rateLimitTracker.js";
@@ -59,6 +62,16 @@ const classifyTool: Anthropic.Tool = {
   // Shared with geminiClient.ts's response_format.schema — see classificationSchema.ts
   // for why (keeps both providers' outputs directly comparable/mergeable).
   input_schema: CLASSIFICATION_JSON_SCHEMA as unknown as Anthropic.Tool["input_schema"],
+};
+
+// Separate tool for the main photo-scan path only (classifyImage below) — every
+// other call site in this file (classifyFromBarcode, verifyCorrection's
+// structuring call) keeps using classifyTool/CLASSIFICATION_JSON_SCHEMA above
+// completely untouched, since those are always genuinely one item, never several.
+const multiItemTool: Anthropic.Tool = {
+  name: MULTI_ITEM_TOOL_NAME,
+  description: "Report every distinct wearable clothing item visible in a photo, excluding belts and jewelry.",
+  input_schema: MULTI_ITEM_JSON_SCHEMA as unknown as Anthropic.Tool["input_schema"],
 };
 
 interface ClassifyOptions {
@@ -117,6 +130,57 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
     console.warn(`[claudeClient] ${model} call failed, retrying once:`, err);
     await new Promise((resolve) => setTimeout(resolve, 500));
     return await callClaude(model, opts);
+  }
+}
+
+/** Multi-item counterpart to callClaude — same shape, forces multiItemTool instead
+ * of classifyTool, returns the whole items array rather than one object. Only
+ * used by classifyImage's photo-scan path. */
+async function callClaudeMultiItem(model: string, opts: ClassifyOptions): Promise<RawClassification[]> {
+  const hintText = opts.hint
+    ? ` A separate image-recognition system's best guess for this photo is "${opts.hint}" — treat that ` +
+      "as a hint, not ground truth: weigh it against what you actually see, and still return an empty " +
+      "items array if the hint doesn't hold up either."
+    : "";
+
+  const response = await getClient().messages.create({
+    model,
+    max_tokens: 1536, // several items' worth of structured output, vs. classifyTool's single-item 512
+    tools: [multiItemTool],
+    tool_choice: { type: "tool", name: MULTI_ITEM_TOOL_NAME },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: opts.mediaType, data: opts.imageBase64 } },
+          {
+            type: "text",
+            text:
+              "Identify every distinct wearable clothing item in this photo and call " +
+              "report_clothing_items with your best assessment. " +
+              MULTI_ITEM_PROMPT +
+              hintText,
+          },
+        ],
+      },
+    ],
+  });
+  const toolUse = response.content.find(
+    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === MULTI_ITEM_TOOL_NAME
+  );
+  if (!toolUse) {
+    throw new ClassificationError("Claude did not return a structured multi-item classification");
+  }
+  return (toolUse.input as RawMultiItemClassification).items;
+}
+
+async function callClaudeMultiItemWithRetry(model: string, opts: ClassifyOptions): Promise<RawClassification[]> {
+  try {
+    return await callClaudeMultiItem(model, opts);
+  } catch (err) {
+    console.warn(`[claudeClient] ${model} multi-item call failed, retrying once:`, err);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return await callClaudeMultiItem(model, opts);
   }
 }
 
@@ -191,10 +255,22 @@ function applyVisionBrandSignal(
  * neither available, this is exactly Claude-alone behavior.
  */
 
-export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult> {
+/** Maps a batch of raw per-item results into ClassificationResults, tagging every
+ * item with the same model/extra-flags — used at every return point below so the
+ * "which provider/rescue stage produced this" tagging can't drift between items
+ * from the same pass. */
+function toResults(
+  items: RawClassification[],
+  model: ClassificationResult["model"],
+  extra?: Partial<ClassificationResult>
+): ClassificationResult[] {
+  return items.map((raw) => ({ ...raw, model, ...extra }));
+}
+
+export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult[]> {
   // Vision starts immediately, in parallel — cheap enough to always run. Gemini
   // does NOT start here anymore (see the latency note above) — it's only called
-  // further down, and only on the unrecognized path.
+  // further down, and only on the empty-result path.
   const visionStartedAt = Date.now();
   const visionPromise = getVisionSignal(opts.imageBase64).catch(() => null);
   if (LOG_TIMING) {
@@ -202,75 +278,84 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   }
 
   const claudeStartedAt = Date.now();
-  const first = await callClaudeWithRetry(SONNET_MODEL, opts);
+  const first = await callClaudeMultiItemWithRetry(SONNET_MODEL, opts);
   if (LOG_TIMING) {
-    console.log(`[claudeClient] Sonnet (first pass): ${Date.now() - claudeStartedAt}ms`);
+    console.log(`[claudeClient] Sonnet (first pass): ${Date.now() - claudeStartedAt}ms, ${first.length} item(s)`);
   }
 
-  if (first.garmentType !== UNRECOGNIZED_GARMENT) {
+  if (first.length > 0) {
     // Common path: Claude already has an answer. Await the concurrently-started
     // Vision promise — typically already resolved, so this is expected to be
-    // near-instant. No Gemini call on this path at all.
+    // near-instant. No Gemini call on this path at all. Vision's logo detection is
+    // whole-photo and ambiguous about which garment it belongs to in a multi-item
+    // shot, so its brand-fill only ever applies to the primary (first-listed) item
+    // — attributing one detected logo to every item risks misattributing it to
+    // garments it doesn't belong to.
     const vision = await visionPromise;
-    const merged = applyVisionBrandSignal(first, vision);
-    return { ...merged, model: "claude-sonnet-5" };
+    const [primary, ...rest] = first;
+    const mergedPrimary = applyVisionBrandSignal(primary, vision);
+    return toResults([mergedPrimary, ...rest], "claude-sonnet-5");
   }
 
-  // Claude couldn't identify it — NOW call Gemini, only here, so its latency is
+  // Claude found nothing at all — NOW call Gemini, only here, so its latency is
   // paid rarely (a genuine failure) rather than on every scan. Try Gemini's own
   // independent answer first — a full second opinion beats a single-phrase hint
   // fed back to Claude.
-  const gemini = await classifyWithGemini(opts.imageBase64, opts.mediaType).catch(() => null);
-  if (gemini && gemini.garmentType !== UNRECOGNIZED_GARMENT) {
+  const gemini = await classifyMultiItemWithGemini(opts.imageBase64, opts.mediaType).catch(() => null);
+  if (gemini && gemini.length > 0) {
     const vision = await visionPromise;
-    const merged = applyVisionBrandSignal(gemini, vision);
-    return { ...merged, model: GEMINI_MODEL_LABEL };
+    const [primary, ...rest] = gemini;
+    const mergedPrimary = applyVisionBrandSignal(primary, vision);
+    return toResults([mergedPrimary, ...rest], GEMINI_MODEL_LABEL);
   }
 
-  // Gemini also couldn't identify it (or isn't configured) — fall back to the
-  // existing Vision-hint rescue as a last resort. Reuses the same already-in-flight
-  // Vision promise (it had a head start from launching concurrently).
+  // Gemini also found nothing (or isn't configured) — fall back to the existing
+  // Vision-hint rescue as a last resort. Reuses the same already-in-flight Vision
+  // promise (it had a head start from launching concurrently).
   const vision = await visionPromise;
   if (!vision) {
-    return { ...first, model: "claude-sonnet-5" };
+    return [];
   }
 
   // Prefer Vision's general scene guess for the rescue hint; if web/label detection
   // came up empty but a logo was found, fall back to a logo-derived hint.
   const hintText = vision.bestGuess ?? (vision.logos[0] ? `a logo matching "${vision.logos[0].description}"` : null);
   if (!hintText) {
-    return { ...first, model: "claude-sonnet-5" };
+    return [];
   }
 
-  const retried = await callClaudeWithRetry(SONNET_MODEL, { ...opts, hint: hintText });
-  if (retried.garmentType !== UNRECOGNIZED_GARMENT) {
-    const merged = applyVisionBrandSignal(retried, vision);
-    return { ...merged, model: "claude-sonnet-5", visionAssisted: true };
+  const retried = await callClaudeMultiItemWithRetry(SONNET_MODEL, { ...opts, hint: hintText });
+  if (retried.length > 0) {
+    const [primary, ...rest] = retried;
+    const mergedPrimary = applyVisionBrandSignal(primary, vision);
+    return toResults([mergedPrimary, ...rest], "claude-sonnet-5", { visionAssisted: true });
   }
 
   // Claude, Gemini, AND the Vision-hint retry have all now failed — genuinely rare
   // (three misses deep), so one more attempt here costs nothing on the common path.
   // Fashion-CLIP is a differently-trained model asked a much narrower question
-  // (broad category only, see fashionClipClient.ts) — a real chance at a fresh
-  // signal none of the above had, not just a repeat of the same hint that already
-  // didn't work. FASHION_CLIP_MIN_SCORE requires it to clearly stand out from the
-  // ~0.125 baseline an 8-way random guess would score, so a genuinely uncertain
-  // Fashion-CLIP result doesn't push Claude toward a confident-but-wrong answer.
+  // (one whole-photo category signal, see fashionClipClient.ts) — it can only ever
+  // suggest "this category probably shows up somewhere in the photo," not enumerate
+  // multiple items, so it's used purely as one more hint, not a replacement for
+  // multi-item detection. FASHION_CLIP_MIN_SCORE requires it to clearly stand out
+  // from the ~0.125 baseline an 8-way random guess would score, so a genuinely
+  // uncertain Fashion-CLIP result doesn't push Claude toward a confident-but-wrong
+  // answer.
   const fashionClip = await getFashionClipCategoryHint(opts.imageBase64);
   if (!fashionClip || fashionClip.score < FASHION_CLIP_MIN_SCORE) {
-    return { ...retried, model: "claude-sonnet-5", visionAssisted: false };
+    return [];
   }
 
-  const finalRetry = await callClaudeWithRetry(SONNET_MODEL, {
+  const finalRetry = await callClaudeMultiItemWithRetry(SONNET_MODEL, {
     ...opts,
-    hint: `${fashionClip.phrase} (per a separate fashion-focused image classifier)`,
+    hint: `${fashionClip.phrase} (per a separate fashion-focused image classifier — this only signals one likely category among possibly several items in the photo, not the complete list)`,
   });
-  const merged = applyVisionBrandSignal(finalRetry, vision);
-  return {
-    ...merged,
-    model: "claude-sonnet-5",
-    fashionClipAssisted: finalRetry.garmentType !== UNRECOGNIZED_GARMENT,
-  };
+  if (finalRetry.length === 0) {
+    return [];
+  }
+  const [primary, ...rest] = finalRetry;
+  const mergedPrimary = applyVisionBrandSignal(primary, vision);
+  return toResults([mergedPrimary, ...rest], "claude-sonnet-5", { fashionClipAssisted: true });
 }
 
 // An 8-way zero-shot guess scores ~0.125 on average if genuinely uncertain between

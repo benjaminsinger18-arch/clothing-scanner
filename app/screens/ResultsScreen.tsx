@@ -19,79 +19,100 @@ type Tab = (typeof TABS)[number];
 
 const GENDER_LABELS: Record<Gender, string> = { men: "Men's", women: "Women's", unisex: "Unisex" };
 
+type LoadState<T> = { data: T | null; loading: boolean; error: { title: string; detail?: string } | null };
+const IDLE_STATE: LoadState<never> = { data: null, loading: false, error: null };
+
 export function ResultsScreen({ route, navigation }: Props) {
-  const { classification, prefetchedPricing, prefetchedOutfits, photoThumbnail } = route.params;
+  const { classifications, initialIndex = 0, prefetchedPricing, prefetchedOutfits, photoThumbnail } = route.params;
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const [tab, setTab] = useState<Tab>("Overview");
+  const classification = classifications[selectedIndex];
 
-  const [pricing, setPricing] = useState<PriceSearchResult | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(true);
-  const [pricingError, setPricingError] = useState<{ title: string; detail?: string } | null>(null);
+  // Per-item caches, keyed by index into `classifications` — one detected item's
+  // pricing/outfit fetch never affects another's. Only `initialIndex` is
+  // prefetched eagerly (see the mount-only effect below); every other item's data
+  // is fetched lazily, the first time the user actually selects it — deliberate,
+  // not an oversight: eagerly prefetching every detected item would multiply
+  // SerpApi calls by however many items are in the photo, against a tight shared
+  // monthly quota (see prefetchResultsData's doc comment).
+  const [pricingByIndex, setPricingByIndex] = useState<Record<number, LoadState<PriceSearchResult>>>({});
+  const [outfitsByIndex, setOutfitsByIndex] = useState<Record<number, LoadState<OutfitSuggestionsResult>>>({});
+  const [closetSaveStateByIndex, setClosetSaveStateByIndex] = useState<Record<number, "idle" | "saving" | "saved">>({});
 
-  const fetchPricing = useCallback(async () => {
-    setPricingLoading(true);
-    setPricingError(null);
+  const pricingState = pricingByIndex[selectedIndex] ?? IDLE_STATE;
+  const outfitsState = outfitsByIndex[selectedIndex] ?? IDLE_STATE;
+  const closetSaveState = closetSaveStateByIndex[selectedIndex] ?? "idle";
+
+  const fetchPricing = useCallback(async (index: number) => {
+    setPricingByIndex((prev) => ({ ...prev, [index]: { data: null, loading: true, error: null } }));
     try {
-      const result = await searchPrices(classification);
-      setPricing(result);
+      const result = await searchPrices(classifications[index]);
+      setPricingByIndex((prev) => ({ ...prev, [index]: { data: result, loading: false, error: null } }));
     } catch (err) {
-      setPricingError(toErrorInfo(err, "Couldn't load pricing"));
-    } finally {
-      setPricingLoading(false);
+      setPricingByIndex((prev) => ({
+        ...prev,
+        [index]: { data: null, loading: false, error: toErrorInfo(err, "Couldn't load pricing") },
+      }));
     }
-  }, [classification]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchOutfits = useCallback(async (index: number) => {
+    setOutfitsByIndex((prev) => ({ ...prev, [index]: { data: null, loading: true, error: null } }));
+    try {
+      const result = await getOutfitSuggestions(classifications[index]);
+      setOutfitsByIndex((prev) => ({ ...prev, [index]: { data: result, loading: false, error: null } }));
+    } catch (err) {
+      setOutfitsByIndex((prev) => ({
+        ...prev,
+        [index]: { data: null, loading: false, error: toErrorInfo(err, "Couldn't load outfit ideas") },
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    // Prefer an already-in-flight prefetched request (see prefetchResultsData in
-    // app/lib/prefetchResults.ts — set by whichever screen navigated here) over
-    // starting a fresh one now that we've mounted; falls back to fetchPricing
-    // when nothing was prefetched (e.g. hot-reloaded straight onto this screen).
-    // Deliberately run once on mount only, not on every fetchPricing identity
-    // change — a stale prefetched promise should never be re-awaited on re-render,
-    // and the per-tab "Try again" buttons call fetchPricing directly for retries.
+    // Mount-only, eager, for initialIndex only — prefers an already-in-flight
+    // prefetched request (see prefetchResultsData in app/lib/prefetchResults.ts)
+    // over starting a fresh one, falling back to fetchPricing/fetchOutfits when
+    // nothing was prefetched (e.g. hot-reloaded straight onto this screen).
     if (prefetchedPricing) {
-      setPricingLoading(true);
-      setPricingError(null);
+      setPricingByIndex((prev) => ({ ...prev, [initialIndex]: { data: null, loading: true, error: null } }));
       prefetchedPricing
-        .then(setPricing)
-        .catch((err) => setPricingError(toErrorInfo(err, "Couldn't load pricing")))
-        .finally(() => setPricingLoading(false));
+        .then((result) => setPricingByIndex((prev) => ({ ...prev, [initialIndex]: { data: result, loading: false, error: null } })))
+        .catch((err) =>
+          setPricingByIndex((prev) => ({
+            ...prev,
+            [initialIndex]: { data: null, loading: false, error: toErrorInfo(err, "Couldn't load pricing") },
+          }))
+        );
     } else {
-      fetchPricing();
+      fetchPricing(initialIndex);
+    }
+    if (prefetchedOutfits) {
+      setOutfitsByIndex((prev) => ({ ...prev, [initialIndex]: { data: null, loading: true, error: null } }));
+      prefetchedOutfits
+        .then((result) => setOutfitsByIndex((prev) => ({ ...prev, [initialIndex]: { data: result, loading: false, error: null } })))
+        .catch((err) =>
+          setOutfitsByIndex((prev) => ({
+            ...prev,
+            [initialIndex]: { data: null, loading: false, error: toErrorInfo(err, "Couldn't load outfit ideas") },
+          }))
+        );
+    } else {
+      fetchOutfits(initialIndex);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const [outfits, setOutfits] = useState<OutfitSuggestionsResult | null>(null);
-  const [outfitsLoading, setOutfitsLoading] = useState(true);
-  const [outfitsError, setOutfitsError] = useState<{ title: string; detail?: string } | null>(null);
-
-  const fetchOutfits = useCallback(async () => {
-    setOutfitsLoading(true);
-    setOutfitsError(null);
-    try {
-      const result = await getOutfitSuggestions(classification);
-      setOutfits(result);
-    } catch (err) {
-      setOutfitsError(toErrorInfo(err, "Couldn't load outfit ideas"));
-    } finally {
-      setOutfitsLoading(false);
-    }
-  }, [classification]);
 
   useEffect(() => {
-    // Same prefetch-first pattern as the pricing effect above.
-    if (prefetchedOutfits) {
-      setOutfitsLoading(true);
-      setOutfitsError(null);
-      prefetchedOutfits
-        .then(setOutfits)
-        .catch((err) => setOutfitsError(toErrorInfo(err, "Couldn't load outfit ideas")))
-        .finally(() => setOutfitsLoading(false));
-    } else {
-      fetchOutfits();
-    }
+    // Lazy fetch for whichever item the user just selected, only if it hasn't
+    // been fetched (or isn't already in flight) yet — cached once loaded, so
+    // switching back and forth between items never refetches.
+    if (!(selectedIndex in pricingByIndex)) fetchPricing(selectedIndex);
+    if (!(selectedIndex in outfitsByIndex)) fetchOutfits(selectedIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedIndex]);
 
   // For the Outfit Matches tab's "from your closet" section — a snapshot of
   // what's saved as of this screen loading, not kept live in sync with the
@@ -106,6 +127,7 @@ export function ResultsScreen({ route, navigation }: Props) {
   }, []);
 
   const closetMatches = useMemo(() => {
+    const outfits = outfitsState.data;
     if (!outfits || outfits.suggestions.length === 0 || closetItems.length === 0) return [];
     const seen = new Set<string>();
     const matches: ClosetItem[] = [];
@@ -118,23 +140,41 @@ export function ResultsScreen({ route, navigation }: Props) {
       }
     }
     return matches.slice(0, 6);
-  }, [outfits, closetItems]);
+  }, [outfitsState.data, closetItems]);
 
-  const [closetSaveState, setClosetSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const handleSaveToCloset = useCallback(async () => {
     if (closetSaveState !== "idle") return;
-    setClosetSaveState("saving");
+    setClosetSaveStateByIndex((prev) => ({ ...prev, [selectedIndex]: "saving" }));
     try {
-      await addClosetItem(classification, pricing?.estimatedNewRange, photoThumbnail);
-      setClosetSaveState("saved");
+      await addClosetItem(classification, pricingState.data?.estimatedNewRange, photoThumbnail);
+      setClosetSaveStateByIndex((prev) => ({ ...prev, [selectedIndex]: "saved" }));
     } catch (err) {
       console.warn("[ResultsScreen] Failed to save to closet:", err);
-      setClosetSaveState("idle");
+      setClosetSaveStateByIndex((prev) => ({ ...prev, [selectedIndex]: "idle" }));
     }
-  }, [classification, pricing, closetSaveState, photoThumbnail]);
+  }, [classification, pricingState.data, closetSaveState, photoThumbnail, selectedIndex]);
 
   return (
     <View style={styles.container}>
+      {classifications.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.itemSelectorBar}
+          contentContainerStyle={styles.itemSelectorContent}
+        >
+          {classifications.map((c, i) => (
+            <Pressable
+              key={i}
+              onPress={() => setSelectedIndex(i)}
+              style={[styles.itemChip, i === selectedIndex && styles.itemChipActive]}
+            >
+              <Text style={[styles.itemChipText, i === selectedIndex && styles.itemChipTextActive]}>{c.garmentType}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
         {TABS.map((t) => (
           <Pressable key={t} onPress={() => setTab(t)} style={[styles.tabButton, tab === t && styles.tabButtonActive]}>
@@ -178,7 +218,14 @@ export function ResultsScreen({ route, navigation }: Props) {
             </View>
 
             <Pressable
-              onPress={() => navigation.navigate("Correction", { classification, photoThumbnail })}
+              onPress={() =>
+                navigation.navigate("Correction", {
+                  classification,
+                  allClassifications: classifications,
+                  itemIndex: selectedIndex,
+                  photoThumbnail,
+                })
+              }
               style={styles.correctionLink}
             >
               <Text style={styles.correctionLinkText}>Doesn't look right? Suggest a fix</Text>
@@ -190,19 +237,19 @@ export function ResultsScreen({ route, navigation }: Props) {
               </Text>
             )}
 
-            <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
+            <PriceRangeSummary pricing={pricingState.data} loading={pricingState.loading} />
           </View>
         )}
 
         {tab === "Price Comparison" && (
           <View>
-            <PriceRangeSummary pricing={pricing} loading={pricingLoading} />
+            <PriceRangeSummary pricing={pricingState.data} loading={pricingState.loading} />
             <ProviderDataBody
-              items={pricing?.similarItems ?? []}
-              status={pricing?.status ?? null}
-              loading={pricingLoading}
-              error={pricingError}
-              onRetry={fetchPricing}
+              items={pricingState.data?.similarItems ?? []}
+              status={pricingState.data?.status ?? null}
+              loading={pricingState.loading}
+              error={pricingState.error}
+              onRetry={() => fetchPricing(selectedIndex)}
               emptyTitle="No similar listings found"
               emptyDetail="Try a clearer photo or a different angle."
             />
@@ -212,11 +259,11 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Reviews" && (
           <View>
             <ProviderDataBody
-              items={pricing?.reviews ?? []}
-              status={pricing?.status ?? null}
-              loading={pricingLoading}
-              error={pricingError}
-              onRetry={fetchPricing}
+              items={pricingState.data?.reviews ?? []}
+              status={pricingState.data?.status ?? null}
+              loading={pricingState.loading}
+              error={pricingState.error}
+              onRetry={() => fetchPricing(selectedIndex)}
               emptyTitle="No reviews found for this item"
               emptyDetail="This is common for less popular or secondhand items."
             />
@@ -226,11 +273,11 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Similar Items" && (
           <View>
             <ProviderDataBody
-              items={pricing?.similarItems ?? []}
-              status={pricing?.status ?? null}
-              loading={pricingLoading}
-              error={pricingError}
-              onRetry={fetchPricing}
+              items={pricingState.data?.similarItems ?? []}
+              status={pricingState.data?.status ?? null}
+              loading={pricingState.loading}
+              error={pricingState.error}
+              onRetry={() => fetchPricing(selectedIndex)}
               emptyTitle="No similar listings found"
               emptyDetail="Try a clearer photo or a different angle."
             />
@@ -240,10 +287,10 @@ export function ResultsScreen({ route, navigation }: Props) {
         {tab === "Outfit Matches" && (
           <View>
             <OutfitBody
-              outfits={outfits}
-              loading={outfitsLoading}
-              error={outfitsError}
-              onRetry={fetchOutfits}
+              outfits={outfitsState.data}
+              loading={outfitsState.loading}
+              error={outfitsState.error}
+              onRetry={() => fetchOutfits(selectedIndex)}
               closetMatches={closetMatches}
             />
           </View>
@@ -441,6 +488,15 @@ function Row({ label, value, hint }: { label: string; value: string; hint?: stri
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
+  // Item selector — only rendered when a scan detected more than one item (see
+  // classifications.length > 1 above). Mirrors the tab bar's own pill styling
+  // directly below rather than inventing new visual language for it.
+  itemSelectorBar: { maxHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
+  itemSelectorContent: { paddingHorizontal: 12, paddingVertical: 8, alignItems: "center", gap: 8 },
+  itemChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.radius.pill, backgroundColor: theme.colors.surfaceAlt },
+  itemChipActive: { backgroundColor: theme.colors.accent },
+  itemChipText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
+  itemChipTextActive: { color: theme.colors.textPrimary },
   tabBar: { maxHeight: 48, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
   tabBarContent: { paddingHorizontal: 12, alignItems: "center", gap: 8 },
   tabButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: theme.radius.pill },

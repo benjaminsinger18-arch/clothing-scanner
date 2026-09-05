@@ -22,13 +22,13 @@ classifyRouter.post("/classify", async (req, res) => {
   const mediaType = inferMediaType(body.mediaType);
 
   try {
-    const classification = await classifyImage({ imageBase64, mediaType });
+    const classifications = await classifyImage({ imageBase64, mediaType });
     try {
-      logClassification({ timestamp: new Date().toISOString(), trigger: "classify", result: classification });
+      logClassification({ timestamp: new Date().toISOString(), trigger: "classify", result: classifications });
     } catch (err) {
       console.warn("[/classify] Failed to log classification:", err);
     }
-    res.json({ classification });
+    res.json({ classifications });
   } catch (err) {
     console.error("[/classify] classification failed:", err);
     const reason = err instanceof ClassificationError ? err.message : "Unknown error contacting Claude";

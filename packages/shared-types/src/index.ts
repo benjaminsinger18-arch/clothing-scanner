@@ -152,6 +152,16 @@ export interface ClassifyRequestBody {
   mediaType?: "image/jpeg" | "image/png" | "image/webp";
 }
 
+/** Response shape for POST /classify. Plural/array because one photo can now
+ * report multiple distinct clothing items (see classifyImage in claudeClient.ts)
+ * — an empty array means nothing recognizable and wearable was found, the same
+ * "not a server error" outcome the old single-item UNRECOGNIZED_GARMENT sentinel
+ * represented. GET /barcode-lookup stays single-item (`{ classification }`) since
+ * a barcode match is always exactly one product — this type is /classify-only. */
+export interface ClassifyResponseBody {
+  classifications: ClassificationResult[];
+}
+
 /** Query shape for GET /price-search — the subset of ClassificationResult needed
  * to build a product search, sent as query params (see PriceSearchQueryKeys). */
 export interface PriceSearchQuery {

@@ -80,7 +80,7 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
 
       <Pressable
         style={styles.viewResultsButton}
-        onPress={() => navigation.navigate("Results", { classification, photoThumbnail })}
+        onPress={() => navigation.navigate("Results", { classifications: [classification], initialIndex: 0, photoThumbnail })}
       >
         <Text style={styles.viewResultsButtonText}>View Full Results</Text>
       </Pressable>
