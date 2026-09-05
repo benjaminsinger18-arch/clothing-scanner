@@ -397,7 +397,7 @@ not configured, so `npm run dev` works with zero setup.
 ## Improving classification accuracy
 
 Claude's own weights can't be fine-tuned via the API, so accuracy work here means prompt/ensemble
-tuning — which first needs a way to measure whether a change actually helped. Two pieces of
+tuning — which first needs a way to measure whether a change actually helped. A few pieces of
 infrastructure exist for that:
 
 - **Correction log** (`server/data/corrections.jsonl`) — every time a user submits a correction via
@@ -407,7 +407,15 @@ infrastructure exist for that:
   This is local-disk, gitignored, and **not persisted on a Render free-tier deploy** — no persistent
   disk there by default, so it survives local dev restarts but is wiped on every Render
   restart/redeploy. A good source of real-world misclassification examples to curate into the golden
-  eval set below.
+  eval set below. Note this is a *biased* sample — only scans someone bothered to correct.
+- **Classification log** (`server/data/classifications.jsonl`) — every successful `/classify` and
+  `/barcode-lookup` call (not just corrections) appends its result — unbiased, since it's every scan,
+  not just known failures (see `server/src/lib/classificationLog.ts`). Deliberately doesn't store the
+  photo (scan volume is much higher than corrections; the correction log above already covers
+  image-carrying failures). Same Render free-tier caveat as the correction log. Run
+  `npm run summarize --workspace=server` to print real usage-pattern stats from it: unrecognized
+  rate, how often Gemini's rescue pass or Vision's brand-fill signal fires, brand confidence
+  distribution.
 - **Eval harness** (`server/eval/`) — a hand-curated golden set of photos + expected classification
   fields (`server/eval/golden/`, starts empty — see its own README for the format) and a runner
   (`npm run eval --workspace=server`) that calls the real classification pipeline against each one and
