@@ -40,6 +40,13 @@ export interface ClassificationResult {
    * scan instead (see `model`), since that's a different mechanism than this flag
    * documents. */
   visionAssisted?: boolean;
+  /** True when Claude's first pass, Gemini's rescue, AND the Vision-hint retry all
+   * came back "unrecognized" and a further retry seeded with Fashion-CLIP's
+   * best-guess category (see getFashionClipCategoryHint in fashionClipClient.ts)
+   * finally identified the item. This is the last rescue attempt in the chain —
+   * absent/false whenever an earlier stage already succeeded, Fashion-CLIP wasn't
+   * configured/confident enough to try, or this final retry didn't help either. */
+  fashionClipAssisted?: boolean;
   /** Present when brandGuess/brandConfidence were filled in or upgraded from a
    * source other than the primary result's own judgment (only happens when the
    * primary result's own brandConfidence was "none" or "low"):
