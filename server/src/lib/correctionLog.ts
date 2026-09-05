@@ -7,19 +7,23 @@
 //
 // KNOWN LIMITATION: on Render's free tier there is no persistent disk by default
 // — this file (and the server/data/ directory it lives in) is wiped on every
-// restart/redeploy there. Reliable today only for local dev. If corrections need
-// to survive on the deployed instance, that requires a Render persistent disk
-// (paid) or an external store (S3, a hosted DB, etc.) — out of scope here.
+// restart/redeploy there. Reliable today only for local dev, UNLESS bucket sync
+// is configured (see bucketSync.ts) — when the HF_BUCKET_* env vars are set, this
+// file's full content is re-uploaded to a Hugging Face Storage Bucket after every
+// write, and restored from there at server startup, so it survives restarts even
+// without a paid Render disk. Still local-disk-only (today's original behavior)
+// when those env vars are unset.
 
 import { mkdirSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ClassificationResult } from "@clothing-scanner/shared-types";
+import { syncToBucket } from "./bucketSync.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // server/src/lib -> server/data
 const LOG_DIR = join(__dirname, "..", "..", "data");
-const LOG_FILE = join(LOG_DIR, "corrections.jsonl");
+export const LOG_FILE = join(LOG_DIR, "corrections.jsonl");
 
 export interface CorrectionLogEntry {
   timestamp: string; // ISO 8601
@@ -38,4 +42,5 @@ export interface CorrectionLogEntry {
 export function logCorrection(entry: CorrectionLogEntry): void {
   mkdirSync(LOG_DIR, { recursive: true });
   appendFileSync(LOG_FILE, JSON.stringify(entry) + "\n", "utf8");
+  syncToBucket(LOG_FILE, "corrections.jsonl");
 }

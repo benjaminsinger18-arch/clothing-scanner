@@ -16,4 +16,12 @@ services:
         sync: false
       - key: APP_SHARED_SECRET
         sync: false
+      - key: HF_BUCKET_S3_ENDPOINT
+        sync: false
+      - key: HF_BUCKET_NAME
+        sync: false
+      - key: HF_BUCKET_ACCESS_KEY_ID
+        sync: false
+      - key: HF_BUCKET_SECRET_ACCESS_KEY
+        sync: false
     healthCheckPath: /health

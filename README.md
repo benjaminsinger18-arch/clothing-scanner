@@ -404,18 +404,21 @@ infrastructure exist for that:
   the "Suggest a fix" flow (see "Correction" above) and it's successfully verified, the original
   (wrong) classification, the user's correction text, the verified result, and the photo thumbnail
   (if the client sent one) are appended as one JSON line (see `server/src/lib/correctionLog.ts`).
-  This is local-disk, gitignored, and **not persisted on a Render free-tier deploy** — no persistent
-  disk there by default, so it survives local dev restarts but is wiped on every Render
-  restart/redeploy. A good source of real-world misclassification examples to curate into the golden
-  eval set below. Note this is a *biased* sample — only scans someone bothered to correct.
+  This is local-disk, gitignored, and **not persisted on a Render free-tier deploy by default** — no
+  persistent disk there, so it survives local dev restarts but is wiped on every Render
+  restart/redeploy *unless* bucket sync is configured (see `HF_BUCKET_*` under "Required API keys"
+  below) — when set, this file is restored from a Hugging Face Storage Bucket at server startup and
+  re-synced there after every write. A good source of real-world misclassification examples to
+  curate into the golden eval set below. Note this is a *biased* sample — only scans someone bothered
+  to correct.
 - **Classification log** (`server/data/classifications.jsonl`) — every successful `/classify` and
   `/barcode-lookup` call (not just corrections) appends its result — unbiased, since it's every scan,
   not just known failures (see `server/src/lib/classificationLog.ts`). Deliberately doesn't store the
   photo (scan volume is much higher than corrections; the correction log above already covers
-  image-carrying failures). Same Render free-tier caveat as the correction log. Run
-  `npm run summarize --workspace=server` to print real usage-pattern stats from it: unrecognized
-  rate, how often Gemini's rescue pass or Vision's brand-fill signal fires, brand confidence
-  distribution.
+  image-carrying failures). Same Render free-tier caveat — and the same optional bucket-sync
+  mitigation — as the correction log. Run `npm run summarize --workspace=server` to print real
+  usage-pattern stats from it: unrecognized rate, how often Gemini's rescue pass or Vision's
+  brand-fill signal fires, brand confidence distribution.
 - **Eval harness** (`server/eval/`) — a golden set of expected classification fields
   (`server/eval/golden/`, seeded with 10 openly-licensed Wikimedia Commons stock photos — see its
   own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos are a supplement to
@@ -464,6 +467,19 @@ infrastructure exist for that:
   runaway-cost circuit breaker, not quota protection. Leave unset to skip Gemini
   entirely — `/classify` still works with Claude (+ Vision) alone, just without
   Gemini's brand cross-validation or its unrecognized-item rescue pass.
+- `HF_BUCKET_S3_ENDPOINT` / `HF_BUCKET_NAME` / `HF_BUCKET_ACCESS_KEY_ID` /
+  `HF_BUCKET_SECRET_ACCESS_KEY` — optional, all four together persist
+  `corrections.jsonl`/`classifications.jsonl` to a Hugging Face Storage Bucket (see
+  `server/src/lib/bucketSync.ts`) so they survive Render free-tier restarts/redeploys.
+  Setup is manual and one-time: create a bucket at https://huggingface.co/new-bucket
+  (or `hf buckets create <name>`), then generate S3 credentials from a User Access
+  Token's dropdown ("Generate S3 credentials", **Write** scope) at
+  https://huggingface.co/settings/tokens — `HF_BUCKET_S3_ENDPOINT` is the resulting
+  gateway URL scoped to your namespace (e.g. `https://s3.hf.co/your-username`), and
+  the access key ID / secret access key come from that same step. Leave any of the
+  four unset to skip this entirely — both logs stay local-disk-only, exactly as
+  before this existed.
+
 `/price-search` returns `status: "unavailable"` when `SERPAPI_KEY` isn't configured
 (there's no other source to fall back to). Check the server console on startup for
 a reminder of which keys are missing.
