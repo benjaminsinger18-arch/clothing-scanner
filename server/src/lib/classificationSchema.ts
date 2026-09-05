@@ -84,9 +84,8 @@ export interface RawClassification {
 // Per-field shape (color/pattern/style/gender/brandGuess/brandConfidence) is
 // identical to the single-item schema, so it's spread in rather than redefined —
 // only garmentType/category get multi-item-aware wording. category.enum is
-// reused BY REFERENCE (not copied), so fashionClipClient.ts's startup check
-// against CLASSIFICATION_JSON_SCHEMA.properties.category.enum can never drift
-// out of sync with what this schema accepts.
+// reused BY REFERENCE (not copied), so the two schemas' accepted category values
+// can never drift apart.
 const MULTI_ITEM_ITEM_SCHEMA = {
   type: "object",
   properties: {

@@ -86,24 +86,6 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   genuine failure, not on every scan. Optional: unset `GEMINI_API_KEY` to skip it
   entirely. **Note:** unlike every other optional provider here, Gemini 3.1 Pro has
   no free tier — see "Required API keys" below before enabling it.
-- Fashion-CLIP last-resort rescue ✅ — `/classify` tries one more thing **only when
-  Claude's first pass, the Gemini rescue, AND the Vision-hint retry have all
-  already failed**: [Fashion-CLIP](https://huggingface.co/patrickjohncyh/fashion-clip)
-  (MIT licensed, via Hugging Face's hosted Inference API) is a zero-shot image
-  classifier fine-tuned on ~800k fashion product photos — asked which of the 8
-  `category` values (see `classificationSchema.ts`) best matches the photo. Unlike
-  Gemini/Vision, this is never an always-on signal — Claude is already strong at
-  coarse category judgment on anything it actually recognizes, so the only place a
-  differently-trained opinion has a real chance of helping is the rare "genuinely
-  stumped after three tries" case, and gating it there means it never adds latency
-  to the common path (see `fashionClipClient.ts` and `classifyImage` in
-  `claudeClient.ts`). If Fashion-CLIP's top guess clearly beats chance
-  (`FASHION_CLIP_MIN_SCORE`, an 8-way random guess scores ~0.125), its category
-  guess becomes the hint for one final Claude retry — Claude still makes the actual
-  call, same as the Vision-hint retry above, just with a fresh angle none of the
-  earlier attempts had. `fashionClipAssisted: true` on the response marks a scan
-  this stage actually rescued (`npm run summarize --workspace=server` reports the
-  rate). Optional: unset `HUGGINGFACE_API_KEY` to skip this entirely.
 - Barcode scanning ✅ — a second entry point alongside the photo flow: scan a
   UPC/EAN barcode on a clothing tag (in-app live camera via `expo-camera`, new
   "Scan Barcode" button on the Capture screen) and the backend looks it up via
@@ -482,15 +464,6 @@ infrastructure exist for that:
   runaway-cost circuit breaker, not quota protection. Leave unset to skip Gemini
   entirely — `/classify` still works with Claude (+ Vision) alone, just without
   Gemini's brand cross-validation or its unrecognized-item rescue pass.
-- `HUGGINGFACE_API_KEY` — optional, from https://huggingface.co/settings/tokens (a
-  free "read" token is enough — sign up, generate one). Powers the Fashion-CLIP
-  last-resort rescue described above. Unlike Vision/Gemini, this never runs on a
-  normal scan — only on the rare photo where Claude, Gemini, and the Vision-hint
-  retry have all already failed — so realistic call volume is a small fraction of
-  total scans regardless of the 100/day cap in `rateLimitTracker.ts` (sized as a
-  circuit breaker, not real quota protection). Leave unset to skip this final
-  rescue attempt entirely — every earlier stage is completely unaffected.
-
 `/price-search` returns `status: "unavailable"` when `SERPAPI_KEY` isn't configured
 (there's no other source to fall back to). Check the server console on startup for
 a reminder of which keys are missing.

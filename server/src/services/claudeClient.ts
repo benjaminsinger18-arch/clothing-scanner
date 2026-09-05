@@ -16,7 +16,6 @@ import {
 } from "../lib/classificationSchema.js";
 import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 import { classifyMultiItemWithGemini } from "./geminiClient.js";
-import { getFashionClipCategoryHint } from "./fashionClipClient.js";
 import type { UpcItem } from "./upcClient.js";
 import { canMakeWebSearchCall, recordWebSearchCall } from "../lib/rateLimitTracker.js";
 
@@ -332,37 +331,10 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   }
 
   // Claude, Gemini, AND the Vision-hint retry have all now failed — genuinely rare
-  // (three misses deep), so one more attempt here costs nothing on the common path.
-  // Fashion-CLIP is a differently-trained model asked a much narrower question
-  // (one whole-photo category signal, see fashionClipClient.ts) — it can only ever
-  // suggest "this category probably shows up somewhere in the photo," not enumerate
-  // multiple items, so it's used purely as one more hint, not a replacement for
-  // multi-item detection. FASHION_CLIP_MIN_SCORE requires it to clearly stand out
-  // from the ~0.125 baseline an 8-way random guess would score, so a genuinely
-  // uncertain Fashion-CLIP result doesn't push Claude toward a confident-but-wrong
-  // answer.
-  const fashionClip = await getFashionClipCategoryHint(opts.imageBase64);
-  if (!fashionClip || fashionClip.score < FASHION_CLIP_MIN_SCORE) {
-    return [];
-  }
-
-  const finalRetry = await callClaudeMultiItemWithRetry(SONNET_MODEL, {
-    ...opts,
-    hint: `${fashionClip.phrase} (per a separate fashion-focused image classifier — this only signals one likely category among possibly several items in the photo, not the complete list)`,
-  });
-  if (finalRetry.length === 0) {
-    return [];
-  }
-  const [primary, ...rest] = finalRetry;
-  const mergedPrimary = applyVisionBrandSignal(primary, vision);
-  return toResults([mergedPrimary, ...rest], "claude-sonnet-5", { fashionClipAssisted: true });
+  // (three misses deep). Nothing left to try; report an empty result rather than
+  // force a guess.
+  return [];
 }
-
-// An 8-way zero-shot guess scores ~0.125 on average if genuinely uncertain between
-// candidates — require clearly better than that before feeding it to Claude as a
-// hint, so a coin-flip Fashion-CLIP result doesn't nudge an honest "unrecognized"
-// into a confident-but-wrong guess.
-const FASHION_CLIP_MIN_SCORE = 0.35;
 
 /**
  * Normalizes a UPCitemdb barcode match into a full ClassificationResult. Text-only
