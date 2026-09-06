@@ -60,6 +60,14 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | cargo-pants.jpg | Cargo pants 001.jpg | CC0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Cargo_pants_001.jpg) |
 | white-culottes.jpg | Broekrok merk Cos juli 2017.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Broekrok_merk_Cos_juli_2017.jpg) |
 | muddy-rubber-boots.jpg | Boots bottle Rope 1317.jpg | CC BY-SA 4.0 | Gillfoto | [link](https://commons.wikimedia.org/wiki/File:Boots_bottle_Rope_1317.jpg) |
+| beige-sheath-dress.jpg | Sleeveless beige crepe sheath dress by Joset Walker, 1948.jpg | No restrictions | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Sleeveless_beige_crepe_sheath_dress_by_Joset_Walker,_1948.jpg) |
+| cream-long-johns.jpg | Lange onderbroek, Maasoord, objectnr 79207.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Lange_onderbroek,_Maasoord,_objectnr_79207.JPG) |
+| denim-jacket-detail.jpg | Denim jacket details.jpg | CC BY 2.0 | Ana P. Santos | [link](https://commons.wikimedia.org/wiki/File:Denim_jacket_details.jpg) |
+| black-leather-clogs.jpg | Black Lancashire clogs.jpg | CC BY-SA 3.0 | Rept0n1x | [link](https://commons.wikimedia.org/wiki/File:Black_Lancashire_clogs.jpg) |
+| velvet-lace-bonnet.jpg | Purple Velvet Renaissance Beret.jpg | Attribution | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Purple_Velvet_Renaissance_Beret.jpg) |
+| hypercolor-tie-dye-sweatshirt.jpg | Generra Hypercolor sweatshirt.jpg | CC BY-SA 4.0 | Ajaxfour | [link](https://commons.wikimedia.org/wiki/File:Generra_Hypercolor_sweatshirt.jpg) |
+| floral-romper.jpg | Floral Romper over a Denim Jacket (16965781089).jpg | CC BY-SA 2.0 | Sarah Korf | [link](https://commons.wikimedia.org/wiki/File:Floral_Romper_over_a_Denim_Jacket_(16965781089).jpg) |
+| barbour-bucket-hat.jpg | Black Barbour bucket hat.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Black_Barbour_bucket_hat.jpg) |
 
 ## Notes on this batch
 
@@ -133,3 +141,28 @@ dropped rather than forced in:
   licensed print — the same separately-copyrighted-character issue as last round's Hulk boxers, on
   top of being children's items. Swapped for `Boots_bottle_Rope_1317.jpg`, a single worn pair with
   incidental background objects (a rope, a bottle) that don't obscure the boots as the clear subject.
+
+## Notes on the seventh expansion batch
+
+Attempted the biggest pass yet (16 candidates queried across 22 search categories) but cut short by
+Wikimedia Commons rate-limiting partway through downloads — their error response explicitly asked for
+"a less disruptive approach," so rather than keep hammering retries this batch stopped at **8 kept
+photos** instead of the ~15-20 originally targeted. The remaining ~6 candidates (loafers, a kimono,
+two vintage-underwear museum pieces) were never successfully downloaded and aren't in this set at all
+(not rejected for content — just not fetched). Worth another pass later once the rate limit clears.
+
+4 rejections among what did download, all dropped rather than forced in:
+- A "puffer jacket" candidate was an avant-garde gallery exhibit shot (two wildly exaggerated
+  quilted trailing-train garments side by side) — multi-item and not representative of an actual
+  puffer jacket anyone would scan.
+- A "bike shorts" candidate was a tight, low-angle beach photo cropped on a shirtless person's hip/
+  buttocks — same "framing isn't about the garment" issue as past rounds.
+- A "suspenders" candidate was an extreme macro close-up of canvas webbing — zoomed in so far the
+  overall garment shape isn't recognizable at all, so it fails a different way (unreadable, not
+  suggestive).
+- A "compression shorts" candidate was a shirtless mirror-photo torso shot — same body-focused
+  framing issue as the bike shorts reject.
+
+One filename/reality mismatch: Commons titles `Purple_Velvet_Renaissance_Beret.jpg`, but the actual
+garment pictured is a lace-trimmed bonnet/cap, not a flat beret — labeled `bonnet` to match what's
+visible, per the standing "label from the photo, not the title" rule.
