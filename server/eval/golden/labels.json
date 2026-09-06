@@ -372,5 +372,49 @@
       "gender": "unisex",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "lace-overlay-cocktail-dress.jpg",
+    "expected": {
+      "garmentType": "cocktail dress",
+      "category": "dresses",
+      "color": "brown and black",
+      "pattern": "lace overlay",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "denim-skirt.jpg",
+    "expected": {
+      "garmentType": "denim skirt",
+      "category": "bottoms",
+      "color": "blue",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "ankle-boot.jpg",
+    "expected": {
+      "garmentType": "ankle boot",
+      "category": "footwear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "eyelet-petticoat.jpg",
+    "expected": {
+      "garmentType": "petticoat",
+      "category": "underwear-sleepwear",
+      "color": "ecru",
+      "pattern": "eyelet embroidery",
+      "gender": "women",
+      "brandGuess": null
+    }
   }
 ]
