@@ -53,6 +53,13 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | denim-skirt.jpg | Blauwe denim rok, objectnr 72691.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Blauwe_denim_rok,_objectnr_72691.JPG) |
 | ankle-boot.jpg | Ankle boot.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Ankle_boot.jpg) |
 | eyelet-petticoat.jpg | Ecru Cotton Eyelet Embroidered Petticoat.jpg | Attribution | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Ecru_Cotton_Eyelet_Embroidered_Petticoat.jpg) |
+| inca-poncho.jpg | An Inca poncho.jpg | Public domain | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:An_Inca_poncho.jpg) |
+| cream-henley-shirt.jpg | Sawyer Henley shirt.jpg | CC BY 2.0 | Sawyer Bengtson | [link](https://commons.wikimedia.org/wiki/File:Sawyer_Henley_shirt.jpg) |
+| camo-tank-top.jpg | Tank top.JPG | CC BY-SA 3.0 | Sylenius | [link](https://commons.wikimedia.org/wiki/File:Tank_top.JPG) |
+| embroidered-espadrilles.jpg | Espadrilles van rood linnen geborduurd..., objectnr 62631-1-2.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Espadrilles_van_rood_linnen_geborduurd_met_geel,_wit_en_groen,_rijgveter_door_het_linnen,_touwzool_met_daaromheen_een_leren_rand,_objectnr_62631-1-2.JPG) |
+| cargo-pants.jpg | Cargo pants 001.jpg | CC0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Cargo_pants_001.jpg) |
+| white-culottes.jpg | Broekrok merk Cos juli 2017.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Broekrok_merk_Cos_juli_2017.jpg) |
+| muddy-rubber-boots.jpg | Boots bottle Rope 1317.jpg | CC BY-SA 4.0 | Gillfoto | [link](https://commons.wikimedia.org/wiki/File:Boots_bottle_Rope_1317.jpg) |
 
 ## Notes on this batch
 
@@ -110,3 +117,19 @@ candidates downloaded were usable as-is — no rejections this round. The cockta
 other dresses partially visible at the frame edges (a museum exhibit case with neighboring mannequins)
 but the labeled dress is unambiguously the framed/centered subject, so it was kept rather than treated
 as a cluttered multi-item shot.
+
+## Notes on the sixth expansion batch
+
+A bigger pass this round — 7 kept out of 9 downloaded, across a wider spread of categories
+(outerwear, tops, footwear, bottoms) than the usual 4-item batch. Two rejections, both swapped or
+dropped rather than forced in:
+- A parka candidate ("Dark mink parka...") turned out to be a candid street-style photo shot from
+  behind, cropped to emphasize the wearer's legs/figure rather than the coat — same "framing isn't
+  really about showing the garment" concern as past rounds' rejects. A second attempt ("Final Home"
+  nylon parka) was a real garment but shot in a cluttered gallery display with heavy background
+  clutter and no clean single-subject framing. Both rejected; outerwear got no addition this round.
+- A rubber-boots candidate showing 4 pairs of children's boots lined up was rejected for two reasons:
+  multi-item/cluttered (no single color to label) and one pair had a visible Marvel Spider-Man
+  licensed print — the same separately-copyrighted-character issue as last round's Hulk boxers, on
+  top of being children's items. Swapped for `Boots_bottle_Rope_1317.jpg`, a single worn pair with
+  incidental background objects (a rope, a bottle) that don't obscure the boots as the clear subject.
