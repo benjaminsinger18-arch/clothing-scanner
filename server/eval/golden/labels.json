@@ -284,5 +284,49 @@
       "gender": "women",
       "brandGuess": "Nike"
     }
+  },
+  {
+    "filename": "pencil-skirt-checkerboard.jpg",
+    "expected": {
+      "garmentType": "pencil skirt",
+      "category": "bottoms",
+      "color": "black and white",
+      "pattern": "checkerboard",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "embroidered-leather-gloves.jpg",
+    "expected": {
+      "garmentType": "gloves",
+      "category": "accessories",
+      "color": "ivory",
+      "pattern": "embroidered",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "carrot-print-boxer-shorts.jpg",
+    "expected": {
+      "garmentType": "boxer shorts",
+      "category": "underwear-sleepwear",
+      "color": "white and blue",
+      "pattern": "novelty print",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "plaid-flannel-shirt.jpg",
+    "expected": {
+      "garmentType": "flannel shirt",
+      "category": "tops",
+      "color": "teal and orange",
+      "pattern": "plaid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
   }
 ]
