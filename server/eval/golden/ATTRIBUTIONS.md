@@ -41,6 +41,10 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | tods-loafers.jpg | A brown Loafer Shoes from TODS.jpg | CC BY-SA 4.0 | Peachyeung316 | [link](https://commons.wikimedia.org/wiki/File:A_brown_Loafer_Shoes_from_TODS.jpg) |
 | thom-browne-sunglasses.jpg | 2013-0314-ThomBrowne-Sunglasses.jpg | CC BY 3.0 | Bobak Ha'Eri | [link](https://commons.wikimedia.org/wiki/File:2013-0314-ThomBrowne-Sunglasses.jpg) |
 | sports-bra.jpg | Sports Bra (front).jpg | CC BY-SA 4.0 | Breeze0715 | [link](https://commons.wikimedia.org/wiki/File:Sports_Bra_(front).jpg) |
+| pencil-skirt-checkerboard.jpg | Kristian Leigh pencil skirt.jpg | CC BY-SA 4.0 | Kristian Leigh | [link](https://commons.wikimedia.org/wiki/File:Kristian_Leigh_pencil_skirt.jpg) |
+| embroidered-leather-gloves.jpg | BLW Pair of Embroidered Leather Gloves.jpg | CC BY-SA 2.0 uk | Birmingham Museums Trust | [link](https://commons.wikimedia.org/wiki/File:BLW_Pair_of_Embroidered_Leather_Gloves.jpg) |
+| carrot-print-boxer-shorts.jpg | Blue carrots pattern boxer shorts.jpg | CC BY-SA 4.0 | Anaklaseis | [link](https://commons.wikimedia.org/wiki/File:Blue_carrots_pattern_boxer_shorts.jpg) |
+| plaid-flannel-shirt.jpg | Flannel Shirt For Abi.jpg | CC BY-SA 2.0 | arbyreed | [link](https://commons.wikimedia.org/wiki/File:Flannel_Shirt_For_Abi.jpg) |
 
 ## Notes on this batch
 
@@ -66,3 +70,15 @@ print as its dominant visual — the *photograph* was CC0, but the Marvel charac
 in it are separately copyrighted and a CC0 snapshot doesn't clear that, so it was excluded regardless
 of the photo's own license. `Skirts`, `Gloves`, and `Underwear` (as distinct additions) remain
 thin/unrepresented as a result — worth another pass with different search terms if picked up again.
+
+## Notes on the third expansion batch
+
+Targeted the three thin categories flagged above with new search terms ("Pencil skirts", "Leather
+gloves", "Boxer shorts" instead of the generic "Skirts"/"Gloves"/"Underwear" categories tried last
+round) plus one general-variety addition. Of 6 candidates downloaded, 2 were rejected after viewing:
+a leather-gloves listing photo showing 8+ mismatched pairs spread across a table (no single color to
+label, same "multi-item/cluttered" problem as the round-2 glove installation) and a flannel-shirt
+retail rack shot showing a dozen shirts in different colorways side by side (same problem). Both were
+swapped for alternates in the same Commons category that turned out to be genuine single-garment
+shots (`BLW_Pair_of_Embroidered_Leather_Gloves.jpg`, a museum pair, and `Flannel_Shirt_For_Abi.jpg`,
+a single shirt on a dress form). `Skirts`, `Gloves`, and `Underwear` are no longer unrepresented.
