@@ -49,6 +49,10 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | green-ribbed-leggings.jpg | Donkergroene gebreide legging met ribbels, "Mac & Maggie", objectnr 91585.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Donkergroene_gebreide_legging_met_ribbels,_%E2%80%9CMac_%26_Maggie%E2%80%9D,_objectnr_91585.JPG) |
 | striped-zip-cardigan.jpg | Beige gestreept vest met lange mouwen en rode en zwarte strepen, van Bulgaarse bouwvakker, objectnr 91220-2.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Beige_gestreept_vest_met_lange_mouwen_en_rode_en_zwarte_strepen,_van_Bulgaarse_bouwvakker,_objectnr_91220-2.JPG) |
 | knit-beanie.jpg | Blue knit fleece hat.jpg | Public domain | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Blue_knit_fleece_hat.jpg) |
+| lace-overlay-cocktail-dress.jpg | 1951 cocktail dress - Jacques Fath.jpg | CC BY-SA 2.0 | Gerry Dincher | [link](https://commons.wikimedia.org/wiki/File:1951_cocktail_dress_-_Jacques_Fath.jpg) |
+| denim-skirt.jpg | Blauwe denim rok, objectnr 72691.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Blauwe_denim_rok,_objectnr_72691.JPG) |
+| ankle-boot.jpg | Ankle boot.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Ankle_boot.jpg) |
+| eyelet-petticoat.jpg | Ecru Cotton Eyelet Embroidered Petticoat.jpg | Attribution | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Ecru_Cotton_Eyelet_Embroidered_Petticoat.jpg) |
 
 ## Notes on this batch
 
@@ -97,3 +101,12 @@ indoor lighting; labeled by what's actually visible in the frame (black), not th
 standing rule. `A woman in pajamas...jpg` is a cropped lifestyle photo (torso down, seated) rather
 than a clean product shot, but the garment (floral pajama pants) is clearly and fully visible and
 the framing isn't suggestive, so it was kept.
+
+## Notes on the fifth expansion batch
+
+Targeted `dresses` and `underwear-sleepwear` (thinnest categories at 3 each), plus general-variety
+additions (a denim skirt, an ankle boot) not yet represented as distinct garment types. All 4
+candidates downloaded were usable as-is — no rejections this round. The cocktail dress photo has two
+other dresses partially visible at the frame edges (a museum exhibit case with neighboring mannequins)
+but the labeled dress is unambiguously the framed/centered subject, so it was kept rather than treated
+as a cluttered multi-item shot.
