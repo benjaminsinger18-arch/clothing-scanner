@@ -35,6 +35,12 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | tracksuit-bottoms.jpg | Tracksuit bottoms.jpg | CC BY 3.0 | RyanDiller | [link](https://commons.wikimedia.org/wiki/File:Tracksuit_bottoms.jpg) |
 | tracksuit-jacket.jpg | Tracksuit jacket.jpg | CC BY 3.0 | RyanDiller | [link](https://commons.wikimedia.org/wiki/File:Tracksuit_jacket.jpg) |
 | bathrobe.jpg | BathrobeHungup.jpg | CC BY-SA 3.0 | GlassCobra | [link](https://commons.wikimedia.org/wiki/File:BathrobeHungup.jpg) |
+| polo-shirt.jpg | Fumarel piqué polo shirt.jpg | CC0 | Fumarel1987 | [link](https://commons.wikimedia.org/wiki/File:Fumarel_piqu%C3%A9_polo_shirt.jpg) |
+| dior-coat.jpg | 1957 Dior coat.jpg | CC BY-SA 4.0 | Mabalu | [link](https://commons.wikimedia.org/wiki/File:1957_Dior_coat.jpg) |
+| summer-dress.jpg | Summer dress (5634765615).jpg | Public domain | USAID Africa Bureau | [link](https://commons.wikimedia.org/wiki/File:Summer_dress_(5634765615).jpg) |
+| tods-loafers.jpg | A brown Loafer Shoes from TODS.jpg | CC BY-SA 4.0 | Peachyeung316 | [link](https://commons.wikimedia.org/wiki/File:A_brown_Loafer_Shoes_from_TODS.jpg) |
+| thom-browne-sunglasses.jpg | 2013-0314-ThomBrowne-Sunglasses.jpg | CC BY 3.0 | Bobak Ha'Eri | [link](https://commons.wikimedia.org/wiki/File:2013-0314-ThomBrowne-Sunglasses.jpg) |
+| sports-bra.jpg | Sports Bra (front).jpg | CC BY-SA 4.0 | Breeze0715 | [link](https://commons.wikimedia.org/wiki/File:Sports_Bra_(front).jpg) |
 
 ## Notes on this batch
 
@@ -46,3 +52,17 @@ before trusting its filename/title.
 
 All 8 categories (tops, bottoms, outerwear, dresses, footwear, accessories, activewear,
 underwear-sleepwear) now have at least one entry — the previous "still missing" gap is closed.
+
+## Notes on the second expansion batch
+
+Of 10 candidates downloaded to add variety, 4 were rejected after actually viewing them and left
+out of the set entirely (not swapped, since no clean alternative existed in the same category this
+round): a black-and-white vintage catalog photo of two models in full blouse+skirt outfits (no
+usable color information, genuinely ambiguous skirt-vs-dress framing); a whimsical lost-and-found
+art installation showing a dozen mismatched gloves on a clothesline (not a usable single-item shot);
+a leggings product photo cropped tightly on the body in a way that wasn't really about showing the
+garment; and a boxer-briefs photo where one of three pairs shown had a licensed Marvel "Hulk" comic
+print as its dominant visual — the *photograph* was CC0, but the Marvel characters/artwork depicted
+in it are separately copyrighted and a CC0 snapshot doesn't clear that, so it was excluded regardless
+of the photo's own license. `Skirts`, `Gloves`, and `Underwear` (as distinct additions) remain
+thin/unrepresented as a result — worth another pass with different search terms if picked up again.

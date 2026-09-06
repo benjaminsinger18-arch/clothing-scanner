@@ -218,5 +218,71 @@
       "gender": "unisex",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "polo-shirt.jpg",
+    "expected": {
+      "garmentType": "polo shirt",
+      "category": "tops",
+      "color": "sage green",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Fumarel"
+    }
+  },
+  {
+    "filename": "dior-coat.jpg",
+    "expected": {
+      "garmentType": "coat",
+      "category": "outerwear",
+      "color": "gray",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "summer-dress.jpg",
+    "expected": {
+      "garmentType": "sundress",
+      "category": "dresses",
+      "color": "multicolor",
+      "pattern": "novelty print",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "tods-loafers.jpg",
+    "expected": {
+      "garmentType": "tassel loafers",
+      "category": "footwear",
+      "color": "tan",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "Tod's"
+    }
+  },
+  {
+    "filename": "thom-browne-sunglasses.jpg",
+    "expected": {
+      "garmentType": "sunglasses",
+      "category": "accessories",
+      "color": "black and navy",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Thom Browne"
+    }
+  },
+  {
+    "filename": "sports-bra.jpg",
+    "expected": {
+      "garmentType": "sports bra",
+      "category": "activewear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": "Nike"
+    }
   }
 ]

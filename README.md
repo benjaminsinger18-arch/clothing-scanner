@@ -420,7 +420,7 @@ infrastructure exist for that:
   usage-pattern stats from it: unrecognized rate, how often Gemini's rescue pass or Vision's
   brand-fill signal fires, brand confidence distribution.
 - **Eval harness** (`server/eval/`) — a golden set of expected classification fields
-  (`server/eval/golden/`, seeded with 20 openly-licensed Wikimedia Commons stock photos covering all
+  (`server/eval/golden/`, seeded with 26 openly-licensed Wikimedia Commons stock photos covering all
   8 categories — see its own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos
   are a supplement to real phone photos, not a replacement) and a runner
   (`npm run eval --workspace=server`) that calls
