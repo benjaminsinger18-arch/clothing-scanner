@@ -493,5 +493,93 @@
       "gender": "unisex",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "beige-sheath-dress.jpg",
+    "expected": {
+      "garmentType": "sheath dress",
+      "category": "dresses",
+      "color": "beige",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "cream-long-johns.jpg",
+    "expected": {
+      "garmentType": "long johns",
+      "category": "underwear-sleepwear",
+      "color": "cream",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "denim-jacket-detail.jpg",
+    "expected": {
+      "garmentType": "denim jacket",
+      "category": "outerwear",
+      "color": "dark blue",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Zara"
+    }
+  },
+  {
+    "filename": "black-leather-clogs.jpg",
+    "expected": {
+      "garmentType": "clogs",
+      "category": "footwear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "velvet-lace-bonnet.jpg",
+    "expected": {
+      "garmentType": "bonnet",
+      "category": "accessories",
+      "color": "purple and cream",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "hypercolor-tie-dye-sweatshirt.jpg",
+    "expected": {
+      "garmentType": "sweatshirt",
+      "category": "tops",
+      "color": "pink and purple",
+      "pattern": "tie-dye",
+      "gender": "unisex",
+      "brandGuess": "Generra Hypercolor"
+    }
+  },
+  {
+    "filename": "floral-romper.jpg",
+    "expected": {
+      "garmentType": "romper",
+      "category": "dresses",
+      "color": "black, pink, and green",
+      "pattern": "floral",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "barbour-bucket-hat.jpg",
+    "expected": {
+      "garmentType": "bucket hat",
+      "category": "accessories",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Barbour"
+    }
   }
 ]
