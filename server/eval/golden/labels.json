@@ -416,5 +416,82 @@
       "gender": "women",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "inca-poncho.jpg",
+    "expected": {
+      "garmentType": "poncho",
+      "category": "outerwear",
+      "color": "brown, maroon, and gold",
+      "pattern": "geometric diamond",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "cream-henley-shirt.jpg",
+    "expected": {
+      "garmentType": "henley shirt",
+      "category": "tops",
+      "color": "cream",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "camo-tank-top.jpg",
+    "expected": {
+      "garmentType": "tank top",
+      "category": "tops",
+      "color": "green and brown",
+      "pattern": "camouflage",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "embroidered-espadrilles.jpg",
+    "expected": {
+      "garmentType": "espadrilles",
+      "category": "footwear",
+      "color": "red",
+      "pattern": "embroidered stripe",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "cargo-pants.jpg",
+    "expected": {
+      "garmentType": "cargo pants",
+      "category": "bottoms",
+      "color": "olive green",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "white-culottes.jpg",
+    "expected": {
+      "garmentType": "culottes",
+      "category": "bottoms",
+      "color": "white",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "muddy-rubber-boots.jpg",
+    "expected": {
+      "garmentType": "rubber boots",
+      "category": "footwear",
+      "color": "brown",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
   }
 ]

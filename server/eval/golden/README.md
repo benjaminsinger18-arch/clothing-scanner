@@ -1,6 +1,6 @@
 # Golden eval set
 
-Seeded with 38 openly-licensed stock photos from Wikimedia Commons (see `ATTRIBUTIONS.md` for
+Seeded with 45 openly-licensed stock photos from Wikimedia Commons (see `ATTRIBUTIONS.md` for
 license/author per file) spanning all 8 categories (tops, bottoms, outerwear, dresses, footwear,
 accessories, activewear, underwear-sleepwear). **These are a supplement, not a replacement for real
 phone photos** — they're clean/museum/product-style photography, not the messy real-world phone
