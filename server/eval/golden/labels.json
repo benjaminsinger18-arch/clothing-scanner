@@ -328,5 +328,49 @@
       "gender": "unisex",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "floral-pajama-pants.jpg",
+    "expected": {
+      "garmentType": "pajama pants",
+      "category": "underwear-sleepwear",
+      "color": "pink and white",
+      "pattern": "floral",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "green-ribbed-leggings.jpg",
+    "expected": {
+      "garmentType": "leggings",
+      "category": "activewear",
+      "color": "dark green",
+      "pattern": "ribbed",
+      "gender": "women",
+      "brandGuess": "Mac & Maggie"
+    }
+  },
+  {
+    "filename": "striped-zip-cardigan.jpg",
+    "expected": {
+      "garmentType": "zip cardigan",
+      "category": "tops",
+      "color": "beige, black, and red",
+      "pattern": "striped",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "knit-beanie.jpg",
+    "expected": {
+      "garmentType": "beanie",
+      "category": "accessories",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
   }
 ]

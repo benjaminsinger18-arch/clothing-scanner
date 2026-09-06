@@ -45,6 +45,10 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | embroidered-leather-gloves.jpg | BLW Pair of Embroidered Leather Gloves.jpg | CC BY-SA 2.0 uk | Birmingham Museums Trust | [link](https://commons.wikimedia.org/wiki/File:BLW_Pair_of_Embroidered_Leather_Gloves.jpg) |
 | carrot-print-boxer-shorts.jpg | Blue carrots pattern boxer shorts.jpg | CC BY-SA 4.0 | Anaklaseis | [link](https://commons.wikimedia.org/wiki/File:Blue_carrots_pattern_boxer_shorts.jpg) |
 | plaid-flannel-shirt.jpg | Flannel Shirt For Abi.jpg | CC BY-SA 2.0 | arbyreed | [link](https://commons.wikimedia.org/wiki/File:Flannel_Shirt_For_Abi.jpg) |
+| floral-pajama-pants.jpg | A woman in pajamas drinkig coffee and reading fashion magazine.jpg | CC BY 2.0 | Marco Verch | [link](https://commons.wikimedia.org/wiki/File:A_woman_in_pajamas_drinkig_coffee_and_reading_fashion_magazine.jpg) |
+| green-ribbed-leggings.jpg | Donkergroene gebreide legging met ribbels, "Mac & Maggie", objectnr 91585.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Donkergroene_gebreide_legging_met_ribbels,_%E2%80%9CMac_%26_Maggie%E2%80%9D,_objectnr_91585.JPG) |
+| striped-zip-cardigan.jpg | Beige gestreept vest met lange mouwen en rode en zwarte strepen, van Bulgaarse bouwvakker, objectnr 91220-2.JPG | CC BY-SA 3.0 | (museum donation, uncredited photographer) | [link](https://commons.wikimedia.org/wiki/File:Beige_gestreept_vest_met_lange_mouwen_en_rode_en_zwarte_strepen,_van_Bulgaarse_bouwvakker,_objectnr_91220-2.JPG) |
+| knit-beanie.jpg | Blue knit fleece hat.jpg | Public domain | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Blue_knit_fleece_hat.jpg) |
 
 ## Notes on this batch
 
@@ -82,3 +86,14 @@ retail rack shot showing a dozen shirts in different colorways side by side (sam
 swapped for alternates in the same Commons category that turned out to be genuine single-garment
 shots (`BLW_Pair_of_Embroidered_Leather_Gloves.jpg`, a museum pair, and `Flannel_Shirt_For_Abi.jpg`,
 a single shirt on a dress form). `Skirts`, `Gloves`, and `Underwear` are no longer unrepresented.
+
+## Notes on the fourth expansion batch
+
+Targeted `underwear-sleepwear` (thinnest category at 2 entries) plus general-variety garment types
+not yet represented at all (leggings, a zip cardigan, a beanie). All 4 candidates downloaded were
+usable as-is — no rejections this round. One naming mismatch worth flagging: `Blue knit fleece
+hat.jpg` is titled "blue" but reads as black/very dark charcoal in the actual photo under its warm
+indoor lighting; labeled by what's actually visible in the frame (black), not the filename, per the
+standing rule. `A woman in pajamas...jpg` is a cropped lifestyle photo (torso down, seated) rather
+than a clean product shot, but the garment (floral pajama pants) is clearly and fully visible and
+the framing isn't suggestive, so it was kept.
