@@ -68,6 +68,13 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | hypercolor-tie-dye-sweatshirt.jpg | Generra Hypercolor sweatshirt.jpg | CC BY-SA 4.0 | Ajaxfour | [link](https://commons.wikimedia.org/wiki/File:Generra_Hypercolor_sweatshirt.jpg) |
 | floral-romper.jpg | Floral Romper over a Denim Jacket (16965781089).jpg | CC BY-SA 2.0 | Sarah Korf | [link](https://commons.wikimedia.org/wiki/File:Floral_Romper_over_a_Denim_Jacket_(16965781089).jpg) |
 | barbour-bucket-hat.jpg | Black Barbour bucket hat.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Black_Barbour_bucket_hat.jpg) |
+| beuchat-wetsuit.jpg | Beuchat wetsuit.jpg | CC BY-SA 3.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Beuchat_wetsuit.jpg) |
+| navy-swim-briefs.jpg | Calção de Banho, Acervo do Museu Paulista da USP (1).jpg | CC BY-SA 4.0 | Museu Paulista da USP | [link](https://commons.wikimedia.org/wiki/File:Cal%C3%A7%C3%A3o_de_Banho,_Acervo_do_Museu_Paulista_da_USP_(1).jpg) |
+| embroidered-silk-nightcap.jpg | Nightcap, 18th century (CH 18392135).jpg | Public domain | Cooper Hewitt, Smithsonian Design Museum | [link](https://commons.wikimedia.org/wiki/File:Nightcap,_18th_century_(CH_18392135).jpg) |
+| cream-lace-bra.jpg | Bustehouder van zalmkleurig satijn met kant, BK-1997-86.jpg | CC0 | Rijksmuseum | [link](https://commons.wikimedia.org/wiki/File:Bustehouder_van_zalmkleurig_satijn_met_kant,_BK-1997-86.jpg) |
+| navy-crocs-slides.jpg | A Crocs Black Slippers.jpg | CC BY-SA 4.0 | Peachyeung316 | [link](https://commons.wikimedia.org/wiki/File:A_Crocs_Black_Slippers.jpg) |
+| olive-duffel-bag.jpg | (US) BAG, DUFFEL (501e RCC - 2e DB), 2001.194.jpg | CC0 | Musée de l'Armée | [link](https://commons.wikimedia.org/wiki/File:(US)_BAG,_DUFFEL_(501e_RCC_-_2e_DB),_2001.194.jpg) |
+| navy-fleece-neck-gaiter.jpg | Neck gaiter1.jpg | CC BY-SA 4.0 | (uncredited on file page) | [link](https://commons.wikimedia.org/wiki/File:Neck_gaiter1.jpg) |
 
 ## Notes on this batch
 
@@ -166,3 +173,14 @@ two vintage-underwear museum pieces) were never successfully downloaded and aren
 One filename/reality mismatch: Commons titles `Purple_Velvet_Renaissance_Beret.jpg`, but the actual
 garment pictured is a lace-trimmed bonnet/cap, not a flat beret — labeled `bonnet` to match what's
 visible, per the standing "label from the photo, not the title" rule.
+
+## Notes on the eighth expansion batch
+
+A normal-size pass (not another "big" push) after round 7's rate-limiting — confirmed the Commons
+rate limit had cleared with a single test request before running the full query. Targeted activewear
+and underwear-sleepwear (the two thinnest categories: 4 and 5 entries respectively). All 7 candidates
+downloaded were usable as-is — no rejections this round, and no further rate-limiting at the standard
+4s/12s pacing. One filename/reality mismatch: Commons titles the Crocs photo "Black Slippers" but the
+pair pictured is clearly navy/dark blue, not black — labeled by what's visible. The Crocs photo also
+has other Crocs products visible in a cluttered stockroom background, but the pictured pair is
+unambiguously the focused, centered subject, so it was kept rather than treated as multi-item.
