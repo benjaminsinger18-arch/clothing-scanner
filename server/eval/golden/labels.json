@@ -581,5 +581,82 @@
       "gender": "unisex",
       "brandGuess": "Barbour"
     }
+  },
+  {
+    "filename": "beuchat-wetsuit.jpg",
+    "expected": {
+      "garmentType": "wetsuit",
+      "category": "activewear",
+      "color": "black and blue",
+      "pattern": "color block",
+      "gender": "unisex",
+      "brandGuess": "Beuchat"
+    }
+  },
+  {
+    "filename": "navy-swim-briefs.jpg",
+    "expected": {
+      "garmentType": "swim briefs",
+      "category": "activewear",
+      "color": "navy blue",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "embroidered-silk-nightcap.jpg",
+    "expected": {
+      "garmentType": "nightcap",
+      "category": "underwear-sleepwear",
+      "color": "brown",
+      "pattern": "floral",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "cream-lace-bra.jpg",
+    "expected": {
+      "garmentType": "bra",
+      "category": "underwear-sleepwear",
+      "color": "cream",
+      "pattern": "lace",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "navy-crocs-slides.jpg",
+    "expected": {
+      "garmentType": "slides",
+      "category": "footwear",
+      "color": "navy blue",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Crocs"
+    }
+  },
+  {
+    "filename": "olive-duffel-bag.jpg",
+    "expected": {
+      "garmentType": "duffel bag",
+      "category": "accessories",
+      "color": "olive green",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "navy-fleece-neck-gaiter.jpg",
+    "expected": {
+      "garmentType": "neck gaiter",
+      "category": "accessories",
+      "color": "navy",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
   }
 ]
