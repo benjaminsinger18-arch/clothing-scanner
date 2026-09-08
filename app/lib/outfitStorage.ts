@@ -74,7 +74,9 @@ function getDb() {
 /** Newest-first, same convention as closetStorage's getClosetItems. */
 export async function getOutfits(): Promise<SavedOutfit[]> {
   const db = await getDb();
-  const rows = await db.getAllAsync<OutfitRow>("SELECT id, name, saved_at, item_ids_json FROM outfits ORDER BY saved_at DESC");
+  const rows = await db.getAllAsync<OutfitRow>(
+    "SELECT id, name, saved_at, item_ids_json FROM outfits ORDER BY saved_at DESC"
+  );
   return rows.map(rowToSavedOutfit);
 }
 

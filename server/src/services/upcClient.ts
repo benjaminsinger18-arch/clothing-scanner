@@ -53,10 +53,7 @@ export interface UpcItem {
 }
 
 export type UpcLookupResult =
-  | { status: "found"; item: UpcItem }
-  | { status: "not_found" }
-  | { status: "rate_limited" }
-  | { status: "unavailable" };
+  { status: "found"; item: UpcItem } | { status: "not_found" } | { status: "rate_limited" } | { status: "unavailable" };
 
 // UPCitemdb sometimes returns a literal placeholder string instead of omitting a
 // field entirely (observed live: brand: "N/A" on a match) — treat those the same

@@ -32,19 +32,21 @@ export function OutfitMatchesTab({
     return <ErrorState title={error.title} detail={error.detail} onRetry={onRetry} />;
   }
   if (!outfits || outfits.status === "unavailable") {
-    return <ErrorState title="Couldn't load outfit ideas right now" detail="Give it another moment and try again." onRetry={onRetry} />;
-  }
-  if (outfits.status === "rate_limited") {
     return (
       <ErrorState
-        title="We've hit today's limit"
-        detail="Try again a little later."
+        title="Couldn't load outfit ideas right now"
+        detail="Give it another moment and try again."
         onRetry={onRetry}
       />
     );
   }
+  if (outfits.status === "rate_limited") {
+    return <ErrorState title="We've hit today's limit" detail="Try again a little later." onRetry={onRetry} />;
+  }
   if (outfits.suggestions.length === 0) {
-    return <ErrorState title="No outfit suggestions found" detail="Try again, or check back later." onRetry={onRetry} />;
+    return (
+      <ErrorState title="No outfit suggestions found" detail="Try again, or check back later." onRetry={onRetry} />
+    );
   }
   return (
     <>

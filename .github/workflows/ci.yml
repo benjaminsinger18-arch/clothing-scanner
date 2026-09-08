@@ -1,0 +1,53 @@
+# Runs on every push and pull request — this repo previously had zero CI of
+# any kind (Render/Vercel auto-deploy on push to master with no gate in front
+# of it; see README's "Tests" section for the same point about the test
+# suite). This workflow is a first, deliberately modest step: typecheck every
+# workspace, lint every workspace, check Prettier formatting, and run the
+# (currently small) server unit test suite. It does NOT run the eval harness
+# (server/eval/runEval.ts) — that makes real, paid Claude/Vision/Gemini API
+# calls per run, needs API keys as repo secrets, and has no established
+# pass-rate baseline yet to gate on (see runEval.ts's own --min-pass-rate
+# comment). Wire that in separately, deliberately, once there's a real
+# threshold to enforce — not as a side effect of adding this file.
+
+name: CI
+
+# Quoted "on" (not bare `on:`) — a generic YAML 1.1 parser reads the bare
+# form as the boolean `true` (a well-known gotcha; GitHub's own workflow
+# parser special-cases it and handles the bare form fine, but quoting sidesteps
+# the ambiguity for any other tool that ever reads this file, e.g. a linter).
+"on":
+  push:
+  pull_request:
+
+jobs:
+  typecheck-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm install
+
+      # shared-types is consumed by both app/ and server/ as a built package
+      # (imports resolve to dist/index.d.ts — see packages/shared-types/package.json),
+      # and typecheck has no pre-hook to build it first the way dev/build do
+      # (predev/prebuild) — build it explicitly before typechecking anything
+      # that depends on it.
+      - run: npm run build --workspace=@clothing-scanner/shared-types
+
+      - run: npm run typecheck --workspace=@clothing-scanner/shared-types
+      - run: npm run typecheck --workspace=server
+      - run: npm run typecheck --workspace=app
+
+      - run: npm run lint --workspace=@clothing-scanner/shared-types
+      - run: npm run lint --workspace=server
+      - run: npm run lint --workspace=app
+
+      - run: npm run format:check
+
+      - run: npm run test --workspace=server

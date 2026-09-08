@@ -31,7 +31,7 @@ export const CLASSIFICATION_JSON_SCHEMA = {
         "apparent gender presentation. Otherwise infer from the garment's cut, fit, and typical retail " +
         'styling/marketing (e.g. a fitted blouse with darts reads "women", a boxy suit jacket with a ' +
         'masculine cut reads "men"). Use "unisex" only when the item is genuinely gender-neutral in ' +
-        'styling (e.g. a plain crewneck sweatshirt, a basic tote bag) — not as a default when you\'re ' +
+        "styling (e.g. a plain crewneck sweatshirt, a basic tote bag) — not as a default when you're " +
         'simply unsure; make your best call between "men" and "women" whenever the styling gives any ' +
         "signal at all.",
     },

@@ -82,7 +82,10 @@ function readJsonArrayIfExists<T>(path: string): T[] {
  * than relying on timestamp alone, so this stays correct even if the
  * timestamp format or granularity ever changes upstream. */
 function correctionId(entry: CorrectionLogEntry): string {
-  return createHash("sha1").update(entry.timestamp + entry.correctionText).digest("hex").slice(0, 16);
+  return createHash("sha1")
+    .update(entry.timestamp + entry.correctionText)
+    .digest("hex")
+    .slice(0, 16);
 }
 
 function slugify(s: string): string {
@@ -193,7 +196,7 @@ function main() {
   writeFileSync(PROMOTED_FILE, JSON.stringify([...promoted, ...newPromotedIds], null, 2) + "\n");
   console.log(
     `\nWrote ${newLabels.length} new image(s) to ${IMAGES_DIR} and appended ${newLabels.length} entry/entries to ${LABELS_FILE}.\n` +
-      "Still manual: add an ATTRIBUTIONS.md row for each (source: \"user correction\", not Wikimedia Commons — no attribution " +
+      'Still manual: add an ATTRIBUTIONS.md row for each (source: "user correction", not Wikimedia Commons — no attribution ' +
       "needed, but worth a note distinguishing it from the rest of the set) and update both READMEs' photo-count mentions, " +
       "same as every prior golden-set expansion round."
   );

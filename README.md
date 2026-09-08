@@ -8,6 +8,7 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 **All 5 tabs are now backed by real data — every planned phase (1-4) is built.**
 
 **Status:**
+
 - Phase 1 ✅ — image capture + Claude vision classification, end-to-end.
 - Phase 2 ✅ — SerpApi (Google Shopping) listings power Similar Items / Price
   Comparison, with a single **estimated retail price** range shown. (This app
@@ -57,9 +58,9 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   (SerpApi/Vision/Gemini/UPCitemdb/Claude web search) with a progress bar per
   provider that turns amber past 75% of its cap and red past 95%.
 - My Outfits ✅ — a separate feature from Outfit Matches above: lets you assemble,
-  name, and save a combination of your *own* closet pieces (`app/lib/outfitStorage.ts`,
+  name, and save a combination of your _own_ closet pieces (`app/lib/outfitStorage.ts`,
   `OutfitsScreen`/`OutfitBuilderScreen`/`OutfitDetailScreen`, "My Outfits" link on the
-  Capture screen). Outfit Matches only ever *suggests* shoppable items to buy (plus a
+  Capture screen). Outfit Matches only ever _suggests_ shoppable items to buy (plus a
   read-only "you already own something like this" cross-reference); this is the actual
   assemble-and-keep half. Stored as a name + an ordered list of closet item ids rather
   than a copy of their data, so an outfit always reflects the current state of the
@@ -92,8 +93,8 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   full classification (not just entity detection like Vision) **only when Claude's
   own pass comes back "unrecognized"** — if Gemini's independent pass succeeds
   where Claude didn't, Gemini's whole result is used directly (`model:
-  "gemini-3.1-pro"` on the response), tried before the older Vision-hint rescue
-  path. This used to run on *every* scan (for brand cross-validation too), but
+"gemini-3.1-pro"` on the response), tried before the older Vision-hint rescue
+  path. This used to run on _every_ scan (for brand cross-validation too), but
   that was reverted after live measurement: Gemini 3.1 Pro spends real time
   "thinking" internally even at its lowest setting, and running it in parallel on
   every scan pushed average classify time from a consistent ~2.2-2.6s to an
@@ -109,15 +110,15 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   **UPCitemdb** (`GET /barcode-lookup`, keyless free trial tier, no signup) and
   normalizes the match into the exact same classification shape the photo flow
   produces — brand comes straight from the database match (`brandConfidence:
-  "high"`, `brandSource: "barcode"`, no guessing), garmentType/category/pattern/
+"high"`, `brandSource: "barcode"`, no guessing), garmentType/category/pattern/
   style are a cheap text-only Haiku inference pass over the sparse product-listing
-  text. From there it's the *same* Results screen, unmodified — pricing and outfit
+  text. From there it's the _same_ Results screen, unmodified — pricing and outfit
   matches work identically regardless of how the item was identified. **Coverage
   caveat:** general UPC databases have historically thin coverage for clothing
   specifically (lots of private-label/fast-fashion items were never registered) —
   a "no product found" result is common and expected, not a bug; the scan screen
   offers "Try Again" and "Take Photo Instead" for exactly that reason. UPCitemdb's
-  trial tier is capped at 100 requests/day *shared across all anonymous callers*,
+  trial tier is capped at 100 requests/day _shared across all anonymous callers_,
   not just this app — the backend throttles its own usage to 80/day to leave
   headroom for others on that same pool.
 - Correction ✅ — a "This isn't right? Suggest a correction" link on the Results
@@ -144,6 +145,7 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 ## What's left (not built)
 
 Phase 5 polish is now done:
+
 - Prefetched results — `PreviewScreen` (and `BarcodeScanScreen`/
   `CorrectionScreen`, which reach Results the same way) kicks off pricing +
   outfit-suggestion fetches (`app/lib/prefetchResults.ts`) the instant
@@ -317,7 +319,8 @@ npx expo start --web
    them via `extra` for the app to read through `expo-constants` — note they still
    end up in the shipped bundle either way (unavoidable for anything the client
    needs to call the backend with), same as Metro's `EXPO_PUBLIC_*` auto-inlining
-   would do. Either way, they must be set *before* the build runs, not after.
+   would do. Either way, they must be set _before_ the build runs, not after.
+
 5. Deploy. Vercel runs `vercel.json`'s `buildCommand` (builds `shared-types`, then
    `expo export --platform web` inside `app/`) and serves the static `app/dist`
    output, with a rewrite so client-side navigation doesn't 404 on refresh.
@@ -330,7 +333,7 @@ vary more across browsers than across iOS/Android.
 
 ## Letting a remote collaborator test the app
 
-The steps above only work if your friend's phone is on the *same Wi-Fi network* as
+The steps above only work if your friend's phone is on the _same Wi-Fi network_ as
 this PC — Expo Go needs to reach both the Metro bundler and the backend. If they're
 somewhere else, two things need to be reachable over the internet instead:
 
@@ -352,6 +355,7 @@ somewhere else, two things need to be reachable over the internet instead:
    Free-tier Render web services spin down after ~15 min idle and take a few seconds
    to wake back up on the next request — fine for testing, just expect the first
    request after a lull to be slow.
+
 5. Also set `APP_SHARED_SECRET` (any long random string) — see "Backend auth" below.
    Without it, the deployed URL is wide open to anyone who finds it.
 
@@ -373,7 +377,7 @@ Once the backend is deployed publicly (e.g. Render), its URL is no longer privat
 anyone who finds it can hit `/classify`, `/price-search`, or `/outfit-suggestions`,
 each of which costs real money (Claude/SerpApi calls). Set `APP_SHARED_SECRET`
 on the server to a long random string, and `EXPO_APP_SHARED_SECRET` in
-`app/.env` to the *same* value — the app sends it as an `X-App-Secret` header, and
+`app/.env` to the _same_ value — the app sends it as an `X-App-Secret` header, and
 the server rejects any request to a paid endpoint without it (`/health` stays open,
 since Render's own health checks hit it with no headers).
 
@@ -437,10 +441,10 @@ infrastructure exist for that:
   (if the client sent one) are appended as one JSON line (see `server/src/lib/correctionLog.ts`).
   This is local-disk, gitignored, and **not persisted on a Render free-tier deploy by default** — no
   persistent disk there, so it survives local dev restarts but is wiped on every Render
-  restart/redeploy *unless* bucket sync is configured (see `HF_BUCKET_*` under "Required API keys"
+  restart/redeploy _unless_ bucket sync is configured (see `HF_BUCKET_*` under "Required API keys"
   below) — when set, this file is restored from a Hugging Face Storage Bucket at server startup and
   re-synced there after every write. A good source of real-world misclassification examples to
-  curate into the golden eval set below. Note this is a *biased* sample — only scans someone bothered
+  curate into the golden eval set below. Note this is a _biased_ sample — only scans someone bothered
   to correct.
   - `npm run promote-corrections --workspace=server` (`server/eval/promoteCorrections.ts`) is the
     actual "curate into the golden set" step — for a long time this log was write-only with nothing
@@ -496,11 +500,61 @@ infrastructure exist for that:
     actually written (see `golden/ATTRIBUTIONS.md`'s per-batch notes on always labeling the
     unambiguous primary subject of a frame).
 
+## Tests
+
+`npm run test --workspace=server` (via [Vitest](https://vitest.dev)) runs the unit test suite —
+previously there were zero tests anywhere in this repo. In scope so far: the parts of the backend
+with real logic and no I/O to mock — `priceMath.ts`'s IQR/percentile-trim/median-cap statistics,
+`serpApiClient.ts`'s `isResaleListing` resale-vs-retail heuristic, and `rateLimitTracker.ts`'s
+counter arithmetic (not its day/month period rollover, which needs an injectable clock this pass
+didn't add — see that test file's own top comment). `npm run test:watch --workspace=server` re-runs
+on file change.
+
+Test files (`*.test.ts`) live alongside the code they test (e.g. `priceMath.test.ts` next to
+`priceMath.ts`) and are included in `npm run typecheck` (same `tsconfig.json`, same `src/` scope) but
+excluded from the production build — `npm run build` now points at `tsconfig.build.json`, which
+extends the base config with `**/*.test.ts` excluded, so compiled test code never ships in `dist/`.
+
+No app-side (`app/`) tests yet — growing that coverage is a future pass, not part of this one.
+
+## Linting, formatting, and CI
+
+Previously the only static analysis anywhere in this repo was `tsc --noEmit`, and it wasn't wired to
+anything — nothing ran it automatically, so nothing enforced it.
+
+- **ESLint 9** (flat config, one `eslint.config.js` per workspace, not a shared root config — `app/`
+  has no `"type": "module"` so its config is CommonJS `require()`, while `server/` and
+  `packages/shared-types/` both do and use ESM `import`). `app/` uses `eslint-config-expo/flat`
+  (React/React Native/import rules tuned for Expo); `server/` and `packages/shared-types/` use
+  `@typescript-eslint` directly, no React concerns there. Run per-workspace
+  (`npm run lint --workspace=app`, etc.) or across all three at once with `npm run lint` from the repo
+  root.
+- **Prettier 3** (`.prettierrc.json`) — `printWidth: 120`, not Prettier's 80-char default, chosen to
+  match this codebase's existing long-line/prose-comment style (checked empirically against the
+  longest existing lines before picking a number, rather than guessing). `npm run format` rewrites
+  everything in place; `npm run format:check` (used in CI) fails without writing. `.prettierignore`
+  excludes build output, `server/data/` (runtime logs), and `server/eval/golden/images/` (binary
+  photo fixtures Prettier can't usefully touch anyway).
+- **`npm run typecheck`** and **`npm run lint`** at the repo root run that script in every workspace
+  that defines it (`--workspaces --if-present`), so a single command covers `app/`, `server/`, and
+  `packages/shared-types/` together.
+- **Pre-commit hook** (`husky` + `lint-staged`, `.husky/pre-commit` + `.lintstagedrc.json`) — runs
+  automatically on `git commit` for anyone who's run `npm install` at the repo root (the root
+  `"prepare": "husky"` script installs the hook). Only touches staged files: `eslint --fix` (against
+  the correct workspace's config) + `prettier --write` for `app/`, `server/`, and
+  `packages/shared-types/` source files, `prettier --write` alone for `*.json`/`*.md`/`*.yml`/`*.yaml`
+  anywhere. A file that fails to auto-fix blocks the commit.
+- **`.github/workflows/ci.yml`** runs on every push and pull request: installs once at the repo root,
+  builds `@clothing-scanner/shared-types` (the other two workspaces import its compiled output),
+  then runs `typecheck` for all three workspaces and `test --workspace=server`. Deliberately does
+  **not** run `npm run eval --workspace=server` — that hits real paid APIs per run (see "Golden
+  eval set" above), so it stays a manual/local command, not a CI step.
+
 ## Required API keys
 
 - `ANTHROPIC_API_KEY` — from https://console.anthropic.com/ (used for vision classification; required for the app to do anything at all).
   Also powers the correction feature's web-search verification pass (`POST
-  /correct-classification`) — no separate key needed, but that endpoint draws on
+/correct-classification`) — no separate key needed, but that endpoint draws on
   Anthropic's `web_search` tool, billed at **$10 per 1,000 searches** plus normal
   token costs, with no free tier. Only runs when a user submits a correction (not
   per-scan), capped at 50/day in `rateLimitTracker.ts` as a runaway-cost guard.
@@ -511,7 +565,7 @@ infrastructure exist for that:
   220/month to leave headroom (see `server/src/lib/rateLimitTracker.ts`). It's the
   tightest quota in the app, shared between `/price-search` (~80-100 calls/month at
   this project's usage estimate) and a dedicated, smaller slice reserved for Outfit
-  Matches (capped to the *first* suggested keyword phrase only, not all 3-5 — see
+  Matches (capped to the _first_ suggested keyword phrase only, not all 3-5 — see
   the comments in `server/src/routes/outfitSuggestions.ts` and
   `rateLimitTracker.ts` for the arithmetic behind that cap).
 - `GOOGLE_VISION_API_KEY` — optional, from https://console.cloud.google.com/:
@@ -519,7 +573,7 @@ infrastructure exist for that:
   2. **Credentials** → **Create Credentials** → **API key**. No OAuth/service-account
      setup needed — the REST endpoint this app calls (`images:annotate`) accepts a
      plain API key.
-  3. Paste it into `server/.env`. Free tier is 1,000 units/month *per feature type*
+  3. Paste it into `server/.env`. Free tier is 1,000 units/month _per feature type_
      (web/label/logo detection each get their own allotment); the backend throttles
      at 900/month to leave headroom (see `rateLimitTracker.ts`). Leave unset to skip
      Vision entirely — `/classify` still works with Claude alone, just without the

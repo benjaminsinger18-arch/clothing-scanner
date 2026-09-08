@@ -23,7 +23,10 @@ export class TtlCache<V> {
    *  room. Not real LRU (a re-set doesn't bump an existing key's position),
    *  but good enough at this project's request volume; a proper LRU would be
    *  overkill for a cache this size. */
-  constructor(private readonly ttlMs: number, private readonly maxEntries = 500) {}
+  constructor(
+    private readonly ttlMs: number,
+    private readonly maxEntries = 500
+  ) {}
 
   get(key: string): V | undefined {
     const entry = this.store.get(key);

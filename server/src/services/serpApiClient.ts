@@ -121,7 +121,9 @@ async function runSearchUncached(query: string, num: number): Promise<SerpApiSea
     }
 
     const listings: PriceListing[] = (json.shopping_results ?? [])
-      .filter((item): item is RawShoppingResult & { extracted_price: number } => typeof item.extracted_price === "number")
+      .filter(
+        (item): item is RawShoppingResult & { extracted_price: number } => typeof item.extracted_price === "number"
+      )
       // Defensive cap in case SerpApi ever returns more than requested — not a
       // display-truncation step (see this function's doc comment above).
       .slice(0, num)
@@ -215,7 +217,16 @@ function filterToRelevantCategory(listings: PriceListing[], garmentType: string)
  * as a case-insensitive substring of the merchant name rather than an exact
  * match, since SerpApi's `source` string sometimes includes extra context
  * (e.g. "Poshmark - username" has been observed live). */
-const RESALE_MARKETPLACES = ["poshmark", "thredup", "therealreal", "the realreal", "depop", "ebay", "grailed", "vestiaire"];
+const RESALE_MARKETPLACES = [
+  "poshmark",
+  "thredup",
+  "therealreal",
+  "the realreal",
+  "depop",
+  "ebay",
+  "grailed",
+  "vestiaire",
+];
 
 export function isResaleListing(listing: PriceListing): boolean {
   if (!listing.merchant) return false;

@@ -29,7 +29,8 @@ export function OutfitDetailScreen({ route, navigation }: Props) {
     <View style={styles.container}>
       {missingCount > 0 && (
         <Text style={styles.note}>
-          {missingCount} item{missingCount === 1 ? "" : "s"} in this outfit {missingCount === 1 ? "is" : "are"} no longer in your closet.
+          {missingCount} item{missingCount === 1 ? "" : "s"} in this outfit {missingCount === 1 ? "is" : "are"} no
+          longer in your closet.
         </Text>
       )}
 
@@ -59,7 +60,13 @@ export function OutfitDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  note: { color: theme.colors.textSecondary, fontSize: 12, fontStyle: "italic", padding: theme.spacing.md, paddingBottom: 0 },
+  note: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontStyle: "italic",
+    padding: theme.spacing.md,
+    paddingBottom: 0,
+  },
   list: { flex: 1 },
   content: { padding: theme.spacing.md },
   deleteButton: {

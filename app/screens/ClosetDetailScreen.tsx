@@ -80,7 +80,9 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
 
       <Pressable
         style={styles.viewResultsButton}
-        onPress={() => navigation.navigate("Results", { classifications: [classification], initialIndex: 0, photoThumbnail })}
+        onPress={() =>
+          navigation.navigate("Results", { classifications: [classification], initialIndex: 0, photoThumbnail })
+        }
         accessibilityRole="button"
         accessibilityLabel="View full results"
       >
@@ -116,7 +118,13 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.md },
   header: { flexDirection: "row", gap: theme.spacing.md, marginBottom: theme.spacing.md },
   rows: { flex: 1, minWidth: 0 },
-  photo: { width: 96, height: 96, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
+  photo: {
+    width: 96,
+    height: 96,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surfaceAlt,
+    flexShrink: 0,
+  },
   photoPlaceholder: {
     width: 96,
     height: 96,
@@ -127,17 +135,44 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   row: { marginBottom: 14 },
-  rowLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
+  rowLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: theme.letterSpacing.label,
+  },
   rowValue: { color: theme.colors.textPrimary, fontSize: 18, fontFamily: theme.fonts.body.semiBold, marginTop: 2 },
   rowHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
-  rangeBanner: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md },
-  rangeLabel: { color: theme.colors.textSecondary, fontSize: 11, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label, marginBottom: 4 },
+  rangeBanner: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  rangeLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: theme.letterSpacing.label,
+    marginBottom: 4,
+  },
   rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
   rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
   savedAt: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: theme.spacing.lg },
-  viewResultsButton: { backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center", marginBottom: 12 },
+  viewResultsButton: {
+    backgroundColor: theme.colors.accent,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+    marginBottom: 12,
+  },
   viewResultsButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
-  removeButton: { backgroundColor: theme.colors.surfaceAlt, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  removeButton: {
+    backgroundColor: theme.colors.surfaceAlt,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+  },
   removeButtonDisabled: { opacity: 0.6 },
   removeButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
 });

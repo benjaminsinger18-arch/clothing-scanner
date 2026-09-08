@@ -104,54 +104,6 @@ interface ClassifyOptions {
   hint?: string;
 }
 
-async function callClaude(model: string, opts: ClassifyOptions): Promise<RawClassification> {
-  const hintText = opts.hint
-    ? ` A separate image-recognition system's best guess for this photo is "${opts.hint}" — treat that ` +
-      "as a hint, not ground truth: weigh it against what you actually see, and still call " +
-      "report_classification with garmentType set to \"unrecognized\" if the hint doesn't hold up either."
-    : "";
-
-  const response = await getClient().messages.create({
-    model,
-    max_tokens: 512,
-    tools: [classifyTool],
-    tool_choice: { type: "tool", name: CLASSIFY_TOOL_NAME },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: opts.mediaType, data: opts.imageBase64 } },
-          {
-            type: "text",
-            text:
-              "Identify the piece of clothing in this photo and call report_classification with your " +
-              "best assessment. " +
-              CLASSIFICATION_PROMPT +
-              hintText,
-          },
-        ],
-      },
-    ],
-  });
-  const toolUse = response.content.find(
-    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === CLASSIFY_TOOL_NAME
-  );
-  if (!toolUse) {
-    throw new ClassificationError("Claude did not return a structured classification");
-  }
-  return toolUse.input as RawClassification;
-}
-
-async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promise<RawClassification> {
-  try {
-    return await callClaude(model, opts);
-  } catch (err) {
-    console.warn(`[claudeClient] ${model} call failed, retrying once:`, err);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return await callClaude(model, opts);
-  }
-}
-
 interface MultiItemCallResult {
   items: RawClassification[];
   usage: ScanUsage;
@@ -467,7 +419,7 @@ async function callBarcodeClassification(item: UpcItem): Promise<BarcodeCallResu
           details +
           ". Map the database category into the required category enum as best you can. Only garmentType, " +
           "pattern, and style require genuine inference from this sparse text — say your honest best guess " +
-          "rather than \"unknown\" where the text doesn't pin it down exactly. Call report_classification " +
+          'rather than "unknown" where the text doesn\'t pin it down exactly. Call report_classification ' +
           "with your best structured assessment. " +
           CLASSIFICATION_PROMPT,
       },
@@ -603,7 +555,10 @@ async function callResearch(
   const textBlocks = (json.content ?? []).filter(
     (b): b is AnthropicTextBlock => (b as { type?: string }).type === "text"
   );
-  const summary = textBlocks.map((b) => b.text).join("\n\n").trim();
+  const summary = textBlocks
+    .map((b) => b.text)
+    .join("\n\n")
+    .trim();
 
   const sources: { title: string; url: string }[] = [];
   const seenUrls = new Set<string>();
@@ -696,7 +651,10 @@ async function callCorrectionStructuringWithRetry(
  * itself Claude's synthesized judgment, not a structured record — so forcing
  * "high" confidence would overstate certainty the pipeline doesn't actually have.
  */
-export async function verifyCorrection(correctionText: string, original: ClassificationResult): Promise<CorrectionResult> {
+export async function verifyCorrection(
+  correctionText: string,
+  original: ClassificationResult
+): Promise<CorrectionResult> {
   if (!canMakeWebSearchCall()) {
     return { status: "rate_limited" };
   }
@@ -714,7 +672,8 @@ export async function verifyCorrection(correctionText: string, original: Classif
     raw = await callCorrectionStructuringWithRetry(research.summary, correctionText, original);
   } catch (err) {
     console.error("[claudeClient] correction structuring failed:", err);
-    const reason = err instanceof ClassificationError ? err.message : "Unknown error structuring the corrected classification";
+    const reason =
+      err instanceof ClassificationError ? err.message : "Unknown error structuring the corrected classification";
     return { status: "structuring_failed", reason };
   }
 
@@ -745,7 +704,7 @@ const outfitTool: Anthropic.Tool = {
             keywords: {
               type: "string",
               description:
-                'Short, search-friendly keyword phrase for the complementary item, e.g. "men\'s navy chino ' +
+                "Short, search-friendly keyword phrase for the complementary item, e.g. \"men's navy chino " +
                 'pants" or "women\'s white leather sneakers" — not a full sentence, and not a restatement ' +
                 "of the item itself. Include the gender in the phrase itself (as shown) whenever the item " +
                 "being paired with is gendered, so the downstream product search comes back correctly " +

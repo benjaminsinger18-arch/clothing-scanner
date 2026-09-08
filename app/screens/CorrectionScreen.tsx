@@ -68,11 +68,13 @@ export function CorrectionScreen({ route, navigation }: Props) {
           {original.brandGuess ? ` (${original.brandGuess})` : ""}
         </Text>
 
-        <Text style={styles.prompt}>What's it actually?</Text>
+        <Text style={styles.prompt}>What’s it actually?</Text>
         <TextInput
           style={styles.input}
           multiline
-          placeholder={'e.g. "This is a Patagonia Better Sweater fleece, not a generic jacket" — brand, exact model, material, anything you know'}
+          placeholder={
+            'e.g. "This is a Patagonia Better Sweater fleece, not a generic jacket" — brand, exact model, material, anything you know'
+          }
           placeholderTextColor={theme.colors.textSecondary}
           value={text}
           onChangeText={setText}
@@ -101,7 +103,12 @@ export function CorrectionScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.md },
-  currentLabel: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: theme.letterSpacing.label },
+  currentLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: theme.letterSpacing.label,
+  },
   currentValue: {
     color: theme.colors.textPrimary,
     fontSize: 16,
@@ -109,7 +116,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 20,
   },
-  prompt: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold, marginBottom: theme.spacing.sm },
+  prompt: {
+    color: theme.colors.textPrimary,
+    fontSize: 15,
+    fontFamily: theme.fonts.body.semiBold,
+    marginBottom: theme.spacing.sm,
+  },
   input: {
     minHeight: 120,
     backgroundColor: theme.colors.surface,
@@ -119,7 +131,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlignVertical: "top",
   },
-  submitButton: { marginTop: 20, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  submitButton: {
+    marginTop: 20,
+    backgroundColor: theme.colors.accent,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+  },
   submitButtonDisabled: { opacity: 0.4 },
   submitButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
 });

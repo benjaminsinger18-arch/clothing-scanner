@@ -108,7 +108,9 @@ export async function classifyMultiItemWithGemini(
         input: [
           {
             type: "text",
-            text: "Identify every distinct clothing item visible in this photo and report your best assessment. " + MULTI_ITEM_PROMPT,
+            text:
+              "Identify every distinct clothing item visible in this photo and report your best assessment. " +
+              MULTI_ITEM_PROMPT,
           },
           { type: "image", data: imageBase64, mime_type: mediaType },
         ],

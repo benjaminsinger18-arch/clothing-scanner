@@ -33,16 +33,16 @@ export function ProviderDataBody({
     return <ErrorState title={error.title} detail={error.detail} onRetry={onRetry} />;
   }
   if (status === "unavailable" || status === null) {
-    return <ErrorState title="Couldn't load pricing right now" detail="Give it another moment and try again." onRetry={onRetry} />;
-  }
-  if (status === "rate_limited") {
     return (
       <ErrorState
-        title="We've hit today's limit"
-        detail="Try again a little later."
+        title="Couldn't load pricing right now"
+        detail="Give it another moment and try again."
         onRetry={onRetry}
       />
     );
+  }
+  if (status === "rate_limited") {
+    return <ErrorState title="We've hit today's limit" detail="Try again a little later." onRetry={onRetry} />;
   }
   if (items.length === 0) {
     return <ErrorState title={emptyTitle} detail={emptyDetail} onRetry={onRetry} />;

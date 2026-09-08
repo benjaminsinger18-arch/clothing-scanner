@@ -223,7 +223,12 @@ const styles = StyleSheet.create({
   },
   filterBar: { maxHeight: 44, marginTop: theme.spacing.sm },
   filterBarContent: { paddingHorizontal: theme.spacing.md, alignItems: "center", gap: 8 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.radius.pill, backgroundColor: theme.colors.surfaceAlt },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
   filterChipActive: { backgroundColor: theme.colors.accent },
   filterChipText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
   filterChipTextActive: { color: theme.colors.textPrimary },

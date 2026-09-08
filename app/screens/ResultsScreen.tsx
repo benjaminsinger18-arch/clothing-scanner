@@ -82,7 +82,9 @@ export function ResultsScreen({ route, navigation }: Props) {
     if (prefetchedPricing) {
       setPricingByIndex((prev) => ({ ...prev, [initialIndex]: { data: null, loading: true, error: null } }));
       prefetchedPricing
-        .then((result) => setPricingByIndex((prev) => ({ ...prev, [initialIndex]: { data: result, loading: false, error: null } })))
+        .then((result) =>
+          setPricingByIndex((prev) => ({ ...prev, [initialIndex]: { data: result, loading: false, error: null } }))
+        )
         .catch((err) =>
           setPricingByIndex((prev) => ({
             ...prev,
@@ -95,7 +97,9 @@ export function ResultsScreen({ route, navigation }: Props) {
     if (prefetchedOutfits) {
       setOutfitsByIndex((prev) => ({ ...prev, [initialIndex]: { data: null, loading: true, error: null } }));
       prefetchedOutfits
-        .then((result) => setOutfitsByIndex((prev) => ({ ...prev, [initialIndex]: { data: result, loading: false, error: null } })))
+        .then((result) =>
+          setOutfitsByIndex((prev) => ({ ...prev, [initialIndex]: { data: result, loading: false, error: null } }))
+        )
         .catch((err) =>
           setOutfitsByIndex((prev) => ({
             ...prev,
@@ -175,13 +179,20 @@ export function ResultsScreen({ route, navigation }: Props) {
               accessibilityLabel={c.garmentType}
               accessibilityState={{ selected: i === selectedIndex }}
             >
-              <Text style={[styles.itemChipText, i === selectedIndex && styles.itemChipTextActive]}>{c.garmentType}</Text>
+              <Text style={[styles.itemChipText, i === selectedIndex && styles.itemChipTextActive]}>
+                {c.garmentType}
+              </Text>
             </Pressable>
           ))}
         </ScrollView>
       )}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabBar}
+        contentContainerStyle={styles.tabBarContent}
+      >
         {TABS.map((t) => (
           <Pressable
             key={t}
@@ -256,7 +267,11 @@ export function ResultsScreen({ route, navigation }: Props) {
         accessibilityState={{ disabled: closetSaveState !== "idle" }}
       >
         <Text style={styles.saveClosetText}>
-          {closetSaveState === "saved" ? "Saved to Closet ✓" : closetSaveState === "saving" ? "Saving…" : "Save to Closet"}
+          {closetSaveState === "saved"
+            ? "Saved to Closet ✓"
+            : closetSaveState === "saving"
+              ? "Saving…"
+              : "Save to Closet"}
         </Text>
       </Pressable>
 
@@ -277,9 +292,18 @@ const styles = StyleSheet.create({
   // Item selector — only rendered when a scan detected more than one item (see
   // classifications.length > 1 above). Mirrors the tab bar's own pill styling
   // directly below rather than inventing new visual language for it.
-  itemSelectorBar: { maxHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
+  itemSelectorBar: {
+    maxHeight: 52,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
   itemSelectorContent: { paddingHorizontal: 12, paddingVertical: 8, alignItems: "center", gap: 8 },
-  itemChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.radius.pill, backgroundColor: theme.colors.surfaceAlt },
+  itemChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
   itemChipActive: { backgroundColor: theme.colors.accent },
   itemChipText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
   itemChipTextActive: { color: theme.colors.textPrimary },
@@ -290,7 +314,14 @@ const styles = StyleSheet.create({
   tabButtonText: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
   tabButtonTextActive: { color: theme.colors.textPrimary },
   content: { flex: 1 },
-  scanAgainButton: { marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md, backgroundColor: theme.colors.accent, paddingVertical: 14, borderRadius: theme.radius.md, alignItems: "center" },
+  scanAgainButton: {
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.accent,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+  },
   scanAgainText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.bold },
   saveClosetButton: {
     marginHorizontal: theme.spacing.md,

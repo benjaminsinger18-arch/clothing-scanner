@@ -68,9 +68,9 @@ export function OverviewTab({
         }
         style={styles.correctionLink}
         accessibilityRole="button"
-        accessibilityLabel="Doesn't look right? Suggest a fix"
+        accessibilityLabel="Doesn’t look right? Suggest a fix"
       >
-        <Text style={styles.correctionLinkText}>Doesn't look right? Suggest a fix</Text>
+        <Text style={styles.correctionLinkText}>Doesn’t look right? Suggest a fix</Text>
       </Pressable>
 
       {classification.source === "correction" && classification.sources && classification.sources.length > 0 && (

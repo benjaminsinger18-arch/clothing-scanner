@@ -42,7 +42,8 @@ export function PriceRangeSummary({ pricing, loading }: { pricing: PriceSearchRe
           </Text>
           {resaleSavingsPct !== null && resaleSavingsPct > 0 && (
             <Text style={styles.note}>
-              Roughly {resaleSavingsPct}% less than buying new, based on secondhand marketplace listings (Poshmark, eBay, and similar).
+              Roughly {resaleSavingsPct}% less than buying new, based on secondhand marketplace listings (Poshmark,
+              eBay, and similar).
             </Text>
           )}
         </View>

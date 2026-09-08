@@ -137,7 +137,9 @@ async function runOne(entry: GoldenEntry): Promise<ItemReport> {
     actual = result.classifications[0];
   } catch (err) {
     report.error =
-      err instanceof ClassificationError ? err.message : `Unexpected error: ${err instanceof Error ? err.message : String(err)}`;
+      err instanceof ClassificationError
+        ? err.message
+        : `Unexpected error: ${err instanceof Error ? err.message : String(err)}`;
     return report;
   }
 
@@ -206,7 +208,12 @@ function printSummary(reports: ItemReport[]): number | null {
  * these numbers. Sums every entry's usage (including zero-item/error entries
  * that still made a billed call) rather than only gradable ones. */
 function printCostEstimate(reports: ItemReport[]): void {
-  const totals: ScanUsage = { claudeInputTokens: 0, claudeOutputTokens: 0, geminiInputTokens: 0, geminiOutputTokens: 0 };
+  const totals: ScanUsage = {
+    claudeInputTokens: 0,
+    claudeOutputTokens: 0,
+    geminiInputTokens: 0,
+    geminiOutputTokens: 0,
+  };
   let timedCount = 0;
   for (const r of reports) {
     if (!r.usage) continue;
@@ -279,9 +286,7 @@ async function main() {
     return;
   }
   if (overallPassRate < minPassRate) {
-    console.log(
-      `\nFAIL: overall pass rate ${overallPassRate.toFixed(1)}% is below --min-pass-rate=${minPassRate}.`
-    );
+    console.log(`\nFAIL: overall pass rate ${overallPassRate.toFixed(1)}% is below --min-pass-rate=${minPassRate}.`);
     process.exitCode = 1;
   } else {
     console.log(`\nOK: overall pass rate ${overallPassRate.toFixed(1)}% meets --min-pass-rate=${minPassRate}.`);

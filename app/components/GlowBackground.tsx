@@ -15,10 +15,7 @@ import { theme } from "../theme";
 export function GlowBackground({ style }: { style?: ViewStyle }) {
   return (
     <View style={[styles.container, style]} pointerEvents="none">
-      <LinearGradient
-        colors={[theme.colors.glow(0.35), theme.colors.glow(0)]}
-        style={styles.gradient}
-      />
+      <LinearGradient colors={[theme.colors.glow(0.35), theme.colors.glow(0)]} style={styles.gradient} />
     </View>
   );
 }
