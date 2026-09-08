@@ -1,0 +1,16 @@
+# Normalize all text files to LF in the repo and on checkout, regardless of a
+# contributor's local core.autocrlf setting. Without this, a Windows checkout
+# with autocrlf=true silently rewrites every tracked file to CRLF, which then
+# fights Prettier's "lf" default (endOfLine, unset here since lf is already
+# the default) and makes `prettier --check` falsely flag the entire repo as
+# unformatted after nothing but a `git checkout`/`git merge` — not an actual
+# formatting regression, just a line-ending mismatch. Binary assets are
+# excluded so git never tries to diff/convert them.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ttf binary
+*.wasm binary
+*.ico binary
