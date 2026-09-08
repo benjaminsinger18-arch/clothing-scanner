@@ -6,6 +6,7 @@ import type {
   OutfitSuggestionsRequestBody,
   OutfitSuggestionsResult,
   PriceSearchResult,
+  UsageSnapshot,
 } from "@clothing-scanner/shared-types";
 
 // Read from app.config.js's `extra` (populated from EXPO_API_URL /
@@ -224,4 +225,33 @@ export async function getOutfitSuggestions(classification: ClassificationResult)
   }
 
   return json as OutfitSuggestionsResult;
+}
+
+/** Powers Settings' "Provider usage" section — read-only, makes no external
+ * calls itself (see server/src/routes/usage.ts), just reflects the server's
+ * own in-memory soft-cap counters. */
+export async function getUsage(): Promise<UsageSnapshot> {
+  if (!API_URL) {
+    throw new ApiError(
+      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
+    );
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/usage`, { headers: authHeaders() });
+  } catch {
+    throw new ApiError(
+      "Could not reach the backend",
+      `Check that the server is running and EXPO_API_URL (${API_URL}) is reachable from your phone`
+    );
+  }
+
+  const json = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new ApiError(json?.error ?? "usage_fetch_failed", json?.reason);
+  }
+
+  return json as UsageSnapshot;
 }

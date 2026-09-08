@@ -19,6 +19,6 @@
       "versionCode": 1,
       "permissions": ["CAMERA"]
     },
-    "plugins": ["expo-font"]
+    "plugins": ["expo-font", "expo-sqlite"]
   }
 }

@@ -24,6 +24,10 @@ import { ResultsScreen } from "./screens/ResultsScreen";
 import { CorrectionScreen } from "./screens/CorrectionScreen";
 import { ClosetScreen } from "./screens/ClosetScreen";
 import { ClosetDetailScreen } from "./screens/ClosetDetailScreen";
+import { OutfitsScreen } from "./screens/OutfitsScreen";
+import { OutfitBuilderScreen } from "./screens/OutfitBuilderScreen";
+import { OutfitDetailScreen } from "./screens/OutfitDetailScreen";
+import { SettingsScreen } from "./screens/SettingsScreen";
 import { theme } from "./theme";
 
 // Held open until fonts finish loading (or fail) so the very first screen's Inter
@@ -74,6 +78,14 @@ export default function App() {
             <Stack.Screen name="Correction" component={CorrectionScreen} options={{ title: "Correct This" }} />
             <Stack.Screen name="Closet" component={ClosetScreen} options={{ title: "My Closet" }} />
             <Stack.Screen name="ClosetDetail" component={ClosetDetailScreen} options={{ title: "Saved Item" }} />
+            <Stack.Screen name="Outfits" component={OutfitsScreen} options={{ title: "My Outfits" }} />
+            <Stack.Screen name="OutfitBuilder" component={OutfitBuilderScreen} options={{ title: "Build an Outfit" }} />
+            <Stack.Screen
+              name="OutfitDetail"
+              component={OutfitDetailScreen}
+              options={({ route }) => ({ title: route.params.outfit.name })}
+            />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
