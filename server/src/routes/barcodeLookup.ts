@@ -45,13 +45,14 @@ barcodeLookupRouter.get("/barcode-lookup", async (req, res) => {
 
   const startedAt = Date.now();
   try {
-    const classification = await classifyFromBarcode(lookup.item);
+    const { classification, usage } = await classifyFromBarcode(lookup.item);
     try {
       logClassification({
         timestamp: new Date().toISOString(),
         trigger: "barcode-lookup",
         result: classification,
         latencyMs: Date.now() - startedAt,
+        usage,
       });
     } catch (err) {
       console.warn("[/barcode-lookup] Failed to log classification:", err);

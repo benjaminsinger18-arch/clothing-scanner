@@ -29,6 +29,22 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOG_DIR = join(__dirname, "..", "..", "data");
 export const LOG_FILE = join(LOG_DIR, "classifications.jsonl");
 
+/** Token usage for one scan, possibly spanning several model calls (a Claude
+ * retry pass, a Gemini rescue pass) — accumulated by claudeClient.ts across
+ * whichever calls a given classifyImage/classifyFromBarcode invocation
+ * actually made, not just the first one. Defined here (the log's own shape)
+ * rather than in claudeClient.ts so this file doesn't need a lib -> services
+ * import; claudeClient.ts imports this type instead, matching the existing
+ * services-depend-on-lib direction (e.g. its own rateLimitTracker.ts import). */
+export interface ScanUsage {
+  claudeInputTokens: number;
+  claudeOutputTokens: number;
+  /** Both stay 0 when Gemini's rescue pass never fired (the common case —
+   * see claudeClient.ts's classifyImage) or isn't configured. */
+  geminiInputTokens: number;
+  geminiOutputTokens: number;
+}
+
 export interface ClassificationLogEntry {
   timestamp: string; // ISO 8601
   /** Which endpoint produced this classification. Correction-flow results are
@@ -48,6 +64,12 @@ export interface ClassificationLogEntry {
    * Gemini/retry) — that's already visible indirectly via `result`'s `model`/
    * `visionAssisted` tags, see summarizeClassifications.ts's latency section. */
   latencyMs?: number;
+  /** Token usage for this scan (see ScanUsage above) — optional for the same
+   * reason as latencyMs: old log lines written before this field existed
+   * still parse fine. Vision's own token usage isn't tracked here (Vision's
+   * annotate API is priced per-image-per-feature, not per-token, an entirely
+   * different pricing model). */
+  usage?: ScanUsage;
 }
 
 /** Appends one JSON line. Synchronous for the same reason as correctionLog.ts's

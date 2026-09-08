@@ -45,6 +45,16 @@ confident about some of what's in a photo.
 
 Every eval run makes real Claude Sonnet 5 calls (plus Vision/Gemini if those keys are configured)
 against every entry here — there's no mocking, since the whole point is measuring real model
-behavior. Keep this set to roughly 15-30 photos so a run stays cheap and fast; grow it over time as
-you curate more (a good source: photos from `server/data/corrections.jsonl` where a scan actually
-got something wrong — see that file's own doc comment in `server/src/lib/correctionLog.ts`).
+behavior. This set has grown well past the original "roughly 15-30 photos" cost guidance (60 as of
+this writing, across nine expansion rounds) — a full run costs proportionally more than it used to;
+if that starts to matter, run against a subset rather than shrinking the set back down.
+
+Grow it over time as you curate more. The best source: real corrections logged via the "Suggest a
+fix" flow (`server/data/corrections.jsonl` — see that file's own doc comment in
+`server/src/lib/correctionLog.ts`), where a scan actually got something wrong. Run
+`npm run promote-corrections --workspace=server` to review what's promotable (dry run by default —
+see that script's own header comment) and `-- --apply` to actually add entries. Give each promoted
+entry its own `ATTRIBUTIONS.md` row same as everything else, noting the source as "user correction"
+(no license/attribution needed, but worth flagging that it isn't a Wikimedia Commons photo like the
+rest of the set) — and note that these are lower-resolution than the rest of the set (see the
+script's own comment for why).

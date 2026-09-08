@@ -64,20 +64,35 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+/** Token usage for one Gemini call — separate from claudeClient.ts's ScanUsage
+ * (a Gemini call always fills in just its own two fields there), kept as its
+ * own small shape here since geminiClient.ts has no reason to depend on
+ * classificationLog.ts. */
+export interface GeminiUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface GeminiClassificationResult {
+  items: RawClassification[];
+  usage: GeminiUsage;
+}
+
 /**
  * Asks Gemini for its own full structured multi-item classification of the same
  * photo Claude is looking at. Returns null if unconfigured, rate-limited, timed
  * out, errored, or the response didn't parse — callers should treat null as "no
  * second opinion available" and proceed on Claude (+ Vision) alone. A non-null
- * result may still be an empty array (Gemini's honest "nothing recognizable and
- * wearable here" answer, same as Claude's own empty-array case) — that's a real
- * answer, not a failure, and callers should treat it as "Gemini agrees there's
- * nothing to see here" rather than degrade as if Gemini were unavailable.
+ * result's `items` may still be an empty array (Gemini's honest "nothing
+ * recognizable and wearable here" answer, same as Claude's own empty-array
+ * case) — that's a real answer, not a failure, and callers should treat it as
+ * "Gemini agrees there's nothing to see here" rather than degrade as if Gemini
+ * were unavailable.
  */
 export async function classifyMultiItemWithGemini(
   imageBase64: string,
   mediaType: SupportedMediaType
-): Promise<RawClassification[] | null> {
+): Promise<GeminiClassificationResult | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return null;
@@ -115,7 +130,13 @@ export async function classifyMultiItemWithGemini(
     if (!Array.isArray(parsed.items)) {
       throw new GeminiClassificationError("Gemini's structured output was missing the items array");
     }
-    return parsed.items as RawClassification[];
+    return {
+      items: parsed.items as RawClassification[],
+      usage: {
+        inputTokens: interaction.usage?.total_input_tokens ?? 0,
+        outputTokens: interaction.usage?.total_output_tokens ?? 0,
+      },
+    };
   } catch (err) {
     console.error("[geminiClient] classification failed:", err);
     return null;
