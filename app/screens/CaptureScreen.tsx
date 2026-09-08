@@ -69,14 +69,32 @@ export function CaptureScreen({ navigation }: Props) {
         <Text style={styles.secondaryButtonText}>Choose from Library</Text>
       </Pressable>
 
-      <Pressable
-        style={styles.closetLink}
-        onPress={() => navigation.navigate("Closet")}
-        accessibilityRole="link"
-        accessibilityLabel="View my closet"
-      >
-        <Text style={styles.closetLinkText}>View My Closet</Text>
-      </Pressable>
+      <View style={styles.linkRow}>
+        <Pressable
+          style={styles.closetLink}
+          onPress={() => navigation.navigate("Closet")}
+          accessibilityRole="link"
+          accessibilityLabel="View my closet"
+        >
+          <Text style={styles.closetLinkText}>View My Closet</Text>
+        </Pressable>
+        <Pressable
+          style={styles.closetLink}
+          onPress={() => navigation.navigate("Outfits")}
+          accessibilityRole="link"
+          accessibilityLabel="View my outfits"
+        >
+          <Text style={styles.closetLinkText}>My Outfits</Text>
+        </Pressable>
+        <Pressable
+          style={styles.closetLink}
+          onPress={() => navigation.navigate("Settings")}
+          accessibilityRole="link"
+          accessibilityLabel="Settings"
+        >
+          <Text style={styles.closetLinkText}>Settings</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -112,6 +130,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
+  linkRow: { flexDirection: "row" },
   closetLink: { marginTop: 4, padding: theme.spacing.sm },
   closetLinkText: { color: theme.colors.accent, fontSize: 14, fontFamily: theme.fonts.body.medium },
 });

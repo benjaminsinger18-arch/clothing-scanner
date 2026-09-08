@@ -14,10 +14,15 @@ export function ClosetItemCard({
   item,
   onPress,
   onRemove,
+  selected,
 }: {
   item: ClosetItem;
   onPress?: () => void;
   onRemove?: () => void;
+  /** Multi-select highlight for OutfitBuilderScreen's item picker — undefined
+   * everywhere else (ClosetScreen, Outfit Matches' "from your closet"
+   * section), which renders identically to before this prop existed. */
+  selected?: boolean;
 }) {
   const { classification, priceRange, photoThumbnail } = item;
 
@@ -68,10 +73,12 @@ export function ClosetItemCard({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        style={({ pressed }) => [styles.card, selected && styles.cardSelected, pressed && styles.cardPressed]}
         accessibilityRole="button"
         accessibilityLabel={describeItem(classification)}
+        accessibilityState={selected !== undefined ? { selected } : undefined}
       >
+        {selected !== undefined && <View style={[styles.checkbox, selected && styles.checkboxChecked]} />}
         {content}
       </Pressable>
     );
@@ -98,6 +105,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   cardPressed: { opacity: 0.7 },
+  cardSelected: { borderColor: theme.colors.accent, borderWidth: 2 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: theme.radius.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    flexShrink: 0,
+  },
+  checkboxChecked: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
   thumb: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
   thumbPlaceholder: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 },
   textCol: { flex: 1, minWidth: 0 },

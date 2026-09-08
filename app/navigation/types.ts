@@ -1,5 +1,6 @@
 import type { ClassificationResult, OutfitSuggestionsResult, PriceSearchResult } from "@clothing-scanner/shared-types";
 import type { ClosetItem } from "../lib/closetStorage";
+import type { ResolvedOutfit } from "../lib/outfitStorage";
 
 export type RootStackParamList = {
   Capture: undefined;
@@ -51,4 +52,14 @@ export type RootStackParamList = {
    * params — so this screen needs no extra AsyncStorage read of its own for
    * the common case of "I just tapped this from the list I already loaded." */
   ClosetDetail: { item: ClosetItem };
+  /** Saved outfits (see outfitStorage.ts) — a user-assembled combination of
+   * their own closet pieces, distinct from Results' AI-suggested Outfit
+   * Matches tab. */
+  Outfits: undefined;
+  /** Multi-select picker over the current closet, ending in a name prompt and
+   * a save — see OutfitBuilderScreen. */
+  OutfitBuilder: undefined;
+  /** Same "pass the whole resolved entry" pattern as ClosetDetail above. */
+  OutfitDetail: { outfit: ResolvedOutfit };
+  Settings: undefined;
 };

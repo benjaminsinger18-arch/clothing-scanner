@@ -49,6 +49,23 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   below for why only one). This is a heuristic, not a trained
   outfit-compatibility model (see plan's research notes — no accessible API for that
   exists) — good for casual pairing ideas, not a styling authority.
+- Settings screen ✅ — there was previously no settings screen at all. `SettingsScreen`
+  (linked from the Capture screen) now has three sections: export the whole closet as
+  a JSON file via the native share sheet (`expo-file-system` + `expo-sharing`), a
+  "Clear closet" action (confirmed via a native `Alert`, since it's destructive and
+  irreversible), and a live view of `GET /usage`'s provider soft-cap counters
+  (SerpApi/Vision/Gemini/UPCitemdb/Claude web search) with a progress bar per
+  provider that turns amber past 75% of its cap and red past 95%.
+- My Outfits ✅ — a separate feature from Outfit Matches above: lets you assemble,
+  name, and save a combination of your *own* closet pieces (`app/lib/outfitStorage.ts`,
+  `OutfitsScreen`/`OutfitBuilderScreen`/`OutfitDetailScreen`, "My Outfits" link on the
+  Capture screen). Outfit Matches only ever *suggests* shoppable items to buy (plus a
+  read-only "you already own something like this" cross-reference); this is the actual
+  assemble-and-keep half. Stored as a name + an ordered list of closet item ids rather
+  than a copy of their data, so an outfit always reflects the current state of the
+  items it references; removing a closet item that's part of a saved outfit leaves
+  that outfit with a "no longer in your closet" note rather than blocking the removal
+  or silently breaking.
 - Gendered pairings ✅ — every classification now includes a `gender` field
   ("men" | "women" | "unisex" — see `ClassificationResult` in
   `packages/shared-types`), inferred from a visible wearer's apparent gender

@@ -3,6 +3,8 @@
 // reset on server restart, an acceptable approximation for a single-instance indie
 // deployment (revisit with Redis if this ever needs to survive restarts / scale out).
 
+import type { UsageSnapshot } from "@clothing-scanner/shared-types";
+
 interface Counter {
   count: number;
   periodKey: string;
@@ -137,7 +139,7 @@ export function recordSerpApiOutfitCall(): void {
   serpApiOutfitCounter.count += 1;
 }
 
-export function getUsageSnapshot() {
+export function getUsageSnapshot(): UsageSnapshot {
   resetIfNewPeriod(serpApiCounter, monthKey());
   resetIfNewPeriod(visionCounter, monthKey());
   resetIfNewPeriod(geminiCounter, todayKey());

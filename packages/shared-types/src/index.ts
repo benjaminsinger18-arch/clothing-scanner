@@ -199,3 +199,24 @@ export interface ApiErrorBody {
   error: string;
   reason?: string;
 }
+
+/** One provider's soft-cap counter, as tracked by server/src/lib/rateLimitTracker.ts
+ * and returned by GET /usage — see that file for what each cap is actually
+ * protecting (a real free-tier quota vs. a pure runaway-cost circuit breaker). */
+export interface UsageCounter {
+  count: number;
+  cap: number;
+  period: "day" | "month";
+}
+
+/** Shape of GET /usage's response body — the current in-memory soft-cap
+ * counters for every rate-limited provider. Counts reset on server restart,
+ * same as the caps themselves (see rateLimitTracker.ts's top comment). */
+export interface UsageSnapshot {
+  serpapi: UsageCounter;
+  vision: UsageCounter;
+  gemini: UsageCounter;
+  upc: UsageCounter;
+  webSearch: UsageCounter;
+  serpapiOutfit: UsageCounter;
+}
