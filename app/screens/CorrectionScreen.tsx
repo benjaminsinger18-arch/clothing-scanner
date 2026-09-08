@@ -85,6 +85,9 @@ export function CorrectionScreen({ route, navigation }: Props) {
           style={[styles.submitButton, (!text.trim() || loading) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={!text.trim() || loading}
+          accessibilityRole="button"
+          accessibilityLabel="Verify online"
+          accessibilityState={{ disabled: !text.trim() || loading }}
         >
           <Text style={styles.submitButtonText}>Verify Online</Text>
         </Pressable>

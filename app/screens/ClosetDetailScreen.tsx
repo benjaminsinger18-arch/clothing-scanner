@@ -81,6 +81,8 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
       <Pressable
         style={styles.viewResultsButton}
         onPress={() => navigation.navigate("Results", { classifications: [classification], initialIndex: 0, photoThumbnail })}
+        accessibilityRole="button"
+        accessibilityLabel="View full results"
       >
         <Text style={styles.viewResultsButtonText}>View Full Results</Text>
       </Pressable>
@@ -89,6 +91,9 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
         style={[styles.removeButton, removing && styles.removeButtonDisabled]}
         onPress={handleRemove}
         disabled={removing}
+        accessibilityRole="button"
+        accessibilityLabel={removing ? "Removing from closet" : "Remove from closet"}
+        accessibilityState={{ disabled: removing }}
       >
         <Text style={styles.removeButtonText}>{removing ? "Removing…" : "Remove from Closet"}</Text>
       </Pressable>

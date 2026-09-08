@@ -6,6 +6,7 @@ import { outfitSuggestionsRouter } from "./routes/outfitSuggestions.js";
 import { priceSearchRouter } from "./routes/priceSearch.js";
 import { barcodeLookupRouter } from "./routes/barcodeLookup.js";
 import { correctionRouter } from "./routes/correction.js";
+import { usageRouter } from "./routes/usage.js";
 import { sharedSecretAuth } from "./lib/sharedSecretAuth.js";
 import { restoreFromBucket, isBucketSyncConfigured } from "./lib/bucketSync.js";
 import { LOG_FILE as CORRECTIONS_LOG_FILE } from "./lib/correctionLog.js";
@@ -30,6 +31,7 @@ app.use(priceSearchRouter);
 app.use(outfitSuggestionsRouter);
 app.use(barcodeLookupRouter);
 app.use(correctionRouter);
+app.use(usageRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[server] unhandled error:", err);

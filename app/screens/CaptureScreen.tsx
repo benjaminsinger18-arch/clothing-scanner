@@ -49,17 +49,32 @@ export function CaptureScreen({ navigation }: Props) {
 
       {error ? <ErrorState title={error} /> : null}
 
-      <Pressable style={styles.primaryButton} onPress={takePhoto}>
+      <Pressable style={styles.primaryButton} onPress={takePhoto} accessibilityRole="button" accessibilityLabel="Take photo">
         <Text style={styles.primaryButtonText}>Take Photo</Text>
       </Pressable>
-      <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate("BarcodeScan")}>
+      <Pressable
+        style={styles.secondaryButton}
+        onPress={() => navigation.navigate("BarcodeScan")}
+        accessibilityRole="button"
+        accessibilityLabel="Scan barcode"
+      >
         <Text style={styles.secondaryButtonText}>Scan Barcode</Text>
       </Pressable>
-      <Pressable style={styles.secondaryButton} onPress={pickPhoto}>
+      <Pressable
+        style={styles.secondaryButton}
+        onPress={pickPhoto}
+        accessibilityRole="button"
+        accessibilityLabel="Choose photo from library"
+      >
         <Text style={styles.secondaryButtonText}>Choose from Library</Text>
       </Pressable>
 
-      <Pressable style={styles.closetLink} onPress={() => navigation.navigate("Closet")}>
+      <Pressable
+        style={styles.closetLink}
+        onPress={() => navigation.navigate("Closet")}
+        accessibilityRole="link"
+        accessibilityLabel="View my closet"
+      >
         <Text style={styles.closetLinkText}>View My Closet</Text>
       </Pressable>
     </View>

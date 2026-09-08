@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -14,6 +14,7 @@ export function ClosetScreen({ navigation }: Props) {
   // null = "haven't loaded yet" (distinct from "loaded, empty") so the empty
   // state doesn't flash briefly before the real list on every visit.
   const [items, setItems] = useState<ClosetItem[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(() => {
     getClosetItems()
@@ -25,6 +26,20 @@ export function ClosetScreen({ navigation }: Props) {
   // save made on ResultsScreen (or a removal made here on a prior visit)
   // should show up without forcing a full remount of this screen.
   useFocusEffect(load);
+
+  // Pull-to-refresh, separate from the focus-triggered `load` above: this one
+  // needs its own loading flag so RefreshControl's spinner can turn off once
+  // the read completes, instead of the fire-and-forget focus reload.
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setItems(await getClosetItems());
+    } catch {
+      setItems([]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   async function handleRemove(id: string) {
     // Optimistic — the row disappears immediately rather than waiting on the
@@ -51,6 +66,9 @@ export function ClosetScreen({ navigation }: Props) {
       contentContainerStyle={styles.content}
       data={items}
       keyExtractor={(item) => item.id}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.accent} />
+      }
       renderItem={({ item }) => (
         <ClosetItemCard
           item={item}
