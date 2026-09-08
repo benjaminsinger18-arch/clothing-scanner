@@ -39,6 +39,15 @@ export interface ClassificationLogEntry {
    * in claudeClient.ts) since one photo can now report several items; "barcode-lookup"
    * still logs a single result, a barcode match always being exactly one product. */
   result: ClassificationResult | ClassificationResult[];
+  /** Wall-clock time in ms for the whole classification call (classifyImage or
+   * classifyFromBarcode), measured by the route handler. Previously this same
+   * timing existed only as a `console.log` in claudeClient.ts gated behind
+   * `NODE_ENV !== "production"` — i.e. invisible on the one environment (Render)
+   * where you'd actually want it. Optional so old log lines written before this
+   * field existed still parse fine. Not broken down by rescue stage (Vision/
+   * Gemini/retry) — that's already visible indirectly via `result`'s `model`/
+   * `visionAssisted` tags, see summarizeClassifications.ts's latency section. */
+  latencyMs?: number;
 }
 
 /** Appends one JSON line. Synchronous for the same reason as correctionLog.ts's

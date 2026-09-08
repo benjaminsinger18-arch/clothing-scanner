@@ -11,11 +11,11 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityRole="alert">
       <Text style={styles.title}>{title}</Text>
       {detail ? <Text style={styles.detail}>{detail}</Text> : null}
       {onRetry ? (
-        <Pressable style={styles.button} onPress={onRetry}>
+        <Pressable style={styles.button} onPress={onRetry} accessibilityRole="button" accessibilityLabel="Try again">
           <Text style={styles.buttonText}>Try again</Text>
         </Pressable>
       ) : null}

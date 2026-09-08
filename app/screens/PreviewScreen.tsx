@@ -66,10 +66,22 @@ export function PreviewScreen({ route, navigation }: Props) {
       {error ? <ErrorState title={error.title} detail={error.detail} onRetry={handleUsePhoto} /> : null}
 
       <View style={styles.buttonRow}>
-        <Pressable style={styles.secondaryButton} onPress={() => navigation.goBack()} disabled={loading}>
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => navigation.goBack()}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Retake photo"
+        >
           <Text style={styles.secondaryButtonText}>Retake</Text>
         </Pressable>
-        <Pressable style={styles.primaryButton} onPress={handleUsePhoto} disabled={loading}>
+        <Pressable
+          style={styles.primaryButton}
+          onPress={handleUsePhoto}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Use this photo"
+        >
           <Text style={styles.primaryButtonText}>Use this photo</Text>
         </Pressable>
       </View>

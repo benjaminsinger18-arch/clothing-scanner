@@ -51,7 +51,13 @@ export function ClosetItemCard({
         ) : null}
       </View>
       {onRemove ? (
-        <Pressable onPress={handleRemove} hitSlop={8} style={styles.removeButton}>
+        <Pressable
+          onPress={handleRemove}
+          hitSlop={8}
+          style={styles.removeButton}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${describeItem(classification)} from closet`}
+        >
           <Text style={styles.removeButtonText}>Remove</Text>
         </Pressable>
       ) : null}
@@ -60,7 +66,12 @@ export function ClosetItemCard({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={describeItem(classification)}
+      >
         {content}
       </Pressable>
     );

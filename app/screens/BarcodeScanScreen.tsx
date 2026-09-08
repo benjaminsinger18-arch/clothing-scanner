@@ -80,7 +80,12 @@ export function BarcodeScanScreen({ navigation }: Props) {
           detail={permission.canAskAgain ? undefined : "Enable camera access for this app in your device Settings."}
           onRetry={permission.canAskAgain ? requestPermission : undefined}
         />
-        <Pressable style={styles.secondaryButton} onPress={() => navigation.replace("Capture")}>
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => navigation.replace("Capture")}
+          accessibilityRole="button"
+          accessibilityLabel="Take photo instead"
+        >
           <Text style={styles.secondaryButtonText}>Take Photo Instead</Text>
         </Pressable>
       </View>
@@ -103,7 +108,12 @@ export function BarcodeScanScreen({ navigation }: Props) {
       {error ? (
         <View style={styles.errorSheet}>
           <ErrorState title={error.title} detail={error.detail} onRetry={resumeScanning} />
-          <Pressable style={styles.secondaryButton} onPress={() => navigation.replace("Capture")}>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => navigation.replace("Capture")}
+            accessibilityRole="button"
+            accessibilityLabel="Take photo instead"
+          >
             <Text style={styles.secondaryButtonText}>Take Photo Instead</Text>
           </Pressable>
         </View>

@@ -43,10 +43,16 @@ barcodeLookupRouter.get("/barcode-lookup", async (req, res) => {
     return;
   }
 
+  const startedAt = Date.now();
   try {
     const classification = await classifyFromBarcode(lookup.item);
     try {
-      logClassification({ timestamp: new Date().toISOString(), trigger: "barcode-lookup", result: classification });
+      logClassification({
+        timestamp: new Date().toISOString(),
+        trigger: "barcode-lookup",
+        result: classification,
+        latencyMs: Date.now() - startedAt,
+      });
     } catch (err) {
       console.warn("[/barcode-lookup] Failed to log classification:", err);
     }

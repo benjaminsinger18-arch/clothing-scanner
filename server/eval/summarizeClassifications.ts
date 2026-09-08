@@ -82,6 +82,67 @@ function main() {
   for (const level of ["none", "low", "medium", "high"] as const) {
     console.log(`  ${level}: ${pct(confidenceCounts.get(level) ?? 0, total)}`);
   }
+
+  // Latency — only present on entries logged after latencyMs was added to
+  // ClassificationLogEntry (classificationLog.ts), so older log lines are
+  // silently skipped here rather than treated as 0ms.
+  printLatencySummary(entries);
+}
+
+function median(sorted: number[]): number {
+  if (sorted.length === 0) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+function summarizeLatencies(label: string, values: number[]): void {
+  if (values.length === 0) {
+    console.log(`  ${label}: n/a (no timed entries)`);
+    return;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  console.log(
+    `  ${label}: avg ${Math.round(avg)}ms, median ${Math.round(median(sorted))}ms, ` +
+      `min ${sorted[0]}ms, max ${sorted[sorted.length - 1]}ms (n=${values.length})`
+  );
+}
+
+/** Buckets logged latency by which rescue path eventually resolved the scan —
+ * the exact tradeoff claudeClient.ts's own comments describe having measured by
+ * hand once (Gemini-on-every-scan pushing average latency from ~2.2-2.6s to
+ * 3-7.7s, hence demoting it to rescue-only). This gives that same comparison an
+ * ongoing, durable source instead of a one-time manual measurement. */
+function printLatencySummary(entries: ClassificationLogEntry[]): void {
+  const timed = entries.filter((e): e is ClassificationLogEntry & { latencyMs: number } => e.latencyMs !== undefined);
+  console.log(`\nLatency (${timed.length}/${entries.length} logged entries have timing data):`);
+  if (timed.length === 0) return;
+
+  summarizeLatencies("Overall", timed.map((e) => e.latencyMs));
+
+  const barcodeLatencies = timed.filter((e) => e.trigger === "barcode-lookup").map((e) => e.latencyMs);
+  summarizeLatencies("barcode-lookup", barcodeLatencies);
+
+  const classifyTimed = timed.filter((e) => e.trigger === "classify");
+  const primaryModel = (e: ClassificationLogEntry): ClassificationResult["model"] | undefined =>
+    Array.isArray(e.result) ? e.result[0]?.model : e.result.model;
+
+  summarizeLatencies(
+    "classify — claude-sonnet-5 (no rescue)",
+    classifyTimed.filter((e) => primaryModel(e) === "claude-sonnet-5" && !(Array.isArray(e.result) ? e.result[0]?.visionAssisted : e.result.visionAssisted)).map((e) => e.latencyMs)
+  );
+  summarizeLatencies(
+    "classify — Vision-hint retry resolved it",
+    classifyTimed.filter((e) => Array.isArray(e.result) ? e.result[0]?.visionAssisted : e.result.visionAssisted).map((e) => e.latencyMs)
+  );
+  summarizeLatencies(
+    "classify — Gemini rescue resolved it",
+    classifyTimed.filter((e) => primaryModel(e) === "gemini-3.1-pro").map((e) => e.latencyMs)
+  );
+  summarizeLatencies(
+    "classify — zero items found",
+    classifyTimed.filter((e) => Array.isArray(e.result) && e.result.length === 0).map((e) => e.latencyMs)
+  );
 }
 
 main();

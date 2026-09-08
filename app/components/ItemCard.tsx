@@ -13,6 +13,8 @@ export function ItemCard({ item }: { item: PriceListing }) {
       onPress={() => {
         Linking.openURL(item.url).catch((err) => console.warn("[ItemCard] Failed to open listing URL:", err));
       }}
+      accessibilityRole="link"
+      accessibilityLabel={`${item.title}${item.price > 0 ? `, $${item.price.toFixed(2)}` : ""}${item.merchant ? `, ${item.merchant}` : ""}`}
     >
       <View style={styles.contentRow}>
         {imageUrl && !imageFailed ? (

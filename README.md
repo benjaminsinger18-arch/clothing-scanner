@@ -368,6 +368,20 @@ testing); if this ever goes to real users, replace it with per-user auth instead
 Leave `APP_SHARED_SECRET` unset for local dev — auth is skipped entirely when it's
 not configured, so `npm run dev` works with zero setup.
 
+### Checking provider usage/quota
+
+`GET /usage` (same auth as every other endpoint — send `X-App-Secret` if configured)
+returns the current in-memory soft-cap counters from `rateLimitTracker.ts` — how close
+each provider (SerpApi, Vision, Gemini, UPCitemdb, Claude web search) is to its cap
+right now, e.g.:
+
+```json
+{ "serpapi": { "count": 42, "cap": 220, "period": "month" }, "vision": { "count": 130, "cap": 900, "period": "month" }, ... }
+```
+
+Previously the only way to see this was reading Render's console logs by hand.
+Counts are per-process and reset on server restart, same as the caps themselves.
+
 ### Troubleshooting
 
 - **"Could not reach the backend"** — confirm the server is running, your phone and PC
@@ -415,10 +429,14 @@ infrastructure exist for that:
   `/barcode-lookup` call (not just corrections) appends its result — unbiased, since it's every scan,
   not just known failures (see `server/src/lib/classificationLog.ts`). Deliberately doesn't store the
   photo (scan volume is much higher than corrections; the correction log above already covers
-  image-carrying failures). Same Render free-tier caveat — and the same optional bucket-sync
-  mitigation — as the correction log. Run `npm run summarize --workspace=server` to print real
-  usage-pattern stats from it: unrecognized rate, how often Gemini's rescue pass or Vision's
-  brand-fill signal fires, brand confidence distribution.
+  image-carrying failures). Each entry also records `latencyMs` (wall-clock time for the whole
+  classification call) — this used to only be a `console.log` in `claudeClient.ts` gated behind
+  `NODE_ENV !== "production"`, i.e. invisible on Render; now it's durable and queryable. Same Render
+  free-tier caveat — and the same optional bucket-sync mitigation — as the correction log. Run
+  `npm run summarize --workspace=server` to print real usage-pattern stats from it: unrecognized
+  rate, how often Gemini's rescue pass or Vision's brand-fill signal fires, brand confidence
+  distribution, and a latency breakdown by which rescue path resolved the scan (Claude alone vs.
+  Vision-hint retry vs. Gemini rescue).
 - **Eval harness** (`server/eval/`) — a golden set of expected classification fields
   (`server/eval/golden/`, seeded with 60 openly-licensed Wikimedia Commons stock photos covering all
   8 categories — see its own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos
