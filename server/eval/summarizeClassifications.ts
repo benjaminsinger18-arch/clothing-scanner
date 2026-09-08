@@ -15,7 +15,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BrandConfidence, ClassificationResult } from "@clothing-scanner/shared-types";
-import type { ClassificationLogEntry } from "../src/lib/classificationLog.js";
+import type { ClassificationLogEntry, ScanUsage } from "../src/lib/classificationLog.js";
+import { CLAUDE_HAIKU_PRICE, CLAUDE_SONNET_PRICE, GEMINI_PRICE, estimateCostUsd, formatUsd } from "./pricing.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOG_FILE = join(__dirname, "..", "data", "classifications.jsonl");
@@ -87,6 +88,9 @@ function main() {
   // ClassificationLogEntry (classificationLog.ts), so older log lines are
   // silently skipped here rather than treated as 0ms.
   printLatencySummary(entries);
+
+  // Cost — same "only present on entries logged after the field existed" caveat.
+  printCostSummary(entries);
 }
 
 function median(sorted: number[]): number {
@@ -142,6 +146,75 @@ function printLatencySummary(entries: ClassificationLogEntry[]): void {
   summarizeLatencies(
     "classify — zero items found",
     classifyTimed.filter((e) => Array.isArray(e.result) && e.result.length === 0).map((e) => e.latencyMs)
+  );
+}
+
+function sumUsage(usages: ScanUsage[]): ScanUsage {
+  const total: ScanUsage = { claudeInputTokens: 0, claudeOutputTokens: 0, geminiInputTokens: 0, geminiOutputTokens: 0 };
+  for (const u of usages) {
+    total.claudeInputTokens += u.claudeInputTokens;
+    total.claudeOutputTokens += u.claudeOutputTokens;
+    total.geminiInputTokens += u.geminiInputTokens;
+    total.geminiOutputTokens += u.geminiOutputTokens;
+  }
+  return total;
+}
+
+/** Reports $ for a bucket of entries, using Sonnet pricing for the Claude
+ * side (both classifyImage's rescue chain and barcode-lookup's normalization
+ * pass — barcode-lookup actually uses Haiku, priced separately below, since
+ * lumping the two together would understate barcode-lookup's real cost and
+ * overstate classify's). */
+function summarizeCost(label: string, usages: ScanUsage[], claudePrice = CLAUDE_SONNET_PRICE): void {
+  if (usages.length === 0) {
+    console.log(`  ${label}: n/a (no entries)`);
+    return;
+  }
+  const total = sumUsage(usages);
+  const claudeCost = estimateCostUsd(total.claudeInputTokens, total.claudeOutputTokens, claudePrice);
+  const geminiCost = estimateCostUsd(total.geminiInputTokens, total.geminiOutputTokens, GEMINI_PRICE);
+  const totalCost = claudeCost + geminiCost;
+  console.log(
+    `  ${label}: ~${formatUsd(totalCost)} total, ~${formatUsd(totalCost / usages.length)}/scan (n=${usages.length})`
+  );
+}
+
+/** Same rescue-path buckets as printLatencySummary above — the two sections
+ * are meant to be read side by side (a rescue path that's both slower AND
+ * more expensive is the clearest signal that a tradeoff needs revisiting,
+ * same kind of live measurement that originally justified moving Gemini to
+ * rescue-only — see claudeClient.ts's classifyImage doc comment). */
+function printCostSummary(entries: ClassificationLogEntry[]): void {
+  const timed = entries.filter((e): e is ClassificationLogEntry & { usage: ScanUsage } => e.usage !== undefined);
+  console.log(`\nEstimated cost (${timed.length}/${entries.length} logged entries have usage data; see pricing.ts for caveats):`);
+  if (timed.length === 0) return;
+
+  summarizeCost("Overall", timed.map((e) => e.usage));
+
+  const barcodeEntries = timed.filter((e) => e.trigger === "barcode-lookup");
+  summarizeCost("barcode-lookup (Haiku)", barcodeEntries.map((e) => e.usage), CLAUDE_HAIKU_PRICE);
+
+  const classifyTimed = timed.filter((e) => e.trigger === "classify");
+  const primaryModel = (e: ClassificationLogEntry): ClassificationResult["model"] | undefined =>
+    Array.isArray(e.result) ? e.result[0]?.model : e.result.model;
+  const visionAssisted = (e: ClassificationLogEntry): boolean =>
+    Array.isArray(e.result) ? Boolean(e.result[0]?.visionAssisted) : Boolean(e.result.visionAssisted);
+
+  summarizeCost(
+    "classify — claude-sonnet-5 (no rescue)",
+    classifyTimed.filter((e) => primaryModel(e) === "claude-sonnet-5" && !visionAssisted(e)).map((e) => e.usage)
+  );
+  summarizeCost(
+    "classify — Vision-hint retry resolved it",
+    classifyTimed.filter((e) => visionAssisted(e)).map((e) => e.usage)
+  );
+  summarizeCost(
+    "classify — Gemini rescue resolved it",
+    classifyTimed.filter((e) => primaryModel(e) === "gemini-3.1-pro").map((e) => e.usage)
+  );
+  summarizeCost(
+    "classify — zero items found",
+    classifyTimed.filter((e) => Array.isArray(e.result) && e.result.length === 0).map((e) => e.usage)
   );
 }
 

@@ -12,7 +12,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "eval": "tsx eval/runEval.ts",
-    "summarize": "tsx eval/summarizeClassifications.ts"
+    "summarize": "tsx eval/summarizeClassifications.ts",
+    "promote-corrections": "tsx eval/promoteCorrections.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",

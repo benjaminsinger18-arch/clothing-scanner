@@ -442,6 +442,16 @@ infrastructure exist for that:
   re-synced there after every write. A good source of real-world misclassification examples to
   curate into the golden eval set below. Note this is a *biased* sample — only scans someone bothered
   to correct.
+  - `npm run promote-corrections --workspace=server` (`server/eval/promoteCorrections.ts`) is the
+    actual "curate into the golden set" step — for a long time this log was write-only with nothing
+    reading from it. Dry-run by default (prints every promotable correction, flagging which
+    garmentType/category combos are new coverage vs. already represented); pass `-- --apply` to
+    actually copy the image into `golden/images/` and append a `golden/labels.json` entry. Tracks
+    what it's already promoted in `golden/promoted-corrections.json` so reruns don't duplicate.
+    Deliberately not fully automatic — a correction's photo is a real user's own phone photo, not an
+    openly-licensed stock photo like the rest of the set, worth a human glance before it's committed.
+    **Known limitation:** only the compressed thumbnail is available (see above), so promoted images
+    are lower-resolution than the rest of the golden set.
 - **Classification log** (`server/data/classifications.jsonl`) — every successful `/classify` and
   `/barcode-lookup` call (not just corrections) appends its result — unbiased, since it's every scan,
   not just known failures (see `server/src/lib/classificationLog.ts`). Deliberately doesn't store the
@@ -453,15 +463,38 @@ infrastructure exist for that:
   `npm run summarize --workspace=server` to print real usage-pattern stats from it: unrecognized
   rate, how often Gemini's rescue pass or Vision's brand-fill signal fires, brand confidence
   distribution, and a latency breakdown by which rescue path resolved the scan (Claude alone vs.
-  Vision-hint retry vs. Gemini rescue).
+  Vision-hint retry vs. Gemini rescue). Each entry also records token usage (`usage`:
+  `claudeInputTokens`/`claudeOutputTokens`/`geminiInputTokens`/`geminiOutputTokens`, accumulated
+  across every Claude/Gemini call one scan actually made — see `classifyImage`'s `ClassifyImageResult`
+  in `claudeClient.ts`), so `summarize` can also print an estimated $ cost per rescue path, using the
+  hand-maintained pricing table in `server/eval/pricing.ts` (not a live pricing API — check it if a
+  number looks stale). Both `latencyMs` and `usage` are optional fields, so log lines written before
+  either existed still parse fine, just excluded from those specific sections.
 - **Eval harness** (`server/eval/`) — a golden set of expected classification fields
   (`server/eval/golden/`, seeded with 60 openly-licensed Wikimedia Commons stock photos covering all
   8 categories — see its own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos
   are a supplement to real phone photos, not a replacement) and a runner
   (`npm run eval --workspace=server`) that calls
-  the real classification pipeline against each one and reports per-field pass rates. Makes real
-  Claude/Vision/Gemini calls (no mocking) — see `server/eval/golden/README.md` for cost guidance and
-  grading rules. This is a report, not a CI gate; there's no CI in this repo yet.
+  the real classification pipeline against each one and reports per-field pass rates, plus an
+  estimated $ cost for the whole run (same `pricing.ts` table as above). Makes real Claude/Vision/
+  Gemini calls (no mocking) — see `server/eval/golden/README.md` for cost guidance and grading rules.
+  This is a report by default, not a gate — it exits 0 regardless of pass rate. Pass
+  `--min-pass-rate=<0-100>` (e.g. `npm run eval --workspace=server -- --min-pass-rate=80`) to turn it
+  into one: exits 1 if the overall pass rate (passed field-checks / total graded field-checks, across
+  every entry) falls below that threshold. A malformed value fails immediately, before any paid API
+  call. Still opt-in, not wired into CI by default — there's no established baseline for this set yet,
+  and this isn't part of `.github/workflows/ci.yml` since it costs real money per run; wire it in
+  yourself once you've picked a threshold that reflects this set's actual baseline, not a guess.
+  - **Bug fixed in this pass:** `classifyImage` returns an array (a scan can report several detected
+    items — see "Vision ensemble" above), but this file's grading loop was assigning that array
+    directly into a variable typed as a single `ClassificationResult` — a mismatch `tsc` never caught
+    because `eval/` sits outside `server/tsconfig.json`'s typechecked `include`. At runtime, every
+    field lookup silently read a nonexistent property off an array and got `undefined`, so **every
+    eval run since multi-item classification shipped graded 0% on every field, for every entry,
+    silently** — confirmed via a live single-image run before fixing it. Now grades against
+    `classifications[0]` (the primary/first-listed item), matching how the golden set's labels were
+    actually written (see `golden/ATTRIBUTIONS.md`'s per-batch notes on always labeling the
+    unambiguous primary subject of a frame).
 
 ## Required API keys
 

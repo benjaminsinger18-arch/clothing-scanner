@@ -18,6 +18,7 @@ import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 import { classifyMultiItemWithGemini } from "./geminiClient.js";
 import type { UpcItem } from "./upcClient.js";
 import { canMakeWebSearchCall, recordWebSearchCall } from "../lib/rateLimitTracker.js";
+import type { ScanUsage } from "../lib/classificationLog.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const SONNET_MODEL = "claude-sonnet-5";
@@ -31,6 +32,25 @@ const OUTFIT_TOOL_NAME = "report_outfit_suggestions";
 const LOG_TIMING = process.env.NODE_ENV !== "production";
 
 export class ClassificationError extends Error {}
+
+function zeroUsage(): ScanUsage {
+  return { claudeInputTokens: 0, claudeOutputTokens: 0, geminiInputTokens: 0, geminiOutputTokens: 0 };
+}
+
+/** Sums a raw Anthropic response's token usage into an existing ScanUsage —
+ * used at every Claude call site in this file that classifyImage/
+ * classifyFromBarcode threads usage through, so a scan spanning more than one
+ * Claude call (e.g. the Vision-hint retry) accumulates rather than
+ * overwrites. Doesn't include cache_creation/cache_read token fields —
+ * prompt caching was tried and dropped for this schema (see classifyTool's
+ * own comment above), so those fields are always 0 today regardless. */
+function addClaudeUsage(usage: ScanUsage, response: Anthropic.Message): ScanUsage {
+  return {
+    ...usage,
+    claudeInputTokens: usage.claudeInputTokens + response.usage.input_tokens,
+    claudeOutputTokens: usage.claudeOutputTokens + response.usage.output_tokens,
+  };
+}
 
 let anthropic: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -132,10 +152,15 @@ async function callClaudeWithRetry(model: string, opts: ClassifyOptions): Promis
   }
 }
 
+interface MultiItemCallResult {
+  items: RawClassification[];
+  usage: ScanUsage;
+}
+
 /** Multi-item counterpart to callClaude — same shape, forces multiItemTool instead
  * of classifyTool, returns the whole items array rather than one object. Only
  * used by classifyImage's photo-scan path. */
-async function callClaudeMultiItem(model: string, opts: ClassifyOptions): Promise<RawClassification[]> {
+async function callClaudeMultiItem(model: string, opts: ClassifyOptions): Promise<MultiItemCallResult> {
   const hintText = opts.hint
     ? ` A separate image-recognition system's best guess for this photo is "${opts.hint}" — treat that ` +
       "as a hint, not ground truth: weigh it against what you actually see, and still return an empty " +
@@ -170,10 +195,16 @@ async function callClaudeMultiItem(model: string, opts: ClassifyOptions): Promis
   if (!toolUse) {
     throw new ClassificationError("Claude did not return a structured multi-item classification");
   }
-  return (toolUse.input as RawMultiItemClassification).items;
+  return { items: (toolUse.input as RawMultiItemClassification).items, usage: addClaudeUsage(zeroUsage(), response) };
 }
 
-async function callClaudeMultiItemWithRetry(model: string, opts: ClassifyOptions): Promise<RawClassification[]> {
+/** Propagates only the successful attempt's usage, not a sum of a failed first
+ * attempt plus the retry — a call that threw before/without a valid tool_use
+ * block (the only way this catches) generally billed little to nothing
+ * meaningful anyway, and summing would require plumbing partial usage out of
+ * a thrown error. Acceptable simplification for a "why is my cost higher than
+ * expected" signal, not exact accounting. */
+async function callClaudeMultiItemWithRetry(model: string, opts: ClassifyOptions): Promise<MultiItemCallResult> {
   try {
     return await callClaudeMultiItem(model, opts);
   } catch (err) {
@@ -266,7 +297,17 @@ function toResults(
   return items.map((raw) => ({ ...raw, model, ...extra }));
 }
 
-export async function classifyImage(opts: ClassifyOptions): Promise<ClassificationResult[]> {
+export interface ClassifyImageResult {
+  classifications: ClassificationResult[];
+  /** Accumulated across however many Claude/Gemini calls this particular scan
+   * made — a rescue-chain scan (Gemini pass and/or a Vision-hint retry) costs
+   * more than the common single-Sonnet-call path, and this is what lets
+   * summarizeClassifications.ts show that breakdown instead of just an
+   * aggregate rate. */
+  usage: ScanUsage;
+}
+
+export async function classifyImage(opts: ClassifyOptions): Promise<ClassifyImageResult> {
   // Vision starts immediately, in parallel — cheap enough to always run. Gemini
   // does NOT start here anymore (see the latency note above) — it's only called
   // further down, and only on the empty-result path.
@@ -279,10 +320,10 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   const claudeStartedAt = Date.now();
   const first = await callClaudeMultiItemWithRetry(SONNET_MODEL, opts);
   if (LOG_TIMING) {
-    console.log(`[claudeClient] Sonnet (first pass): ${Date.now() - claudeStartedAt}ms, ${first.length} item(s)`);
+    console.log(`[claudeClient] Sonnet (first pass): ${Date.now() - claudeStartedAt}ms, ${first.items.length} item(s)`);
   }
 
-  if (first.length > 0) {
+  if (first.items.length > 0) {
     // Common path: Claude already has an answer. Await the concurrently-started
     // Vision promise — typically already resolved, so this is expected to be
     // near-instant. No Gemini call on this path at all. Vision's logo detection is
@@ -291,9 +332,9 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
     // — attributing one detected logo to every item risks misattributing it to
     // garments it doesn't belong to.
     const vision = await visionPromise;
-    const [primary, ...rest] = first;
+    const [primary, ...rest] = first.items;
     const mergedPrimary = applyVisionBrandSignal(primary, vision);
-    return toResults([mergedPrimary, ...rest], "claude-sonnet-5");
+    return { classifications: toResults([mergedPrimary, ...rest], "claude-sonnet-5"), usage: first.usage };
   }
 
   // Claude found nothing at all — NOW call Gemini, only here, so its latency is
@@ -301,39 +342,62 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
   // independent answer first — a full second opinion beats a single-phrase hint
   // fed back to Claude.
   const gemini = await classifyMultiItemWithGemini(opts.imageBase64, opts.mediaType).catch(() => null);
-  if (gemini && gemini.length > 0) {
+  if (gemini && gemini.items.length > 0) {
     const vision = await visionPromise;
-    const [primary, ...rest] = gemini;
+    const [primary, ...rest] = gemini.items;
     const mergedPrimary = applyVisionBrandSignal(primary, vision);
-    return toResults([mergedPrimary, ...rest], GEMINI_MODEL_LABEL);
+    const usage: ScanUsage = {
+      ...first.usage,
+      geminiInputTokens: first.usage.geminiInputTokens + gemini.usage.inputTokens,
+      geminiOutputTokens: first.usage.geminiOutputTokens + gemini.usage.outputTokens,
+    };
+    return { classifications: toResults([mergedPrimary, ...rest], GEMINI_MODEL_LABEL), usage };
   }
+  // Even when Gemini came back empty (a real "nothing here" answer, not a
+  // failure) its tokens were still spent — fold them in before falling
+  // through to the Vision-hint rescue below.
+  const usageAfterGemini: ScanUsage = gemini
+    ? {
+        ...first.usage,
+        geminiInputTokens: first.usage.geminiInputTokens + gemini.usage.inputTokens,
+        geminiOutputTokens: first.usage.geminiOutputTokens + gemini.usage.outputTokens,
+      }
+    : first.usage;
 
   // Gemini also found nothing (or isn't configured) — fall back to the existing
   // Vision-hint rescue as a last resort. Reuses the same already-in-flight Vision
   // promise (it had a head start from launching concurrently).
   const vision = await visionPromise;
   if (!vision) {
-    return [];
+    return { classifications: [], usage: usageAfterGemini };
   }
 
   // Prefer Vision's general scene guess for the rescue hint; if web/label detection
   // came up empty but a logo was found, fall back to a logo-derived hint.
   const hintText = vision.bestGuess ?? (vision.logos[0] ? `a logo matching "${vision.logos[0].description}"` : null);
   if (!hintText) {
-    return [];
+    return { classifications: [], usage: usageAfterGemini };
   }
 
   const retried = await callClaudeMultiItemWithRetry(SONNET_MODEL, { ...opts, hint: hintText });
-  if (retried.length > 0) {
-    const [primary, ...rest] = retried;
+  const usageAfterRetry: ScanUsage = {
+    ...usageAfterGemini,
+    claudeInputTokens: usageAfterGemini.claudeInputTokens + retried.usage.claudeInputTokens,
+    claudeOutputTokens: usageAfterGemini.claudeOutputTokens + retried.usage.claudeOutputTokens,
+  };
+  if (retried.items.length > 0) {
+    const [primary, ...rest] = retried.items;
     const mergedPrimary = applyVisionBrandSignal(primary, vision);
-    return toResults([mergedPrimary, ...rest], "claude-sonnet-5", { visionAssisted: true });
+    return {
+      classifications: toResults([mergedPrimary, ...rest], "claude-sonnet-5", { visionAssisted: true }),
+      usage: usageAfterRetry,
+    };
   }
 
   // Claude, Gemini, AND the Vision-hint retry have all now failed — genuinely rare
   // (three misses deep). Nothing left to try; report an empty result rather than
   // force a guess.
-  return [];
+  return { classifications: [], usage: usageAfterRetry };
 }
 
 /**
@@ -352,19 +416,32 @@ export async function classifyImage(opts: ClassifyOptions): Promise<Classificati
  * are genuine model inference from the sparse title/description text, since the
  * barcode database has no structured data for those.
  */
-export async function classifyFromBarcode(item: UpcItem): Promise<ClassificationResult> {
-  const raw = await callBarcodeClassificationWithRetry(item);
+export interface ClassifyBarcodeResult {
+  classification: ClassificationResult;
+  usage: ScanUsage;
+}
+
+export async function classifyFromBarcode(item: UpcItem): Promise<ClassifyBarcodeResult> {
+  const { raw, usage } = await callBarcodeClassificationWithRetry(item);
   return {
-    ...raw,
-    brandGuess: item.brand ?? raw.brandGuess,
-    brandConfidence: item.brand ? "high" : "none",
-    brandSource: item.brand ? "barcode" : undefined,
-    model: "claude-haiku-4-5",
-    source: "barcode",
+    classification: {
+      ...raw,
+      brandGuess: item.brand ?? raw.brandGuess,
+      brandConfidence: item.brand ? "high" : "none",
+      brandSource: item.brand ? "barcode" : undefined,
+      model: "claude-haiku-4-5",
+      source: "barcode",
+    },
+    usage,
   };
 }
 
-async function callBarcodeClassification(item: UpcItem): Promise<RawClassification> {
+interface BarcodeCallResult {
+  raw: RawClassification;
+  usage: ScanUsage;
+}
+
+async function callBarcodeClassification(item: UpcItem): Promise<BarcodeCallResult> {
   const details = [
     `Title: "${item.title}"`,
     item.brand ? `Brand: "${item.brand}"` : null,
@@ -402,10 +479,10 @@ async function callBarcodeClassification(item: UpcItem): Promise<RawClassificati
   if (!toolUse) {
     throw new ClassificationError("Claude did not return a structured classification for the barcode match");
   }
-  return toolUse.input as RawClassification;
+  return { raw: toolUse.input as RawClassification, usage: addClaudeUsage(zeroUsage(), response) };
 }
 
-async function callBarcodeClassificationWithRetry(item: UpcItem): Promise<RawClassification> {
+async function callBarcodeClassificationWithRetry(item: UpcItem): Promise<BarcodeCallResult> {
   try {
     return await callBarcodeClassification(item);
   } catch (err) {

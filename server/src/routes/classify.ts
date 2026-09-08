@@ -23,13 +23,14 @@ classifyRouter.post("/classify", async (req, res) => {
 
   const startedAt = Date.now();
   try {
-    const classifications = await classifyImage({ imageBase64, mediaType });
+    const { classifications, usage } = await classifyImage({ imageBase64, mediaType });
     try {
       logClassification({
         timestamp: new Date().toISOString(),
         trigger: "classify",
         result: classifications,
         latencyMs: Date.now() - startedAt,
+        usage,
       });
     } catch (err) {
       console.warn("[/classify] Failed to log classification:", err);
