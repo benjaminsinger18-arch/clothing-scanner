@@ -47,9 +47,7 @@ async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
 
 export async function classifyPhoto(imageBase64: string): Promise<ClassificationResult[]> {
   if (!API_URL) {
-    throw new ApiError(
-      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
-    );
+    throw new ApiError("EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend");
   }
 
   const body: ClassifyRequestBody = { imageBase64, mediaType: "image/jpeg" };
@@ -81,9 +79,7 @@ export async function classifyPhoto(imageBase64: string): Promise<Classification
 
 export async function searchPrices(classification: ClassificationResult): Promise<PriceSearchResult> {
   if (!API_URL) {
-    throw new ApiError(
-      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
-    );
+    throw new ApiError("EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend");
   }
 
   const params = new URLSearchParams({
@@ -119,9 +115,7 @@ export async function searchPrices(classification: ClassificationResult): Promis
 
 export async function lookupBarcode(code: string): Promise<ClassificationResult> {
   if (!API_URL) {
-    throw new ApiError(
-      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
-    );
+    throw new ApiError("EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend");
   }
 
   const params = new URLSearchParams({ code });
@@ -154,9 +148,7 @@ export async function submitCorrection(
   photoThumbnail?: string
 ): Promise<ClassificationResult> {
   if (!API_URL) {
-    throw new ApiError(
-      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
-    );
+    throw new ApiError("EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend");
   }
 
   const body: CorrectionRequestBody = { correctionText, original, photoThumbnail };
@@ -186,9 +178,7 @@ export async function submitCorrection(
 
 export async function getOutfitSuggestions(classification: ClassificationResult): Promise<OutfitSuggestionsResult> {
   if (!API_URL) {
-    throw new ApiError(
-      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
-    );
+    throw new ApiError("EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend");
   }
 
   const body: OutfitSuggestionsRequestBody = {
@@ -232,9 +222,7 @@ export async function getOutfitSuggestions(classification: ClassificationResult)
  * own in-memory soft-cap counters. */
 export async function getUsage(): Promise<UsageSnapshot> {
   if (!API_URL) {
-    throw new ApiError(
-      "EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend"
-    );
+    throw new ApiError("EXPO_API_URL is not set — copy app/.env.example to app/.env and point it at your backend");
   }
 
   let response: Response;

@@ -8,9 +8,12 @@
     "predev": "npm run build --workspace=@clothing-scanner/shared-types",
     "dev": "tsx watch src/index.ts",
     "prebuild": "npm run build --workspace=@clothing-scanner/shared-types",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "eval": "tsx eval/runEval.ts",
     "summarize": "tsx eval/summarizeClassifications.ts",
     "promote-corrections": "tsx eval/promoteCorrections.ts"
@@ -28,7 +31,11 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^22.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "^9.39.5",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^5.0.0"
   }
 }

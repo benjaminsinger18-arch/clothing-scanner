@@ -44,9 +44,9 @@ export function isBucketSyncConfigured(): boolean {
   if (configured === null) {
     configured = Boolean(
       process.env.HF_BUCKET_S3_ENDPOINT &&
-        process.env.HF_BUCKET_NAME &&
-        process.env.HF_BUCKET_ACCESS_KEY_ID &&
-        process.env.HF_BUCKET_SECRET_ACCESS_KEY
+      process.env.HF_BUCKET_NAME &&
+      process.env.HF_BUCKET_ACCESS_KEY_ID &&
+      process.env.HF_BUCKET_SECRET_ACCESS_KEY
     );
   }
   return configured;
@@ -124,7 +124,12 @@ export function syncToBucket(localPath: string, remoteKey: string): void {
     try {
       const content = readFileSync(localPath, "utf8");
       await getClient().send(
-        new PutObjectCommand({ Bucket: getBucketName(), Key: remoteKey, Body: content, ContentType: "application/x-ndjson" })
+        new PutObjectCommand({
+          Bucket: getBucketName(),
+          Key: remoteKey,
+          Body: content,
+          ContentType: "application/x-ndjson",
+        })
       );
     } catch (err) {
       console.warn(`[bucketSync] Failed to sync ${remoteKey} to bucket (local write already succeeded):`, err);

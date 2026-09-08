@@ -64,7 +64,10 @@ export function OutfitBuilderScreen({ navigation }: Props) {
   if (items.length === 0) {
     return (
       <View style={styles.container}>
-        <ErrorState title="Your closet is empty" detail="Save a few items from their results screen before building an outfit." />
+        <ErrorState
+          title="Your closet is empty"
+          detail="Save a few items from their results screen before building an outfit."
+        />
       </View>
     );
   }
@@ -94,7 +97,12 @@ export function OutfitBuilderScreen({ navigation }: Props) {
         <Text style={styles.continueButtonText}>Name &amp; Save ({selectedIds.size})</Text>
       </Pressable>
 
-      <Modal visible={namePromptVisible} transparent animationType="fade" onRequestClose={() => setNamePromptVisible(false)}>
+      <Modal
+        visible={namePromptVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNamePromptVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Name this outfit</Text>
@@ -166,7 +174,12 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     padding: theme.spacing.md,
   },
-  modalTitle: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold, marginBottom: 12 },
+  modalTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 16,
+    fontFamily: theme.fonts.body.semiBold,
+    marginBottom: 12,
+  },
   modalInput: {
     backgroundColor: theme.colors.surfaceAlt,
     borderRadius: theme.radius.md,
@@ -177,8 +190,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalButtonRow: { flexDirection: "row", gap: 10 },
-  modalCancelButton: { flex: 1, paddingVertical: 12, borderRadius: theme.radius.md, alignItems: "center", backgroundColor: theme.colors.surfaceAlt },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+    backgroundColor: theme.colors.surfaceAlt,
+  },
   modalCancelButtonText: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold },
-  modalSaveButton: { flex: 1, paddingVertical: 12, borderRadius: theme.radius.md, alignItems: "center", backgroundColor: theme.colors.accent },
+  modalSaveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+    backgroundColor: theme.colors.accent,
+  },
   modalSaveButtonText: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.bold },
 });

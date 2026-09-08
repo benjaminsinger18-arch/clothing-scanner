@@ -31,7 +31,9 @@ function main() {
     return;
   }
 
-  const lines = readFileSync(LOG_FILE, "utf8").split("\n").filter((l) => l.trim().length > 0);
+  const lines = readFileSync(LOG_FILE, "utf8")
+    .split("\n")
+    .filter((l) => l.trim().length > 0);
   const entries: ClassificationLogEntry[] = lines.map((l) => JSON.parse(l));
 
   if (entries.length === 0) {
@@ -57,7 +59,9 @@ function main() {
 
   const classifyEntries = entries.filter((e) => e.trigger === "classify");
   const zeroItemScans = classifyEntries.filter((e) => Array.isArray(e.result) && e.result.length === 0).length;
-  console.log(`\nZero-items rate (photo scans that found nothing at all): ${pct(zeroItemScans, classifyEntries.length)}`);
+  console.log(
+    `\nZero-items rate (photo scans that found nothing at all): ${pct(zeroItemScans, classifyEntries.length)}`
+  );
   const itemCounts = classifyEntries.map((e) => (Array.isArray(e.result) ? e.result.length : 1));
   const avgItems = itemCounts.length === 0 ? 0 : itemCounts.reduce((a, b) => a + b, 0) / itemCounts.length;
   console.log(`Average items detected per photo scan: ${avgItems.toFixed(2)}`);
@@ -122,7 +126,10 @@ function printLatencySummary(entries: ClassificationLogEntry[]): void {
   console.log(`\nLatency (${timed.length}/${entries.length} logged entries have timing data):`);
   if (timed.length === 0) return;
 
-  summarizeLatencies("Overall", timed.map((e) => e.latencyMs));
+  summarizeLatencies(
+    "Overall",
+    timed.map((e) => e.latencyMs)
+  );
 
   const barcodeLatencies = timed.filter((e) => e.trigger === "barcode-lookup").map((e) => e.latencyMs);
   summarizeLatencies("barcode-lookup", barcodeLatencies);
@@ -133,11 +140,19 @@ function printLatencySummary(entries: ClassificationLogEntry[]): void {
 
   summarizeLatencies(
     "classify — claude-sonnet-5 (no rescue)",
-    classifyTimed.filter((e) => primaryModel(e) === "claude-sonnet-5" && !(Array.isArray(e.result) ? e.result[0]?.visionAssisted : e.result.visionAssisted)).map((e) => e.latencyMs)
+    classifyTimed
+      .filter(
+        (e) =>
+          primaryModel(e) === "claude-sonnet-5" &&
+          !(Array.isArray(e.result) ? e.result[0]?.visionAssisted : e.result.visionAssisted)
+      )
+      .map((e) => e.latencyMs)
   );
   summarizeLatencies(
     "classify — Vision-hint retry resolved it",
-    classifyTimed.filter((e) => Array.isArray(e.result) ? e.result[0]?.visionAssisted : e.result.visionAssisted).map((e) => e.latencyMs)
+    classifyTimed
+      .filter((e) => (Array.isArray(e.result) ? e.result[0]?.visionAssisted : e.result.visionAssisted))
+      .map((e) => e.latencyMs)
   );
   summarizeLatencies(
     "classify — Gemini rescue resolved it",
@@ -186,13 +201,22 @@ function summarizeCost(label: string, usages: ScanUsage[], claudePrice = CLAUDE_
  * rescue-only — see claudeClient.ts's classifyImage doc comment). */
 function printCostSummary(entries: ClassificationLogEntry[]): void {
   const timed = entries.filter((e): e is ClassificationLogEntry & { usage: ScanUsage } => e.usage !== undefined);
-  console.log(`\nEstimated cost (${timed.length}/${entries.length} logged entries have usage data; see pricing.ts for caveats):`);
+  console.log(
+    `\nEstimated cost (${timed.length}/${entries.length} logged entries have usage data; see pricing.ts for caveats):`
+  );
   if (timed.length === 0) return;
 
-  summarizeCost("Overall", timed.map((e) => e.usage));
+  summarizeCost(
+    "Overall",
+    timed.map((e) => e.usage)
+  );
 
   const barcodeEntries = timed.filter((e) => e.trigger === "barcode-lookup");
-  summarizeCost("barcode-lookup (Haiku)", barcodeEntries.map((e) => e.usage), CLAUDE_HAIKU_PRICE);
+  summarizeCost(
+    "barcode-lookup (Haiku)",
+    barcodeEntries.map((e) => e.usage),
+    CLAUDE_HAIKU_PRICE
+  );
 
   const classifyTimed = timed.filter((e) => e.trigger === "classify");
   const primaryModel = (e: ClassificationLogEntry): ClassificationResult["model"] | undefined =>

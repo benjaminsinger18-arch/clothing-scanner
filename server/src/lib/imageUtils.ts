@@ -14,9 +14,10 @@ export function validateImageBase64(imageBase64: unknown): string {
     throw new ImageValidationError("imageBase64 is required and must be a string");
   }
 
-  const stripped = imageBase64.startsWith("data:") && imageBase64.includes(",")
-    ? imageBase64.slice(imageBase64.indexOf(",") + 1)
-    : imageBase64;
+  const stripped =
+    imageBase64.startsWith("data:") && imageBase64.includes(",")
+      ? imageBase64.slice(imageBase64.indexOf(",") + 1)
+      : imageBase64;
 
   if (stripped.length === 0) {
     throw new ImageValidationError("imageBase64 must not be empty");

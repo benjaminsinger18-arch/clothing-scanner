@@ -45,11 +45,18 @@ export function CaptureScreen({ navigation }: Props) {
     <View style={styles.container}>
       <GlowBackground />
       <Text style={styles.title}>Clothing Scanner</Text>
-      <Text style={styles.subtitle}>Snap a photo and we'll tell you what it is, what it's worth, and what to pair it with.</Text>
+      <Text style={styles.subtitle}>
+        Snap a photo and we’ll tell you what it is, what it’s worth, and what to pair it with.
+      </Text>
 
       {error ? <ErrorState title={error} /> : null}
 
-      <Pressable style={styles.primaryButton} onPress={takePhoto} accessibilityRole="button" accessibilityLabel="Take photo">
+      <Pressable
+        style={styles.primaryButton}
+        onPress={takePhoto}
+        accessibilityRole="button"
+        accessibilityLabel="Take photo"
+      >
         <Text style={styles.primaryButtonText}>Take Photo</Text>
       </Pressable>
       <Pressable
@@ -108,7 +115,12 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     overflow: "hidden",
   },
-  title: { color: theme.colors.textPrimary, fontSize: 28, fontFamily: theme.fonts.display.bold, marginBottom: theme.spacing.sm },
+  title: {
+    color: theme.colors.textPrimary,
+    fontSize: 28,
+    fontFamily: theme.fonts.display.bold,
+    marginBottom: theme.spacing.sm,
+  },
   subtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: "center", marginBottom: theme.spacing.xl },
   primaryButton: {
     backgroundColor: theme.colors.accent,

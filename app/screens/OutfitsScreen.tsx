@@ -59,13 +59,20 @@ export function OutfitsScreen({ navigation }: Props) {
               accessibilityLabel={`${item.name}, ${item.items.length} item${item.items.length === 1 ? "" : "s"}`}
             >
               <View style={styles.thumbRow}>
-                {item.items.slice(0, 3).map((closetItem) =>
-                  closetItem.photoThumbnail ? (
-                    <Image key={closetItem.id} source={{ uri: closetItem.photoThumbnail }} style={styles.thumb} resizeMode="cover" />
-                  ) : (
-                    <View key={closetItem.id} style={styles.thumbPlaceholder} />
-                  )
-                )}
+                {item.items
+                  .slice(0, 3)
+                  .map((closetItem) =>
+                    closetItem.photoThumbnail ? (
+                      <Image
+                        key={closetItem.id}
+                        source={{ uri: closetItem.photoThumbnail }}
+                        style={styles.thumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View key={closetItem.id} style={styles.thumbPlaceholder} />
+                    )
+                  )}
               </View>
               <View style={styles.textCol}>
                 <Text style={styles.title} numberOfLines={1}>
@@ -112,8 +119,18 @@ const styles = StyleSheet.create({
   },
   cardPressed: { opacity: 0.7 },
   thumbRow: { flexDirection: "row", gap: 6, flexShrink: 0 },
-  thumb: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt },
-  thumbPlaceholder: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceAlt },
+  thumb: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  thumbPlaceholder: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
   textCol: { flex: 1, minWidth: 0 },
   title: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.semiBold },
   meta: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 4 },

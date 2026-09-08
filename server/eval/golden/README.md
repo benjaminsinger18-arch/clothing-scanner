@@ -28,6 +28,7 @@ usage" — add your own real photos alongside these over time.
    ```
 
 `expected` fields, and how `runEval.ts` grades each:
+
 - `category`, `gender` — exact match (both are enums).
 - `garmentType`, `color`, `pattern` — case-insensitive substring match in either direction (e.g.
   expected `"t-shirt"` passes against actual `"cotton t-shirt"`). Generous on purpose — mismatches

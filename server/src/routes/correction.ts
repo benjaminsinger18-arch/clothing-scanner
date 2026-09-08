@@ -47,7 +47,10 @@ correctionRouter.post("/correct-classification", async (req, res) => {
       return;
     }
     case "rate_limited": {
-      const errorBody: ApiErrorBody = { error: "rate_limited", reason: "Correction verification quota reached for today" };
+      const errorBody: ApiErrorBody = {
+        error: "rate_limited",
+        reason: "Correction verification quota reached for today",
+      };
       res.status(429).json(errorBody);
       return;
     }

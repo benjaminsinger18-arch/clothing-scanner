@@ -8,6 +8,16 @@
   ],
   "scripts": {
     "server:dev": "npm run dev --workspace=server",
-    "app:start": "npm run start --workspace=app"
+    "app:start": "npm run start --workspace=app",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
+    "prettier": "^3.9.6"
   }
 }
