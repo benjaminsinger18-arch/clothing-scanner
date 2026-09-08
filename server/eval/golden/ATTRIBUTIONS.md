@@ -75,6 +75,12 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | navy-crocs-slides.jpg             | A Crocs Black Slippers.jpg                                                                                      | CC BY-SA 4.0    | Peachyeung316                                                   | [link](https://commons.wikimedia.org/wiki/File:A_Crocs_Black_Slippers.jpg)                                                                                                                               |
 | olive-duffel-bag.jpg              | (US) BAG, DUFFEL (501e RCC - 2e DB), 2001.194.jpg                                                               | CC0             | Musée de l'Armée                                                | [link](<https://commons.wikimedia.org/wiki/File:(US)_BAG,_DUFFEL_(501e_RCC_-_2e_DB),_2001.194.jpg>)                                                                                                      |
 | navy-fleece-neck-gaiter.jpg       | Neck gaiter1.jpg                                                                                                | CC BY-SA 4.0    | (uncredited on file page)                                       | [link](https://commons.wikimedia.org/wiki/File:Neck_gaiter1.jpg)                                                                                                                                         |
+| yellow-shirt-dress.jpg            | Shirt dress.jpg                                                                                                 | Public domain   | Bestvintage                                                     | [link](https://commons.wikimedia.org/wiki/File:Shirt_dress.jpg)                                                                                                                                          |
+| pink-tulle-gown.jpg               | Parisian tulle bouffant gown.jpg                                                                                | CC BY 2.0       | libertygrace0                                                   | [link](https://commons.wikimedia.org/wiki/File:Parisian_tulle_bouffant_gown.jpg)                                                                                                                         |
+| burberry-trench-coat.jpg          | Burberrys Trenchcoat.jpg                                                                                        | CC BY-SA 2.0    | MB-one                                                          | [link](https://commons.wikimedia.org/wiki/File:Burberrys_Trenchcoat.jpg)                                                                                                                                 |
+| khaki-windbreaker-jacket.jpg      | Windbreaker Jacket, Hood Outside.jpg                                                                            | Public domain   | Ingolfson                                                       | [link](https://commons.wikimedia.org/wiki/File:Windbreaker_Jacket,_Hood_Outside.jpg)                                                                                                                     |
+| surfer-rash-guard.jpg             | Rashguard.jpg                                                                                                   | CC BY-SA 3.0    | Peter Pusztai                                                   | [link](https://commons.wikimedia.org/wiki/File:Rashguard.jpg)                                                                                                                                            |
+| black-speedo-swim-trunks.jpg      | Speedo zwembroek-1.jpg                                                                                          | CC BY-SA 3.0    | Kameraad Pjotr                                                  | [link](https://commons.wikimedia.org/wiki/File:Speedo_zwembroek-1.jpg)                                                                                                                                   |
 
 ## Notes on this batch
 
@@ -186,3 +192,39 @@ downloaded were usable as-is — no rejections this round, and no further rate-l
 pair pictured is clearly navy/dark blue, not black — labeled by what's visible. The Crocs photo also
 has other Crocs products visible in a cluttered stockroom background, but the pictured pair is
 unambiguously the focused, centered subject, so it was kept rather than treated as multi-item.
+
+## Notes on the ninth expansion batch
+
+Round 10 — targeted dresses, outerwear, and activewear, the three thinnest categories (6 entries
+each, tied). Two of the eight candidates originally sourced were rejected after downloading and
+visually reviewing them (this batch's search summaries undersold what the actual photos looked
+like, more than in prior rounds):
+
+- An "Electric blue maxi dress" candidate turned out to have the model wearing a substantial tan
+  suede blazer layered on top, visually competing with the dress for primary subject — same
+  ambiguous-primary-garment issue prior rounds have rejected for.
+- A "Compression shorts" candidate was a tight, bare-torso close-up crop — same body-focused
+  framing issue noted as a reject in an earlier round (see the eighth-batch section above); not a
+  fit for this set regardless of licensing.
+- A "Modelo vestido envolvente" (wrap dress) candidate was also rejected after downloading: worn
+  over a buttoned collared shirt in a cluttered classroom, not a clean single-garment shot.
+- Two "Shift dress"/"Wrap dress" file-page candidates turned out to be David Ring fashion-thesaurus
+  ink illustrations, not photos, once fetched — this set is photos only.
+
+Replacements: a pink tulle bouffant gown (shot in a bridal shop window — the pictured gown is sharp
+and centered in the foreground while other gowns visible behind it are soft-focus background
+clutter, the same kind of real-world background noise a phone photo would have, so it was kept)
+and a black Speedo swim trunks flat-lay (clean product shot, brand name visibly printed on the
+fabric itself rather than only claimed by the file's title — see the note below on brandGuess).
+No further Commons rate-limiting encountered at the standard ~4s pacing between downloads.
+
+All six kept images were also resized to the set's standard profile (max 1280px long edge, JPEG
+quality 85, matching `app/lib/compressImage.ts`'s own upload profile) after downloading — this step
+was previously done via an unspecified tool from an earlier session; this round used Python/Pillow
+directly, same end result.
+
+One brandGuess call worth flagging: the trench coat's Commons title says "Burberrys," but the
+garment itself shows no visible logo, label, or check-pattern lining in the photo — labeled
+`brandGuess: null` rather than "Burberry," since the point of that field is testing whether the
+model can visually identify a brand marker in the photo, not whether it can match Commons' own
+file-title metadata.

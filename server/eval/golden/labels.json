@@ -658,5 +658,71 @@
       "gender": "unisex",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "yellow-shirt-dress.jpg",
+    "expected": {
+      "garmentType": "shirt dress",
+      "category": "dresses",
+      "color": "yellow",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "pink-tulle-gown.jpg",
+    "expected": {
+      "garmentType": "gown",
+      "category": "dresses",
+      "color": "pink",
+      "pattern": "solid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "burberry-trench-coat.jpg",
+    "expected": {
+      "garmentType": "trench coat",
+      "category": "outerwear",
+      "color": "beige",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "khaki-windbreaker-jacket.jpg",
+    "expected": {
+      "garmentType": "windbreaker jacket",
+      "category": "outerwear",
+      "color": "khaki",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Lafuma"
+    }
+  },
+  {
+    "filename": "surfer-rash-guard.jpg",
+    "expected": {
+      "garmentType": "rash guard",
+      "category": "activewear",
+      "color": "navy",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "black-speedo-swim-trunks.jpg",
+    "expected": {
+      "garmentType": "swim trunks",
+      "category": "activewear",
+      "color": "black",
+      "pattern": "striped",
+      "gender": "men",
+      "brandGuess": "Speedo"
+    }
   }
 ]
