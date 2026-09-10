@@ -81,6 +81,10 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | khaki-windbreaker-jacket.jpg      | Windbreaker Jacket, Hood Outside.jpg                                                                            | Public domain   | Ingolfson                                                       | [link](https://commons.wikimedia.org/wiki/File:Windbreaker_Jacket,_Hood_Outside.jpg)                                                                                                                     |
 | surfer-rash-guard.jpg             | Rashguard.jpg                                                                                                   | CC BY-SA 3.0    | Peter Pusztai                                                   | [link](https://commons.wikimedia.org/wiki/File:Rashguard.jpg)                                                                                                                                            |
 | black-speedo-swim-trunks.jpg      | Speedo zwembroek-1.jpg                                                                                          | CC BY-SA 3.0    | Kameraad Pjotr                                                  | [link](https://commons.wikimedia.org/wiki/File:Speedo_zwembroek-1.jpg)                                                                                                                                   |
+| khaki-pleated-chinos.jpg          | Chino pants.jpg                                                                                                 | CC BY-SA 3.0    | Kuha455405                                                      | [link](https://commons.wikimedia.org/wiki/File:Chino_pants.jpg)                                                                                                                                          |
+| red-plaid-capri-pants.jpg         | Capri Pants front view.jpg                                                                                      | CC BY-SA 2.5    | Rita Holcomb                                                    | [link](https://commons.wikimedia.org/wiki/File:Capri_Pants_front_view.jpg)                                                                                                                               |
+| floral-lace-camisole.jpg          | Camisole (AM 2000.93.96-1).jpg                                                                                  | CC BY 4.0       | Bendon (via Auckland Museum)                                    | [link](<https://commons.wikimedia.org/wiki/File:Camisole_(AM_2000.93.96-1).jpg>)                                                                                                                         |
+| eyelet-cotton-nightgown.jpg       | Nightgown (AM 11683-1).jpg                                                                                      | CC BY 4.0       | Auckland Museum (photographer uncredited)                       | [link](<https://commons.wikimedia.org/wiki/File:Nightgown_(AM_11683-1).jpg>)                                                                                                                             |
 
 ## Notes on this batch
 
@@ -228,3 +232,43 @@ garment itself shows no visible logo, label, or check-pattern lining in the phot
 `brandGuess: null` rather than "Burberry," since the point of that field is testing whether the
 model can visually identify a brand marker in the photo, not whether it can match Commons' own
 file-title metadata.
+
+## Notes on the tenth expansion batch
+
+Targeted `bottoms` and `underwear-sleepwear` — tied as the thinnest categories at 7 entries each
+(every other category sat at 8 or above). Both now have 9, tied with `footwear`.
+
+Of 9 candidates downloaded across both categories, 5 were rejected after actually viewing them:
+
+- `Back side Chino trousers with welt pocket.jpg` was an extreme close-up crop of a single back
+  pocket — not a recognizable full-garment shot despite the promising title.
+- `Sweatpants.jpg` (the first candidate tried) turned out to be a group photo of three men at an
+  outdoor event, each wearing a different jacket/hoodie on top — multiple people and multiple
+  competing garments, not a clean single-item shot.
+- `Joggers 02.jpg` was two men jogging (the athletic activity) on a street, not a photo of the
+  garment "joggers" at all — a search-term collision, not a framing problem.
+- `Corteiz Alcatraz Joggers.jpg` was a tight close-up of a logo patch, same framing issue as the
+  chino-trousers reject above.
+- `Nightgown.jpg` (the David Ring–credited candidate) turned out to be a hand-drawn ink illustration
+  on a mannequin form, not a photograph — this set is photos only, same rejection reason as prior
+  rounds' illustration finds.
+
+Kept: `Chino pants.jpg` (flat-lay, pleated khaki chinos, full garment visible), `Capri Pants front
+view.jpg` (red/black/white plaid capris on a mannequin), and two Auckland Museum catalog photos —
+`Camisole (AM 2000.93.96-1).jpg` (mannequin product shot, original retail tag still attached and
+legible: "Bendon Bodywear," used as the brandGuess since it's a real marker visible in the photo,
+not outside metadata) and `Nightgown (AM 11683-1).jpg` (white cotton nightgown with eyelet
+embroidery and lace trim, hung against a cluttered museum-storage background — kept anyway since
+the garment itself is unambiguous and fills most of the frame, similar to the bridal-shop-window
+background clutter an earlier round judged acceptable).
+
+Wikimedia's upload servers returned a 429 (rate limited) partway through this batch's downloads —
+the first `Sweatpants.jpg` and `Joggers 02.jpg` attempts came back as 1990-byte HTML error pages
+rather than images, not failed/blank photos. Re-requesting each individually after a short pause
+succeeded; no changes needed to the URLs or candidates themselves.
+
+All four kept images were resized to the set's standard profile (max 1280px long edge, JPEG
+quality 85, matching `app/lib/compressImage.ts`'s own upload profile) via PowerShell's
+`System.Drawing.Bitmap`, since neither ImageMagick nor a Node image library (sharp/Jimp) was
+available in this environment — same end result as prior rounds' Python/Pillow or unspecified-tool
+passes.

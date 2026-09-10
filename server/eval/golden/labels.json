@@ -724,5 +724,49 @@
       "gender": "men",
       "brandGuess": "Speedo"
     }
+  },
+  {
+    "filename": "khaki-pleated-chinos.jpg",
+    "expected": {
+      "garmentType": "pleated chino pants",
+      "category": "bottoms",
+      "color": "khaki",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "red-plaid-capri-pants.jpg",
+    "expected": {
+      "garmentType": "capri pants",
+      "category": "bottoms",
+      "color": "red",
+      "pattern": "plaid",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "floral-lace-camisole.jpg",
+    "expected": {
+      "garmentType": "camisole",
+      "category": "underwear-sleepwear",
+      "color": "white",
+      "pattern": "floral print",
+      "gender": "women",
+      "brandGuess": "Bendon"
+    }
+  },
+  {
+    "filename": "eyelet-cotton-nightgown.jpg",
+    "expected": {
+      "garmentType": "nightgown",
+      "category": "underwear-sleepwear",
+      "color": "white",
+      "pattern": "eyelet embroidery",
+      "gender": "women",
+      "brandGuess": null
+    }
   }
 ]

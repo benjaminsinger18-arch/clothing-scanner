@@ -1,6 +1,6 @@
 # Golden eval set
 
-Seeded with 66 openly-licensed stock photos from Wikimedia Commons (see `ATTRIBUTIONS.md` for
+Seeded with 70 openly-licensed stock photos from Wikimedia Commons (see `ATTRIBUTIONS.md` for
 license/author per file) spanning all 8 categories (tops, bottoms, outerwear, dresses, footwear,
 accessories, activewear, underwear-sleepwear). **These are a supplement, not a replacement for real
 phone photos** — they're clean/museum/product-style photography, not the messy real-world phone
@@ -46,8 +46,8 @@ confident about some of what's in a photo.
 
 Every eval run makes real Claude Sonnet 5 calls (plus Vision/Gemini if those keys are configured)
 against every entry here — there's no mocking, since the whole point is measuring real model
-behavior. This set has grown well past the original "roughly 15-30 photos" cost guidance (66 as of
-this writing, across ten expansion rounds) — a full run costs proportionally more than it used to;
+behavior. This set has grown well past the original "roughly 15-30 photos" cost guidance (70 as of
+this writing, across eleven expansion rounds) — a full run costs proportionally more than it used to;
 if that starts to matter, run against a subset rather than shrinking the set back down.
 
 Grow it over time as you curate more. The best source: real corrections logged via the "Suggest a
