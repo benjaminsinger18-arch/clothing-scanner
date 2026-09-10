@@ -475,7 +475,7 @@ infrastructure exist for that:
   number looks stale). Both `latencyMs` and `usage` are optional fields, so log lines written before
   either existed still parse fine, just excluded from those specific sections.
 - **Eval harness** (`server/eval/`) — a golden set of expected classification fields
-  (`server/eval/golden/`, seeded with 66 openly-licensed Wikimedia Commons stock photos covering all
+  (`server/eval/golden/`, seeded with 70 openly-licensed Wikimedia Commons stock photos covering all
   8 categories — see its own README for format, licensing (`ATTRIBUTIONS.md`), and why stock photos
   are a supplement to real phone photos, not a replacement) and a runner
   (`npm run eval --workspace=server`) that calls
