@@ -11,26 +11,36 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
 
 - Phase 1 ✅ — image capture + Claude vision classification, end-to-end.
 - Phase 2 ✅ — SerpApi (Google Shopping) listings power Similar Items / Price
-  Comparison, with a single **estimated retail price** range shown. (This app
-  originally also integrated eBay for a secondhand/resale price signal alongside
-  retail; eBay was removed entirely — it was unreliably available — so SerpApi is
-  now the sole price/listing source, and there's no resale-value estimate anymore.)
-  The low/high shown is narrowed in three steps (`computePriceRange` in
-  `server/src/lib/priceMath.ts`), not a raw min/max: (1) IQR/Tukey fence
-  outlier removal, for a search that's mostly one tight cluster plus a
-  genuine-but-wildly-priced outlier or two (e.g. a $400+ heritage-line
-  reissue next to a run of $60-80 regular jackets); (2) a mild 10th/90th-
-  percentile trim of whatever survives step 1, for categories with no clean
-  outlier at all — some brand+category searches (e.g. "Gucci belt") span a
-  smooth, continuous range across genuinely different product tiers with no
-  gap to detect, which step 1 alone can't tighten; (3) a hard cap at ±25% of
-  the median (`MAX_RELATIVE_SPREAD`), which only ever narrows further and
-  guarantees a small, predictable gap even for a category diverse enough
+  Comparison, with an **estimated retail price** range always shown and an
+  **estimated resale value** range shown alongside it when enough secondhand
+  listings turn up. (This app originally had a resale signal via a dedicated
+  eBay integration; that integration was removed entirely — it was unreliably
+  available. Resale pricing was later reintroduced without bringing back a
+  second vendor dependency: `isResaleListing` in
+  `server/src/services/serpApiClient.ts` recognizes known resale marketplaces
+  — Poshmark, ThredUp, The RealReal, Depop, Grailed, and eBay itself — that
+  show up mixed into ordinary Google Shopping results, and splits them out of
+  the same SerpApi pool rather than querying a second source. The resale range
+  only appears once at least 3 resale-marketplace listings turn up for a given
+  search (`MIN_RESALE_SAMPLE` in `server/src/routes/priceSearch.ts`) — below
+  that, a couple of secondhand listings say too little about resale value as a
+  whole to be worth showing.)
+  The low/high shown for **each** range is narrowed in three steps
+  (`computePriceRange` in `server/src/lib/priceMath.ts`), not a raw min/max:
+  (1) IQR/Tukey fence outlier removal, for a search that's mostly one tight
+  cluster plus a genuine-but-wildly-priced outlier or two (e.g. a $400+
+  heritage-line reissue next to a run of $60-80 regular jackets); (2) a mild
+  10th/90th-percentile trim of whatever survives step 1, for categories with
+  no clean outlier at all — some brand+category searches (e.g. "Gucci belt")
+  span a smooth, continuous range across genuinely different product tiers
+  with no gap to detect, which step 1 alone can't tighten; (3) a hard cap at
+  ±25% of the median (`MAX_RELATIVE_SPREAD`), which only ever narrows further
+  and guarantees a small, predictable gap even for a category diverse enough
   that steps 1-2 alone still leave a wide-looking (if statistically honest)
   range — a deliberate product decision, not a statistical one, prioritizing
   a tight number over one that fully reflects real cross-model price spread.
   `similarItems`/reviews still show every listing found, trimmed extremes
-  included — only the summary range is affected.
+  and resale listings included — only the summary ranges are affected.
 - Phase 3 ✅ — review/rating snippets, sourced from a much larger SerpApi
   Google Shopping pool than what's actually displayed (`searchSerpApi` in
   `server/src/services/serpApiClient.ts` requests up to 40 raw results via
@@ -602,6 +612,18 @@ anything — nothing ran it automatically, so nothing enforced it.
   the access key ID / secret access key come from that same step. Leave any of the
   four unset to skip this entirely — both logs stay local-disk-only, exactly as
   before this existed.
+- `AFFILIATE_TAG_EBAY` / `AFFILIATE_TAG_POSHMARK` / `AFFILIATE_TAG_THREDUP` /
+  `AFFILIATE_TAG_THEREALREAL` / `AFFILIATE_TAG_DEPOP` / `AFFILIATE_TAG_GRAILED` — optional,
+  all unset by default. If you enroll in that marketplace's affiliate/revenue-share program
+  (e.g. eBay Partner Network), set the matching var to the raw query string that program's
+  dashboard gives you (e.g. `AFFILIATE_TAG_EBAY="campid=XXXXX&customid=clothingscanner"`) and
+  `server/src/lib/affiliateLinks.ts` appends it to that domain's outbound listing URLs — nothing
+  about the listing's price, ranking, or destination changes, only the tracking query string. Set
+  none of these and every outbound link is untouched, exactly as if this file didn't exist. No
+  business-model decision has actually been made here — this is inert plumbing for a possible
+  future revenue path, not a live one; set a var only once you've decided to monetize and enrolled
+  in that specific program, and update this section with a user-facing affiliate disclosure at
+  the same time.
 
 `/price-search` returns `status: "unavailable"` when `SERPAPI_KEY` isn't configured
 (there's no other source to fall back to). Check the server console on startup for

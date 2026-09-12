@@ -108,4 +108,55 @@ describe("rateLimitTracker", () => {
     // webSearch, untouched in this test, is still well under its own cap.
     expect(mod.canMakeWebSearchCall()).toBe(true);
   });
+
+  // tryReserveXCall()/releaseXCall() — the race-free pair every provider
+  // client now uses instead of canMakeXCall()+recordXCall() around a new
+  // outbound call (see rateLimitTracker.ts's "Reserve/release" comment for
+  // the bug this closes: canMake+record leaves a window, for the whole
+  // network round-trip, where concurrent callers can all see the
+  // not-yet-incremented count and all pass the check).
+  describe("tryReserve/release", () => {
+    it("reserves exactly up to the cap and blocks beyond it, without incrementing on a blocked attempt", () => {
+      for (let i = 0; i < 50; i++) {
+        expect(mod.tryReserveWebSearchCall()).toBe(true);
+      }
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(50);
+      expect(mod.tryReserveWebSearchCall()).toBe(false);
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(50);
+    });
+
+    it("release() gives a slot back, and never takes the counter below 0", () => {
+      mod.tryReserveWebSearchCall();
+      mod.tryReserveWebSearchCall();
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(2);
+      mod.releaseWebSearchCall();
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(1);
+      mod.releaseWebSearchCall();
+      mod.releaseWebSearchCall(); // one more release than was ever reserved
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(0);
+    });
+
+    it("stays exactly at the cap under concurrent reservations that each await afterward — the exact scenario that broke the old canMake+record pattern", async () => {
+      // Fill to one slot below the cap.
+      for (let i = 0; i < 49; i++) mod.tryReserveWebSearchCall();
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(49);
+
+      // Five "concurrent" callers each reserve, then await (simulating the
+      // outbound network call). Only one slot is left, so only one of the
+      // five should succeed — with the old canMakeWebSearchCall()-then-
+      // recordWebSearchCall()-after-the-await pattern, all five could have
+      // passed the check before any of them recorded, overrunning the cap.
+      // tryReserve can't be fooled this way because the check and the
+      // increment happen in the same synchronous step, before the `await`.
+      const reserved = await Promise.all(
+        Array.from({ length: 5 }, async () => {
+          const ok = mod.tryReserveWebSearchCall();
+          await Promise.resolve(); // yield to the event loop, like a real fetch would
+          return ok;
+        })
+      );
+      expect(reserved.filter(Boolean)).toHaveLength(1);
+      expect(mod.getUsageSnapshot().webSearch.count).toBe(50);
+    });
+  });
 });

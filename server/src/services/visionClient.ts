@@ -17,7 +17,7 @@
 // requires a publicly hosted image URL — a good fit here since photos never leave
 // the request as anything but base64.
 
-import { canMakeVisionCall, recordVisionCall } from "../lib/rateLimitTracker.js";
+import { releaseVisionCall, tryReserveVisionCall } from "../lib/rateLimitTracker.js";
 
 const ANNOTATE_URL = "https://vision.googleapis.com/v1/images:annotate";
 const REQUEST_TIMEOUT_MS = 4000;
@@ -72,7 +72,9 @@ export async function getVisionSignal(imageBase64: string): Promise<VisionSignal
   if (!apiKey) {
     return null;
   }
-  if (!canMakeVisionCall()) {
+  // Reserve before firing the request, not after it resolves — see
+  // rateLimitTracker.ts's "Reserve/release" comment.
+  if (!tryReserveVisionCall()) {
     return null;
   }
 
@@ -82,8 +84,9 @@ export async function getVisionSignal(imageBase64: string): Promise<VisionSignal
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -100,8 +103,16 @@ export async function getVisionSignal(imageBase64: string): Promise<VisionSignal
       }),
       signal: controller.signal,
     });
-    recordVisionCall();
+  } catch (err) {
+    // Never reached Vision at all (DNS/connection/timeout failure) — give the
+    // reservation back since it didn't cost any real quota.
+    releaseVisionCall();
+    clearTimeout(timeout);
+    console.error("[visionClient] identification failed:", err);
+    return null;
+  }
 
+  try {
     if (!response.ok) {
       throw new VisionApiError(`Vision API request failed: ${response.status} ${await response.text()}`);
     }

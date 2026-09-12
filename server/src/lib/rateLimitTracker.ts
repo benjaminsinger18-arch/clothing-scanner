@@ -2,6 +2,18 @@
 // limit, rather than only reacting to 429s after the fact. In-memory only — counts
 // reset on server restart, an acceptable approximation for a single-instance indie
 // deployment (revisit with Redis if this ever needs to survive restarts / scale out).
+//
+// Each provider below exposes two APIs: canMakeXCall()/recordXCall() (a plain
+// read-then-separately-increment pair — kept for read-only/advisory checks,
+// e.g. reading current usage without claiming a slot) and
+// tryReserveXCall()/releaseXCall() (an atomic check+increment, with a
+// rollback for a reservation that didn't end up costing anything real). Any
+// call site gating a NEW outbound provider call should use the
+// tryReserve/release pair, not canMake+record — calling canMakeXCall() then
+// awaiting the network call then calling recordXCall() only once it resolves
+// leaves a window, for the whole round-trip, where concurrent callers can all
+// see the same not-yet-incremented count and all pass the check. See the
+// "Reserve/release" section below for the full explanation.
 
 import type { UsageSnapshot } from "@clothing-scanner/shared-types";
 
@@ -25,6 +37,42 @@ function resetIfNewPeriod(counter: Counter, currentKey: string): void {
   }
 }
 
+// --- Reserve/release: the actual race-free way to consume a slot ---
+//
+// Every provider below used to be gated by calling canMakeXCall() (a read-only
+// check), then awaiting the outbound network call, then calling recordXCall()
+// (the increment) only once that call resolved. That leaves a window, for the
+// entire duration of the network round-trip, where the counter hasn't moved
+// yet — concurrent requests arriving in that window all see the same
+// not-yet-incremented count, all pass canMakeXCall(), and all fire their own
+// outbound call, so the soft cap can be overrun by however many requests are
+// in flight at once near the cap. (This can't happen from a single check+
+// increment running back-to-back with no `await` between them — Node is
+// single-threaded, so nothing else runs until the next await point — which is
+// exactly why tryReserve below does the check and the increment as one
+// synchronous step, called BEFORE the network call starts rather than after
+// it resolves.)
+//
+// tryReserve() claims a slot up front; release() gives it back if the
+// reservation turned out not to cost anything real (e.g. the outbound request
+// never reached the provider at all — a connection/DNS-level failure, not an
+// HTTP error response). Call sites should still keep the reservation (not
+// release it) for a response that did reach the provider, even an error one
+// (429/5xx), since that request was actually sent and may count against the
+// provider's own quota regardless of how it resolved — matching this file's
+// original recording behavior, which recorded unconditionally on any resolved
+// fetch.
+function tryReserve(counter: Counter, currentKey: string, cap: number): boolean {
+  resetIfNewPeriod(counter, currentKey);
+  if (counter.count >= cap) return false;
+  counter.count += 1;
+  return true;
+}
+
+function release(counter: Counter): void {
+  if (counter.count > 0) counter.count -= 1;
+}
+
 // --- SerpApi: free tier is 250 searches/month. Leave meaningful headroom since this
 // is the tightest quota in the stack — see README for the "~80-100 scans/month"
 // estimate this cap is meant to protect. ---
@@ -39,6 +87,17 @@ export function canMakeSerpApiCall(): boolean {
 export function recordSerpApiCall(): void {
   resetIfNewPeriod(serpApiCounter, monthKey());
   serpApiCounter.count += 1;
+}
+
+/** Race-free check+increment — see this file's "Reserve/release" comment
+ * above. Call this instead of canMakeSerpApiCall()+recordSerpApiCall()
+ * around a new outbound call. */
+export function tryReserveSerpApiCall(): boolean {
+  return tryReserve(serpApiCounter, monthKey(), SERPAPI_MONTHLY_SOFT_CAP);
+}
+
+export function releaseSerpApiCall(): void {
+  release(serpApiCounter);
 }
 
 // --- Google Cloud Vision: called on every scan now (see claudeClient.ts's
@@ -60,6 +119,14 @@ export function recordVisionCall(): void {
   visionCounter.count += 1;
 }
 
+export function tryReserveVisionCall(): boolean {
+  return tryReserve(visionCounter, monthKey(), VISION_MONTHLY_SOFT_CAP);
+}
+
+export function releaseVisionCall(): void {
+  release(visionCounter);
+}
+
 // --- Gemini: unlike every other cap in this file, Gemini 3.1 Pro has no free tier
 // at all — it's billed from the first call. This cap isn't protecting a free
 // allotment, it's a pure runaway-cost circuit breaker (e.g. against a bug that
@@ -79,6 +146,14 @@ export function recordGeminiCall(): void {
   geminiCounter.count += 1;
 }
 
+export function tryReserveGeminiCall(): boolean {
+  return tryReserve(geminiCounter, todayKey(), GEMINI_DAILY_SOFT_CAP);
+}
+
+export function releaseGeminiCall(): void {
+  release(geminiCounter);
+}
+
 // --- UPCitemdb: trial tier is keyless and its 100 req/day quota is shared across
 // all anonymous callers, not ours alone — cap well under that so this app's own
 // usage doesn't tip an already-shared pool over the edge for everyone else. ---
@@ -93,6 +168,14 @@ export function canMakeUpcCall(): boolean {
 export function recordUpcCall(): void {
   resetIfNewPeriod(upcCounter, todayKey());
   upcCounter.count += 1;
+}
+
+export function tryReserveUpcCall(): boolean {
+  return tryReserve(upcCounter, todayKey(), UPC_DAILY_SOFT_CAP);
+}
+
+export function releaseUpcCall(): void {
+  release(upcCounter);
 }
 
 // --- Claude web search (correction verification): like Gemini above, this has no
@@ -116,6 +199,14 @@ export function recordWebSearchCall(): void {
   webSearchCounter.count += 1;
 }
 
+export function tryReserveWebSearchCall(): boolean {
+  return tryReserve(webSearchCounter, todayKey(), WEB_SEARCH_DAILY_SOFT_CAP);
+}
+
+export function releaseWebSearchCall(): void {
+  release(webSearchCounter);
+}
+
 // --- SerpApi (outfit-suggestions slice): a dedicated sub-cap, checked in addition
 // to the shared SERPAPI_MONTHLY_SOFT_CAP above, protecting /price-search's usage
 // from being crowded out by outfit-suggestions' own SerpApi usage — the two
@@ -137,6 +228,14 @@ export function canMakeSerpApiOutfitCall(): boolean {
 export function recordSerpApiOutfitCall(): void {
   resetIfNewPeriod(serpApiOutfitCounter, monthKey());
   serpApiOutfitCounter.count += 1;
+}
+
+export function tryReserveSerpApiOutfitCall(): boolean {
+  return tryReserve(serpApiOutfitCounter, monthKey(), SERPAPI_OUTFIT_MONTHLY_SOFT_CAP);
+}
+
+export function releaseSerpApiOutfitCall(): void {
+  release(serpApiOutfitCounter);
 }
 
 export function getUsageSnapshot(): UsageSnapshot {

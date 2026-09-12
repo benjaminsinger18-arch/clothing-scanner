@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { ApiErrorBody, ClassifyRequestBody } from "@clothing-scanner/shared-types";
-import { classifyImage, ClassificationError } from "../services/claudeClient.js";
+import { classifyImage, ClassificationConfigError, ClassificationError } from "../services/claudeClient.js";
 import { ImageValidationError, inferMediaType, validateImageBase64 } from "../lib/imageUtils.js";
 import { logClassification } from "../lib/classificationLog.js";
 
@@ -10,16 +10,16 @@ classifyRouter.post("/classify", async (req, res) => {
   const body = req.body as Partial<ClassifyRequestBody>;
 
   let imageBase64: string;
+  let mediaType: ReturnType<typeof inferMediaType>;
   try {
     imageBase64 = validateImageBase64(body.imageBase64);
+    mediaType = inferMediaType(body.mediaType);
   } catch (err) {
     const message = err instanceof ImageValidationError ? err.message : "Invalid image";
     const errorBody: ApiErrorBody = { error: "invalid_image", reason: message };
     res.status(400).json(errorBody);
     return;
   }
-
-  const mediaType = inferMediaType(body.mediaType);
 
   const startedAt = Date.now();
   try {
@@ -38,7 +38,17 @@ classifyRouter.post("/classify", async (req, res) => {
     res.json({ classifications });
   } catch (err) {
     console.error("[/classify] classification failed:", err);
-    const reason = err instanceof ClassificationError ? err.message : "Unknown error contacting Claude";
+    // ClassificationConfigError's message is written for the server console
+    // (setup instructions, env var names), not for a client holding the
+    // shared secret — never forward it. Every other ClassificationError
+    // describes what actually went wrong with this request/upstream call and
+    // is fine to surface, same as before.
+    const reason =
+      err instanceof ClassificationConfigError
+        ? "The server isn't configured correctly. Try again later."
+        : err instanceof ClassificationError
+          ? err.message
+          : "Unknown error contacting Claude";
     const errorBody: ApiErrorBody = { error: "classification_failed", reason };
     res.status(502).json(errorBody);
   }

@@ -21,7 +21,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { SupportedMediaType } from "../lib/imageUtils.js";
 import { MULTI_ITEM_JSON_SCHEMA, MULTI_ITEM_PROMPT, type RawClassification } from "../lib/classificationSchema.js";
-import { canMakeGeminiCall, recordGeminiCall } from "../lib/rateLimitTracker.js";
+import { releaseGeminiCall, tryReserveGeminiCall } from "../lib/rateLimitTracker.js";
 
 const GEMINI_MODEL = "gemini-3.1-pro-preview";
 // Gemini 3.1 Pro defaults to "high" thinking (measured ~4s even on a trivial
@@ -97,12 +97,15 @@ export async function classifyMultiItemWithGemini(
   if (!apiKey) {
     return null;
   }
-  if (!canMakeGeminiCall()) {
+  // Reserve before firing the request, not after it resolves — see
+  // rateLimitTracker.ts's "Reserve/release" comment.
+  if (!tryReserveGeminiCall()) {
     return null;
   }
 
+  let interaction: Awaited<ReturnType<ReturnType<typeof getClient>["interactions"]["create"]>>;
   try {
-    const interaction = await withTimeout(
+    interaction = await withTimeout(
       getClient().interactions.create({
         model: GEMINI_MODEL,
         input: [
@@ -123,8 +126,16 @@ export async function classifyMultiItemWithGemini(
       }),
       REQUEST_TIMEOUT_MS
     );
-    recordGeminiCall();
+  } catch (err) {
+    // The call itself never completed (network failure or our own
+    // withTimeout firing) — give the reservation back since it didn't cost
+    // any real quota.
+    releaseGeminiCall();
+    console.error("[geminiClient] classification failed:", err);
+    return null;
+  }
 
+  try {
     if (!interaction.output_text) {
       throw new GeminiClassificationError("Gemini returned no output_text");
     }
