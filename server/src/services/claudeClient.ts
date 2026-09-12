@@ -17,7 +17,7 @@ import {
 import { getVisionSignal, type VisionSignal } from "./visionClient.js";
 import { classifyMultiItemWithGemini } from "./geminiClient.js";
 import type { UpcItem } from "./upcClient.js";
-import { canMakeWebSearchCall, recordWebSearchCall } from "../lib/rateLimitTracker.js";
+import { canMakeWebSearchCall, releaseWebSearchCall, tryReserveWebSearchCall } from "../lib/rateLimitTracker.js";
 import type { ScanUsage } from "../lib/classificationLog.js";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
@@ -32,6 +32,16 @@ const OUTFIT_TOOL_NAME = "report_outfit_suggestions";
 const LOG_TIMING = process.env.NODE_ENV !== "production";
 
 export class ClassificationError extends Error {}
+
+/** A ClassificationError specifically about this deployment's own setup (a
+ * missing env var, etc.) rather than about the request or an upstream
+ * provider. Routes should never forward this one's .message to the client —
+ * it's written for whoever's reading the server console/logs (e.g. "copy
+ * server/.env.example to server/.env and fill it in"), and doing so would
+ * hand anyone holding the shared secret a live readout of this deployment's
+ * configuration state. See classify.ts/barcodeLookup.ts for where that's
+ * enforced. */
+export class ClassificationConfigError extends ClassificationError {}
 
 function zeroUsage(): ScanUsage {
   return { claudeInputTokens: 0, claudeOutputTokens: 0, geminiInputTokens: 0, geminiOutputTokens: 0 };
@@ -57,7 +67,7 @@ function getClient(): Anthropic {
   if (!anthropic) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      throw new ClassificationError(
+      throw new ClassificationConfigError(
         "ANTHROPIC_API_KEY is not set — copy server/.env.example to server/.env and fill it in"
       );
     }
@@ -506,46 +516,60 @@ async function callResearch(
 ): Promise<{ summary: string; sources: { title: string; url: string }[] }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new ClassificationError(
+    throw new ClassificationConfigError(
       "ANTHROPIC_API_KEY is not set — copy server/.env.example to server/.env and fill it in"
     );
   }
 
-  const response = await fetch(ANTHROPIC_MESSAGES_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: SONNET_MODEL,
-      max_tokens: 1024,
-      // No tool_choice here — left at the default "auto" on purpose, see the
-      // block comment above this section for why forcing it would be a mistake.
-      tools: [{ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: 4 }],
-      messages: [
-        {
-          role: "user",
-          content:
-            `A user is correcting an AI clothing classification they believe is wrong. The system ` +
-            `previously identified the item as: ${describeOriginalForCorrection(original)}. The user says: ` +
-            `"${correctionText}". Research this on the web if it would help confirm the item's real garment ` +
-            `type, category, color, pattern, style, or brand — search for the specific product/brand/model ` +
-            `the user named if one is identifiable. Use your judgment about whether a search is actually ` +
-            `needed. When done, write one clear, confident paragraph stating what this item actually is, ` +
-            `covering garment type, category, color, pattern, style, and brand (with your honest confidence) ` +
-            `— no meta-commentary about your search process, just the final factual summary.`,
-        },
-      ],
-    }),
-  });
+  // Reserve before firing the request, not after it resolves — see
+  // rateLimitTracker.ts's "Reserve/release" comment. This also fixes a
+  // double-spend: callResearchWithRetry below can call this function twice
+  // (initial attempt + one retry) for a single user-facing correction, but
+  // the cap used to only be checked once, up front, by the caller — so a
+  // transient failure on attempt 1 let attempt 2 through uncounted against
+  // the cap. Reserving inside each individual attempt means the 50/day cap
+  // is actually enforced per outbound call, not per correction.
+  if (!tryReserveWebSearchCall()) {
+    throw new ClassificationError("Web search daily cap reached");
+  }
 
-  // Record right after a successful HTTP response, same granularity as
-  // visionClient.ts/geminiClient.ts — counts this as one use against our own soft
-  // cap regardless of whether Claude actually invoked web_search internally (it
-  // may have judged no search was needed), same approximation those two make.
-  recordWebSearchCall();
+  let response: Response;
+  try {
+    response = await fetch(ANTHROPIC_MESSAGES_URL, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": ANTHROPIC_VERSION,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: SONNET_MODEL,
+        max_tokens: 1024,
+        // No tool_choice here — left at the default "auto" on purpose, see the
+        // block comment above this section for why forcing it would be a mistake.
+        tools: [{ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: 4 }],
+        messages: [
+          {
+            role: "user",
+            content:
+              `A user is correcting an AI clothing classification they believe is wrong. The system ` +
+              `previously identified the item as: ${describeOriginalForCorrection(original)}. The user says: ` +
+              `"${correctionText}". Research this on the web if it would help confirm the item's real garment ` +
+              `type, category, color, pattern, style, or brand — search for the specific product/brand/model ` +
+              `the user named if one is identifiable. Use your judgment about whether a search is actually ` +
+              `needed. When done, write one clear, confident paragraph stating what this item actually is, ` +
+              `covering garment type, category, color, pattern, style, and brand (with your honest confidence) ` +
+              `— no meta-commentary about your search process, just the final factual summary.`,
+          },
+        ],
+      }),
+    });
+  } catch (err) {
+    // Never reached Anthropic at all (DNS/connection-level failure) — give
+    // the reservation back since it didn't cost any real quota.
+    releaseWebSearchCall();
+    throw err;
+  }
 
   if (!response.ok) {
     throw new ClassificationError(`Anthropic research call failed: ${response.status} ${await response.text()}`);

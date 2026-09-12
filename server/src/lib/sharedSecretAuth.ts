@@ -1,6 +1,21 @@
+import { timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 
 const HEADER_NAME = "x-app-secret";
+
+/** Plain `===` on secrets leaks timing information proportional to how many
+ * leading bytes match, which a patient attacker can use to recover the value
+ * byte-by-byte. Low-severity here specifically — the secret is already
+ * documented above as extractable straight from the app bundle, so timing
+ * attacks aren't this endpoint's weakest link — but `timingSafeEqual` costs
+ * nothing to use correctly, so there's no reason to leave the cheaper
+ * side-channel open. Requires equal-length buffers, hence the length check
+ * before calling it (a length mismatch alone would otherwise throw). */
+function secretsMatch(provided: string, expected: string): boolean {
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  return providedBuf.length === expectedBuf.length && timingSafeEqual(providedBuf, expectedBuf);
+}
 
 /**
  * Lightweight deterrent against random internet traffic hitting the deployed
@@ -20,7 +35,7 @@ export function sharedSecretAuth(req: Request, res: Response, next: NextFunction
   }
 
   const provided = req.header(HEADER_NAME);
-  if (provided === expected) {
+  if (provided !== undefined && secretsMatch(provided, expected)) {
     next();
     return;
   }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { ApiErrorBody } from "@clothing-scanner/shared-types";
 import { lookupUpc } from "../services/upcClient.js";
-import { classifyFromBarcode, ClassificationError } from "../services/claudeClient.js";
+import { classifyFromBarcode, ClassificationConfigError, ClassificationError } from "../services/claudeClient.js";
 import { logClassification } from "../lib/classificationLog.js";
 
 export const barcodeLookupRouter = Router();
@@ -60,7 +60,14 @@ barcodeLookupRouter.get("/barcode-lookup", async (req, res) => {
     res.json({ classification });
   } catch (err) {
     console.error("[/barcode-lookup] normalization failed:", err);
-    const reason = err instanceof ClassificationError ? err.message : "Unknown error normalizing the barcode match";
+    // See classify.ts's identical check — ClassificationConfigError's message
+    // is server-console-only setup detail, never client-facing.
+    const reason =
+      err instanceof ClassificationConfigError
+        ? "The server isn't configured correctly. Try again later."
+        : err instanceof ClassificationError
+          ? err.message
+          : "Unknown error normalizing the barcode match";
     const errorBody: ApiErrorBody = { error: "classification_failed", reason };
     res.status(502).json(errorBody);
   }

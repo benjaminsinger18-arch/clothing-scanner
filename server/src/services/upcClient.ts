@@ -11,10 +11,15 @@
 // registered. A "not_found" result is a common, expected outcome here, not a rare
 // edge case — callers should treat it as such, not as a failure.
 
-import { canMakeUpcCall, recordUpcCall } from "../lib/rateLimitTracker.js";
+import { releaseUpcCall, tryReserveUpcCall } from "../lib/rateLimitTracker.js";
 import { TtlCache } from "../lib/ttlCache.js";
 
 const LOOKUP_URL = "https://api.upcitemdb.com/prod/trial/lookup";
+// UPCitemdb has no documented SLA; this is a simple key lookup, not a search
+// engine query, so 8s is generous headroom without letting a hang tie up the
+// request indefinitely (matches the AbortController pattern already used in
+// visionClient.ts/geminiClient.ts, which this file previously lacked).
+const REQUEST_TIMEOUT_MS = 8000;
 
 // A UPC code's product record essentially never changes (unlike a price), and
 // this quota is the tightest of any provider in the app — 100 req/day *shared
@@ -80,17 +85,32 @@ export async function lookupUpc(code: string): Promise<UpcLookupResult> {
 }
 
 async function lookupUpcUncached(code: string): Promise<UpcLookupResult> {
-  if (!canMakeUpcCall()) {
+  // Reserve before firing the request, not after it resolves — see
+  // rateLimitTracker.ts's "Reserve/release" comment.
+  if (!tryReserveUpcCall()) {
     return { status: "rate_limited" };
   }
 
   const url = new URL(LOOKUP_URL);
   url.searchParams.set("upc", code);
 
-  try {
-    const response = await fetch(url);
-    recordUpcCall();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    // Never reached UPCitemdb at all (DNS/connection/timeout failure) — give
+    // the reservation back since it didn't cost any of the shared quota.
+    releaseUpcCall();
+    console.error("[upcClient] lookup failed:", err);
+    return { status: "unavailable" };
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  try {
     if (response.status === 429) {
       return { status: "rate_limited" };
     }

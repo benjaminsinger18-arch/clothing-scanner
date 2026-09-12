@@ -7,7 +7,7 @@
 // Free tier: 250 searches/month (see rateLimitTracker's SERPAPI_MONTHLY_SOFT_CAP).
 
 import type { BrandConfidence, DataSourceStatus, PriceListing } from "@clothing-scanner/shared-types";
-import { canMakeSerpApiCall, recordSerpApiCall } from "../lib/rateLimitTracker.js";
+import { releaseSerpApiCall, tryReserveSerpApiCall } from "../lib/rateLimitTracker.js";
 import { TtlCache } from "../lib/ttlCache.js";
 import { applyAffiliateTag } from "../lib/affiliateLinks.js";
 
@@ -92,7 +92,11 @@ async function runSearchUncached(query: string, num: number): Promise<SerpApiSea
     // clean "unavailable" status instead of an unhandled exception.
     return { status: "unavailable", listings: [] };
   }
-  if (!canMakeSerpApiCall()) {
+  // Reserves the slot before firing the request, not after it resolves — see
+  // rateLimitTracker.ts's "Reserve/release" comment for why that ordering
+  // matters (a check-then-later-increment pattern lets concurrent requests
+  // near the cap all slip through during the network round-trip).
+  if (!tryReserveSerpApiCall()) {
     return { status: "rate_limited", listings: [] };
   }
 
@@ -104,10 +108,18 @@ async function runSearchUncached(query: string, num: number): Promise<SerpApiSea
   url.searchParams.set("num", String(num));
   url.searchParams.set("api_key", apiKey);
 
+  let response: Response;
   try {
-    const response = await fetch(url);
-    recordSerpApiCall();
+    response = await fetch(url);
+  } catch (err) {
+    // Never reached SerpApi at all (DNS/connection-level failure) — give the
+    // reservation back since it didn't cost any real quota.
+    releaseSerpApiCall();
+    console.error("[serpApiClient] search failed:", err);
+    return { status: "unavailable", listings: [] };
+  }
 
+  try {
     if (response.status === 429) {
       throw new SerpApiRateLimitError("SerpApi rate limit hit");
     }
