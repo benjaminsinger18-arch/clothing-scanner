@@ -101,6 +101,14 @@ export function CaptureScreen({ navigation }: Props) {
         >
           <Text style={styles.closetLinkText}>Settings</Text>
         </Pressable>
+        <Pressable
+          style={styles.closetLink}
+          onPress={() => navigation.navigate("Insights")}
+          accessibilityRole="link"
+          accessibilityLabel="Wardrobe insights"
+        >
+          <Text style={styles.closetLinkText}>Insights</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -142,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: { color: theme.colors.textPrimary, fontSize: 16, fontFamily: theme.fonts.body.semiBold },
-  linkRow: { flexDirection: "row" },
+  linkRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
   closetLink: { marginTop: 4, padding: theme.spacing.sm },
   closetLinkText: { color: theme.colors.accent, fontSize: 14, fontFamily: theme.fonts.body.medium },
 });

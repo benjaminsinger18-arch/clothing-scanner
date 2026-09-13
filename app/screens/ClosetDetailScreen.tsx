@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { Gender } from "@clothing-scanner/shared-types";
 import type { RootStackParamList } from "../navigation/types";
 import { removeClosetItem } from "../lib/closetStorage";
+import { getWearStats, logWear, type WearStats } from "../lib/wearLog";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ClosetDetail">;
@@ -23,6 +24,29 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
   const { item } = route.params;
   const { classification, priceRange, photoThumbnail, savedAt } = item;
   const [removing, setRemoving] = useState(false);
+  // null = "haven't loaded yet" — distinct from a real 0-wear WearStats, so
+  // the "Mark as worn" button doesn't flash a stale "Never worn" before the
+  // real count arrives.
+  const [wearStats, setWearStats] = useState<WearStats | null>(null);
+  const [loggingWear, setLoggingWear] = useState(false);
+
+  useEffect(() => {
+    getWearStats(item.id)
+      .then(setWearStats)
+      .catch(() => setWearStats({ count: 0, lastWornAt: null }));
+  }, [item.id]);
+
+  async function handleMarkWorn() {
+    if (loggingWear) return;
+    setLoggingWear(true);
+    try {
+      setWearStats(await logWear(item.id));
+    } catch (err) {
+      console.warn("[ClosetDetailScreen] Failed to log wear:", err);
+    } finally {
+      setLoggingWear(false);
+    }
+  }
 
   async function handleRemove() {
     if (removing) return;
@@ -73,6 +97,30 @@ export function ClosetDetailScreen({ route, navigation }: Props) {
             ${priceRange.low.toFixed(2)} – ${priceRange.high.toFixed(2)}{" "}
             <Text style={styles.rangeMedian}>(median ${priceRange.median.toFixed(2)})</Text>
           </Text>
+        </View>
+      )}
+
+      {wearStats && (
+        <View style={styles.wearSection}>
+          <View style={styles.wearStatsRow}>
+            <Text style={styles.wearStatsText}>
+              {wearStats.count === 0 ? "Never worn" : `Worn ${wearStats.count} time${wearStats.count === 1 ? "" : "s"}`}
+              {wearStats.lastWornAt ? ` · last ${new Date(wearStats.lastWornAt).toLocaleDateString()}` : ""}
+            </Text>
+            {priceRange && wearStats.count > 0 && (
+              <Text style={styles.costPerWear}>${(priceRange.median / wearStats.count).toFixed(2)} per wear</Text>
+            )}
+          </View>
+          <Pressable
+            style={[styles.wearButton, loggingWear && styles.wearButtonDisabled]}
+            onPress={handleMarkWorn}
+            disabled={loggingWear}
+            accessibilityRole="button"
+            accessibilityLabel="Mark as worn today"
+            accessibilityState={{ disabled: loggingWear }}
+          >
+            <Text style={styles.wearButtonText}>{loggingWear ? "Logging…" : "Mark as Worn Today"}</Text>
+          </Pressable>
         </View>
       )}
 
@@ -158,6 +206,28 @@ const styles = StyleSheet.create({
   },
   rangeValue: { color: theme.colors.accent, fontSize: 18, fontFamily: theme.fonts.display.bold },
   rangeMedian: { color: theme.colors.textSecondary, fontSize: 13, fontFamily: theme.fonts.body.regular },
+  wearSection: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  wearStatsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    marginBottom: theme.spacing.sm,
+  },
+  wearStatsText: { color: theme.colors.textPrimary, fontSize: 14, fontFamily: theme.fonts.body.medium },
+  costPerWear: { color: theme.colors.accent, fontSize: 13, fontFamily: theme.fonts.body.semiBold },
+  wearButton: {
+    backgroundColor: theme.colors.surfaceAlt,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    alignItems: "center",
+  },
+  wearButtonDisabled: { opacity: 0.6 },
+  wearButtonText: { color: theme.colors.textPrimary, fontSize: 14, fontFamily: theme.fonts.body.semiBold },
   savedAt: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: theme.spacing.lg },
   viewResultsButton: {
     backgroundColor: theme.colors.accent,
