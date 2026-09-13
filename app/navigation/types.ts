@@ -62,4 +62,8 @@ export type RootStackParamList = {
   /** Same "pass the whole resolved entry" pattern as ClosetDetail above. */
   OutfitDetail: { outfit: ResolvedOutfit };
   Settings: undefined;
+  /** Aggregate view over the whole closet (value, category/color breakdown,
+   * wear history) — see InsightsScreen and app/lib/wearLog.ts. Takes no
+   * params; it re-queries the closet/wear tables itself on every focus. */
+  Insights: undefined;
 };

@@ -77,6 +77,21 @@ See `.claude/plans` (or the plan this repo was scaffolded from) for the full des
   items it references; removing a closet item that's part of a saved outfit leaves
   that outfit with a "no longer in your closet" note rather than blocking the removal
   or silently breaking.
+- Wear tracking + Wardrobe Insights ✅ — a "Mark as Worn Today" button on
+  `ClosetDetailScreen` logs a timestamped wear to a new local `wear_log`
+  SQLite table (`app/lib/wearLog.ts`), shown alongside a **cost-per-wear**
+  figure (saved price-range median ÷ wear count) once at least one wear is
+  logged. A new **Insights** screen (linked from Capture, `InsightsScreen`)
+  aggregates the whole closet: total estimated value (sum of saved
+  price-range medians), a category and color breakdown, and a
+  "haven't worn in 90+ days" list (ranked by whichever is older — last worn,
+  or saved-but-never-worn). Entirely local — no server change, no new
+  provider call, no quota impact. Wear history cascades with its closet item
+  (`removeClosetItem`/`clearCloset` in `closetStorage.ts` also clear that
+  item's `wear_log` rows) rather than being left dangling the way a removed
+  item's outfit references are (see "My Outfits" above) — a wear-log row has
+  no meaning once nothing references it back, unlike an outfit's name/other
+  items.
 - Gendered pairings ✅ — every classification now includes a `gender` field
   ("men" | "women" | "unisex" — see `ClassificationResult` in
   `packages/shared-types`), inferred from a visible wearer's apparent gender

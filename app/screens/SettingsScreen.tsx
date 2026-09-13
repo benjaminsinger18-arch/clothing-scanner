@@ -6,6 +6,7 @@ import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import type { UsageCounter, UsageSnapshot } from "@clothing-scanner/shared-types";
 import { ErrorState } from "../components/ErrorState";
+import { Section } from "../components/Section";
 import { toErrorInfo } from "../lib/errors";
 import { clearCloset, getClosetItems } from "../lib/closetStorage";
 import { getUsage } from "../services/api";
@@ -136,15 +137,6 @@ export function SettingsScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionBody}>{children}</View>
-    </View>
-  );
-}
-
 function UsageRow({ label, counter }: { label: string; counter: UsageCounter }) {
   const pct = counter.cap > 0 ? Math.min(1, counter.count / counter.cap) : 0;
   // Amber past 75% of cap, red past 95% — same "getting close" signal a
@@ -170,21 +162,6 @@ function UsageRow({ label, counter }: { label: string; counter: UsageCounter }) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.md },
-  section: { marginBottom: theme.spacing.lg },
-  sectionTitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: theme.letterSpacing.label,
-    marginBottom: 8,
-  },
-  sectionBody: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: "hidden",
-  },
   row: { padding: theme.spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border },
   rowLabel: { color: theme.colors.textPrimary, fontSize: 15, fontFamily: theme.fonts.body.medium },
   rowMeta: { color: theme.colors.textSecondary, fontSize: 12, fontVariant: ["tabular-nums"] },

@@ -27,6 +27,7 @@ import * as SQLite from "expo-sqlite";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { ClassificationResult, PriceRange } from "@clothing-scanner/shared-types";
 import { getSharedDb } from "./db";
+import { clearWearLog, deleteWearLogForItem } from "./wearLog";
 
 export interface ClosetItem {
   id: string;
@@ -247,6 +248,10 @@ export async function addClosetItem(
 export async function removeClosetItem(id: string): Promise<void> {
   const db = await getDb();
   await db.runAsync("DELETE FROM closet_items WHERE id = ?", id);
+  // Unlike a saved outfit's item reference (see outfitStorage.ts), a wear-log
+  // row has no meaning once its closet item is gone — nothing else points
+  // back at it — so this cascades rather than leaving it dangling.
+  await deleteWearLogForItem(id);
 }
 
 /** Deletes every saved closet item — used by Settings' "Clear closet" action.
@@ -254,10 +259,13 @@ export async function removeClosetItem(id: string): Promise<void> {
  * loop (one SQL statement instead of N), and deliberately does NOT touch
  * saved outfits (see outfitStorage.ts) — an outfit whose items were all just
  * cleared simply shows "no longer in your closet" for each, same as any other
- * partial/full dangling-reference case, rather than being silently deleted too. */
+ * partial/full dangling-reference case, rather than being silently deleted too.
+ * Wear history IS cleared alongside the closet, though — see removeClosetItem
+ * above for why wear rows don't get the same dangling-reference tolerance. */
 export async function clearCloset(): Promise<void> {
   const db = await getDb();
   await db.runAsync("DELETE FROM closet_items");
+  await clearWearLog();
 }
 
 /** Matches saved closet items against an outfit-suggestion keyword phrase

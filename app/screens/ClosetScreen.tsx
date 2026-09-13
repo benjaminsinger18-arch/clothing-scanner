@@ -6,35 +6,13 @@ import type { RootStackParamList } from "../navigation/types";
 import { ClosetItemCard } from "../components/ClosetItemCard";
 import { ErrorState } from "../components/ErrorState";
 import { getClosetCategories, queryClosetItems, removeClosetItem, type ClosetItem } from "../lib/closetStorage";
+import { CATEGORY_LABELS, CATEGORY_ORDER } from "../lib/categoryLabels";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Closet">;
 
-/** Display labels for the 8 category values a classification can carry —
- * fixed canonical order (rather than the alphabetical order SQLite's
- * `getClosetCategories` returns) so the filter bar reads like a considered
- * list, not a database dump. Categories with no saved items simply don't
- * appear (see the `.filter` below), rather than showing an always-empty chip. */
-const CATEGORY_ORDER = [
-  "tops",
-  "bottoms",
-  "outerwear",
-  "dresses",
-  "footwear",
-  "activewear",
-  "underwear-sleepwear",
-  "accessories",
-] as const;
-const CATEGORY_LABELS: Record<string, string> = {
-  tops: "Tops",
-  bottoms: "Bottoms",
-  outerwear: "Outerwear",
-  dresses: "Dresses",
-  footwear: "Footwear",
-  activewear: "Activewear",
-  "underwear-sleepwear": "Underwear & Sleepwear",
-  accessories: "Accessories",
-};
+// Categories with no saved items simply don't appear in the filter bar (see
+// the `.filter` below), rather than showing an always-empty chip.
 
 // How long to wait after the last keystroke before actually re-querying —
 // SQLite itself is fast enough not to need this for correctness (the closet

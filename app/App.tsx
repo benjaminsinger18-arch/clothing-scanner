@@ -28,6 +28,7 @@ import { OutfitsScreen } from "./screens/OutfitsScreen";
 import { OutfitBuilderScreen } from "./screens/OutfitBuilderScreen";
 import { OutfitDetailScreen } from "./screens/OutfitDetailScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { InsightsScreen } from "./screens/InsightsScreen";
 import { theme } from "./theme";
 
 // Held open until fonts finish loading (or fail) so the very first screen's Inter
@@ -86,6 +87,7 @@ export default function App() {
               options={({ route }) => ({ title: route.params.outfit.name })}
             />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
+            <Stack.Screen name="Insights" component={InsightsScreen} options={{ title: "Wardrobe Insights" }} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
