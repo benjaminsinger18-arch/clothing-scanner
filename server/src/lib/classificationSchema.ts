@@ -38,13 +38,22 @@ export const CLASSIFICATION_JSON_SCHEMA = {
     brandGuess: {
       type: ["string", "null"],
       description:
-        "Best-effort brand guess based on visible logos/labels/stitching/hardware. " +
-        "Null if there is no reasonable basis for a guess.",
+        "Best-effort brand guess. Look specifically at: neckline/waistband/collar tags, chest/sleeve/" +
+        "pocket logos, embossed or stamped hardware (buttons, zippers, snaps, rivets), sole/insole " +
+        "markings on footwear, and characteristic construction details a brand is known for (e.g. " +
+        "Levi's arcuate stitching on back pockets, a specific sole tread pattern). Null if none of " +
+        "that is visible or legible enough to support a guess — do not infer a brand from generic " +
+        'styling alone (e.g. "looks like a hoodie" is not brand evidence).',
     },
     brandConfidence: {
       type: "string",
       enum: ["none", "low", "medium", "high"],
-      description: "Your honest confidence in brandGuess — do not inflate this.",
+      description:
+        "Your honest confidence in brandGuess, anchored to what evidence you actually saw — do not " +
+        'inflate this. "high": a clearly legible logo, wordmark, or tag. "medium": a recognizable mark ' +
+        "that's partially obscured, small, or blurry, OR a design detail strongly characteristic of one " +
+        'brand even without a legible mark. "low": a plausible guess from overall styling/quality alone, ' +
+        'with no specific mark or detail to point to. "none": brandGuess is null.',
     },
   },
   required: ["garmentType", "category", "color", "pattern", "style", "gender", "brandGuess", "brandConfidence"],
@@ -58,10 +67,14 @@ export const CLASSIFICATION_JSON_SCHEMA = {
 export const CLASSIFICATION_PROMPT =
   "Look closely at the garment's cut, construction, and details before naming its " +
   "specific type, and judge its true dominant color as it actually appears in the " +
-  "photo's lighting. Be honest about uncertainty — do not guess a brand you can't " +
-  "reasonably support from visible evidence. Also note who the item is styled/cut " +
-  "for (men, women, or unisex) — this drives gendered outfit-pairing suggestions " +
-  "downstream, so give it real consideration rather than defaulting to unisex.";
+  "photo's lighting. For brand specifically, actively look for tags, logos, hardware " +
+  "stamps, and characteristic construction details (see brandGuess/brandConfidence's " +
+  "own field descriptions for exactly what counts) before deciding there's no basis " +
+  "for a guess — but still be honest about uncertainty: do not guess a brand you " +
+  "can't reasonably support from what you actually see. Also note who the item is " +
+  "styled/cut for (men, women, or unisex) — this drives gendered outfit-pairing " +
+  "suggestions downstream, so give it real consideration rather than defaulting to " +
+  "unisex.";
 
 export interface RawClassification {
   garmentType: string;

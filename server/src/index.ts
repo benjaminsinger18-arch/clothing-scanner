@@ -92,7 +92,7 @@ async function main() {
     if (!process.env.GEMINI_API_KEY) {
       console.warn(
         "[server] GEMINI_API_KEY is not set — /classify will run without Gemini's second opinion " +
-          "(no brand cross-validation from it, no Gemini rescue pass)."
+          "(no Gemini rescue pass for otherwise-unrecognized items)."
       );
     }
     if (!process.env.APP_SHARED_SECRET) {
