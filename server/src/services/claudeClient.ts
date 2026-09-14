@@ -176,12 +176,23 @@ async function callClaudeMultiItemWithRetry(model: string, opts: ClassifyOptions
   }
 }
 
+// A logo match at or above this score is confident enough to fill a gap at
+// "medium" rather than "low" — still below the model's own "high" (reserved
+// for a mark the model itself read directly off the garment, in full visual
+// context), but better than treating every Vision fill identically regardless
+// of how strong the actual match was. LOGO_SCORE_FLOOR in visionClient.ts
+// (0.5) has already discarded anything below that; this is a second,
+// higher bar within what's left.
+const LOGO_SCORE_MEDIUM_THRESHOLD = 0.85;
+
 /** Post-hoc merge of Vision's logo detection into a result. Only fills in/upgrades
  * the brand guess when the result itself was unconfident (none/low) — a confident
  * guess (medium/high) is left untouched, since it's already vetted against the
- * actual image context and Vision's logo match hasn't been. Forces brandConfidence
- * to "low" regardless of Vision's own score, and tags brandSource so this is never
- * conflated with the model's own guess.
+ * actual image context and Vision's logo match hasn't been. brandConfidence is
+ * scaled to Vision's own logo score (see LOGO_SCORE_MEDIUM_THRESHOLD) rather than
+ * hardcoded, so a near-certain logo match isn't treated the same as a borderline
+ * one; brandSource is tagged either way so this is never conflated with the
+ * model's own guess.
  *
  * Gemini used to also feed into this (a second cross-validation source, ranked
  * above Vision's raw logo match), back when it ran on every scan. It doesn't
@@ -198,7 +209,7 @@ function applyVisionBrandSignal(
     return {
       ...primary,
       brandGuess: vision.logos[0].description,
-      brandConfidence: "low",
+      brandConfidence: vision.logos[0].score >= LOGO_SCORE_MEDIUM_THRESHOLD ? "medium" : "low",
       brandSource: "vision-logo",
     };
   }

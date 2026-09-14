@@ -1,13 +1,21 @@
-// Gemini integration — a second, independent full classification opinion that runs
-// in parallel with Claude's (see claudeClient.ts's classifyImage), not a fallback.
-// Two jobs:
-//   1. Brand cross-validation — when Claude's own brand guess is unconfident, a
-//      confident Gemini guess can fill it in (softened a notch, clearly attributed —
-//      see applyBrandCrossValidation in claudeClient.ts).
-//   2. Unrecognized-item rescue — if Claude can't identify anything at all, and
-//      Gemini *can*, Gemini's own full multi-item classification is used directly
-//      (stronger recovery than Vision's single-phrase hint, since it's a full
-//      reasoned opinion, not just an entity match).
+// Gemini integration — a second, independent full classification opinion, used
+// rescue-only: it fires only when Claude's own first pass (see claudeClient.ts's
+// classifyImage) returns zero items, never in parallel with every scan. One job:
+// unrecognized-item rescue — if Claude can't identify anything at all, and Gemini
+// *can*, Gemini's own full multi-item classification is used directly (stronger
+// recovery than Vision's single-phrase hint, since it's a full reasoned opinion,
+// not just an entity match). On that path, Gemini's own brandGuess/brandConfidence
+// are treated as primary (untouched, same as Claude's own guess would be) —
+// Vision's logo detection can still layer on top via applyVisionBrandSignal in
+// claudeClient.ts, same as it would for a Claude-sourced result.
+//
+// This used to also run on every scan, unconditionally, specifically for brand
+// cross-validation (a confident Gemini guess filling in an unconfident Claude
+// one) — that path (`applyBrandCrossValidation` in claudeClient.ts) was removed
+// after live measurement showed real, unpredictable added latency for a benefit
+// that mattered far less than fixing outright misses; see classifyImage's doc
+// comment and README.md's "Gemini rescue" section for the full history.
+//
 // Uses the same MULTI_ITEM_JSON_SCHEMA as Claude's report_clothing_items tool so
 // both providers' outputs are directly comparable.
 //

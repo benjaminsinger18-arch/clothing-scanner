@@ -36,8 +36,12 @@ usage" — add your own real photos alongside these over time.
 - `brandGuess` — `null` on both sides passes; one `null` and one string fails; two strings use the
   same substring rule as above.
 - `style` — omit it. It's too subjective to grade as pass/fail.
-- `brandConfidence` — omit it. It's never graded pass/fail; instead `runEval.ts` prints a separate
-  "brand confidence calibration" section so you can eyeball whether confidence looks reasonable.
+- `brandConfidence` — omit it. It's never graded pass/fail on its own; instead `runEval.ts` prints
+  two separate sections: a per-photo "brand confidence calibration" list to eyeball, and an
+  aggregate "brand confidence calibration (aggregate)" rollup showing, for each confidence level
+  actually produced, what fraction of `brandGuess` guesses at that level were actually correct
+  (e.g. `high: 9/9 (100%)`, `low: 2/6 (33%)`) — a well-calibrated model should show that fraction
+  roughly increasing from `none`/`low` up to `high`.
 
 Any `expected` field you leave out simply isn't graded for that item — useful when you're only
 confident about some of what's in a photo.

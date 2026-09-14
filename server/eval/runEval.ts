@@ -194,6 +194,8 @@ function printSummary(reports: ItemReport[]): number | null {
     );
   }
 
+  printBrandCalibrationAggregate(gradable);
+
   const errorCount = reports.length - gradable.length;
   if (errorCount > 0) {
     console.log(`\n${errorCount} item(s) errored (API/read failure, not a content mismatch) — see above.`);
@@ -202,6 +204,33 @@ function printSummary(reports: ItemReport[]): number | null {
   printCostEstimate(reports);
 
   return totalChecks === 0 ? null : (totalPassed / totalChecks) * 100;
+}
+
+const BRAND_CONFIDENCE_LEVELS: readonly BrandConfidence[] = ["none", "low", "medium", "high"];
+
+/** Aggregate calibration check for brandConfidence, computed here rather than
+ * during grading since it's a rollup over brandGuess's own pass/fail results,
+ * not a graded field of its own (see golden/README.md — brandConfidence is
+ * deliberately never pass/fail-graded per item). For each confidence level
+ * actually produced, this answers "when the model said X, how often was
+ * brandGuess actually right?" — the number the per-photo calibration list
+ * above can't show on its own. Well-calibrated confidence should read as a
+ * roughly increasing curve (high the most reliable, none/low the least); a
+ * "high" bucket with a low pass rate, or a "low" bucket indistinguishable
+ * from "high", is the signal to look at the prompt/threshold logic again. */
+function printBrandCalibrationAggregate(gradable: ItemReport[]): void {
+  // Only entries where brandGuess itself was graded — an ungraded entry has
+  // no ground truth to check the confidence claim against.
+  const graded = gradable.filter((r) => "brandGuess" in r.entry.expected && r.brandConfidenceNote);
+  if (graded.length === 0) return;
+
+  console.log("\n--- Brand confidence calibration (aggregate) ---");
+  for (const level of BRAND_CONFIDENCE_LEVELS) {
+    const atLevel = graded.filter((r) => r.brandConfidenceNote!.actualConfidence === level);
+    if (atLevel.length === 0) continue;
+    const correct = atLevel.filter((r) => !r.failures.some((f) => f.field === "brandGuess")).length;
+    console.log(`  ${level}: ${correct}/${atLevel.length} (${Math.round((correct / atLevel.length) * 100)}%)`);
+  }
 }
 
 /** Rough total cost estimate for this run — see pricing.ts for the caveat on
