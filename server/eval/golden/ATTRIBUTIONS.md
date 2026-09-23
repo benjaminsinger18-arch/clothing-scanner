@@ -93,6 +93,9 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | white-ballet-flats.jpg            | Ballerinas (Weiss).jpg                                                                                          | CC BY-SA 3.0    | Stefan-Xp                                                       | [link](<https://commons.wikimedia.org/wiki/File:Ballerinas_(Weiss).jpg>)                                                                                                                                 |
 | white-briefs.jpg                  | Briefs-flyfront-20070121.jpg                                                                                    | CC BY-SA 3.0    | Underwear Guy at en.wikipedia                                   | [link](https://commons.wikimedia.org/wiki/File:Briefs-flyfront-20070121.jpg)                                                                                                                             |
 | black-cycling-shorts.jpg          | Radlerhose.jpg                                                                                                  | CC BY-SA 3.0    | Ralf Roletschek                                                 | [link](https://commons.wikimedia.org/wiki/File:Radlerhose.jpg)                                                                                                                                           |
+| cream-dress-shirt.jpg             | Camisade puño doble.jpg                                                                                         | CC BY-SA 3.0    | Incal                                                           | [link](https://commons.wikimedia.org/wiki/File:Camisade_pu%C3%B1o_doble.jpg)                                                                                                                             |
+| chevron-wrap-dress.jpg            | Faux wrap dress and bright red tights.jpg                                                                       | CC BY-SA 2.0    | Jamie                                                           | [link](https://commons.wikimedia.org/wiki/File:Faux_wrap_dress_and_bright_red_tights.jpg)                                                                                                                |
+| black-puffer-vest.jpg             | Adidas Helionic Down vest.jpg                                                                                   | CC BY-SA 4.0    | Adenosine Triphosphate                                          | [link](https://commons.wikimedia.org/wiki/File:Adidas_Helionic_Down_vest.jpg)                                                                                                                            |
 
 ## Notes on this batch
 
@@ -346,3 +349,38 @@ Several rejections this round, more than usual:
 One resize note: `denim-bib-overalls.jpg` was the only one of the four kept images over the
 1280px long-edge cap at its original resolution (1848px tall) and was scaled down via the same
 Python/Pillow profile as recent rounds; the other three were already under the cap.
+
+## Notes on the thirteenth expansion batch
+
+Round 14 — targeted `tops`, `dresses`, and `outerwear`, the three categories left at 9 after round
+13 touched the rest. One entry each brings all 8 categories to 10 or above (`accessories` still
+leads at 11) — the full set is now evenly filled for the first time since the second expansion
+batch.
+
+Notable rejections and one deliberate substitution:
+
+- `Blouse.jpg` was skipped without downloading -- a third David Ring file caught by the same
+  by-contributor pattern flagged in rounds 9 and 13.
+- `Blouse (AM 1965.78-15).jpg` downloaded but turned out to be an extreme close-up of just the
+  lace collar trim, not a recognizable full-garment shot -- same problem as the round-13 overalls
+  waistband reject.
+- `Bra shirt and same with viscose wrap dress.jpg` is a two-panel composite (a black lace camisole
+  on the left, a red wrap dress worn over it on the right); cropping out just the right panel
+  produced a torso-only shot with no visible hem, too ambiguous to confidently grade as "dress"
+  rather than "top" -- rejected rather than forced in. Replaced with
+  `Faux_wrap_dress_and_bright_red_tights.jpg`, a full-length candid photo (chevron-print dress,
+  clearly the single dominant garment despite the outdoor setting, same "candid is fine if the
+  garment reads clearly" standard applied to the round-4 pajama-pants photo) that actually shows
+  the dress's full length and silhouette.
+- No blouse/dress-shirt search turned up a clean simple-button-down alternative beyond
+  `Camisade_puño_doble.jpg` (a clean folded-shirt product photo, cream dress shirt with French
+  cuffs) -- kept as the `tops` addition instead of a blouse.
+
+`black-puffer-vest.jpg` (`Adidas_Helionic_Down_vest.jpg`) was worn-on-model rather than flat-lay or
+mannequin, the first outerwear addition shot that way in several rounds -- kept since the framing
+is clean, centered, and plain-background (same standard that accepted the round-13 cropped-face
+puffer-vest style shot), with "adidas" legible on the chest as the brandGuess source.
+
+Two of the three kept images (`cream-dress-shirt.jpg`, `black-puffer-vest.jpg`) were over the
+1280px long-edge cap at original resolution and were scaled down via the same Python/Pillow
+profile as recent rounds; `chevron-wrap-dress.jpg` was already under the cap.
