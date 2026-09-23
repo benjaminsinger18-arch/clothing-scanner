@@ -85,6 +85,10 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | red-plaid-capri-pants.jpg         | Capri Pants front view.jpg                                                                                      | CC BY-SA 2.5    | Rita Holcomb                                                    | [link](https://commons.wikimedia.org/wiki/File:Capri_Pants_front_view.jpg)                                                                                                                               |
 | floral-lace-camisole.jpg          | Camisole (AM 2000.93.96-1).jpg                                                                                  | CC BY 4.0       | Bendon (via Auckland Museum)                                    | [link](<https://commons.wikimedia.org/wiki/File:Camisole_(AM_2000.93.96-1).jpg>)                                                                                                                         |
 | eyelet-cotton-nightgown.jpg       | Nightgown (AM 11683-1).jpg                                                                                      | CC BY 4.0       | Auckland Museum (photographer uncredited)                       | [link](<https://commons.wikimedia.org/wiki/File:Nightgown_(AM_11683-1).jpg>)                                                                                                                             |
+| taupe-turtleneck-sweater.jpg      | Jersei-coll-alt.jpg                                                                                             | CC BY-SA 3.0    | Joan Rocaguinard                                                | [link](https://commons.wikimedia.org/wiki/File:Jersei-coll-alt.jpg)                                                                                                                                      |
+| navy-peacoat.jpg                  | US Navy p coat wiki.jpg                                                                                         | Public domain   | Sirimiri at English Wikipedia                                   | [link](https://commons.wikimedia.org/wiki/File:US_Navy_p_coat_wiki.jpg)                                                                                                                                  |
+| red-black-cycling-jersey.jpg      | Madison-Genesis-Cycling-Team-Jersey-2019.jpg                                                                    | CC BY-SA 4.0    | 5t4Nm0r3MUK                                                     | [link](https://commons.wikimedia.org/wiki/File:Madison-Genesis-Cycling-Team-Jersey-2019.jpg)                                                                                                             |
+| patchwork-maxi-dress.jpg          | Maxi dress.jpg                                                                                                  | Public domain   | Bestvintage                                                     | [link](https://commons.wikimedia.org/wiki/File:Maxi_dress.jpg)                                                                                                                                           |
 
 ## Notes on this batch
 
@@ -272,3 +276,33 @@ quality 85, matching `app/lib/compressImage.ts`'s own upload profile) via PowerS
 `System.Drawing.Bitmap`, since neither ImageMagick nor a Node image library (sharp/Jimp) was
 available in this environment — same end result as prior rounds' Python/Pillow or unspecified-tool
 passes.
+
+## Notes on the eleventh expansion batch
+
+Round 12 — targeted `tops`, `dresses`, `outerwear`, and `activewear`, which were tied as the
+thinnest categories at 8 entries each (every other category sat at 9+). One entry added per
+category brings all four to 9, matching the rest of the set.
+
+Two candidates were rejected after downloading and viewing them:
+
+- `Wrap_dress.jpg` (credited to David Ring) was skipped without downloading — the same
+  contributor's file-page candidates were already flagged as fashion-thesaurus ink illustrations
+  rather than photos in the ninth batch's notes, and this file matched that same naming/attribution
+  pattern.
+- Both `Diane_von_Fürstenberg_wrap_dress_display_at_LACMA_02.jpg` and `..._04.jpg` turned out to be
+  wide museum-exhibit shots with a dozen-plus mannequins each in a different dress, receding into
+  the background — the same multi-item/cluttered problem earlier rounds have rejected for, and
+  worse here since there's no single dress that reads as the clear, centered subject the way the
+  round-5 cocktail-dress or round-9 tulle-gown background clutter did. Replaced with `Maxi_dress.jpg`
+  (Bestvintage, the same seller-photo source already used for `yellow-shirt-dress.jpg`), a clean
+  single-garment mannequin shot.
+
+One brandGuess call worth flagging: the cycling jersey has "PEARL iZUMi" printed directly on the
+garment at the back of the collar (the actual manufacturer, distinct from "MADISON GENESIS," which
+is the sponsored team name also printed on the jersey but not itself a retail clothing brand) —
+labeled `brandGuess: "Pearl Izumi"` since it's a real, legible marker visible in the photo itself,
+same standard applied to the round-10 camisole's retail tag.
+
+Both new images (turtleneck sweater, peacoat) were already at or under the 1280px long-edge cap at
+their original Commons resolution, so no resizing was needed for this batch; the other two
+(cycling jersey, maxi dress) were likewise already under the cap.
