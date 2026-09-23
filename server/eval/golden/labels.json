@@ -812,5 +812,49 @@
       "gender": "women",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "denim-bib-overalls.jpg",
+    "expected": {
+      "garmentType": "bib overalls",
+      "category": "bottoms",
+      "color": "dark blue",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": "Carhartt"
+    }
+  },
+  {
+    "filename": "white-ballet-flats.jpg",
+    "expected": {
+      "garmentType": "ballet flats",
+      "category": "footwear",
+      "color": "white",
+      "pattern": "perforated",
+      "gender": "women",
+      "brandGuess": "Salamander"
+    }
+  },
+  {
+    "filename": "white-briefs.jpg",
+    "expected": {
+      "garmentType": "briefs",
+      "category": "underwear-sleepwear",
+      "color": "white",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "Tiger"
+    }
+  },
+  {
+    "filename": "black-cycling-shorts.jpg",
+    "expected": {
+      "garmentType": "cycling shorts",
+      "category": "activewear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "unisex",
+      "brandGuess": null
+    }
   }
 ]

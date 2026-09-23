@@ -89,6 +89,10 @@ production, not artificially higher-detail input. This also cut the set from ~26
 | navy-peacoat.jpg                  | US Navy p coat wiki.jpg                                                                                         | Public domain   | Sirimiri at English Wikipedia                                   | [link](https://commons.wikimedia.org/wiki/File:US_Navy_p_coat_wiki.jpg)                                                                                                                                  |
 | red-black-cycling-jersey.jpg      | Madison-Genesis-Cycling-Team-Jersey-2019.jpg                                                                    | CC BY-SA 4.0    | 5t4Nm0r3MUK                                                     | [link](https://commons.wikimedia.org/wiki/File:Madison-Genesis-Cycling-Team-Jersey-2019.jpg)                                                                                                             |
 | patchwork-maxi-dress.jpg          | Maxi dress.jpg                                                                                                  | Public domain   | Bestvintage                                                     | [link](https://commons.wikimedia.org/wiki/File:Maxi_dress.jpg)                                                                                                                                           |
+| denim-bib-overalls.jpg            | Bib-brace.jpg                                                                                                   | CC BY-SA 3.0    | User Stuz on en.wikipedia                                       | [link](https://commons.wikimedia.org/wiki/File:Bib-brace.jpg)                                                                                                                                            |
+| white-ballet-flats.jpg            | Ballerinas (Weiss).jpg                                                                                          | CC BY-SA 3.0    | Stefan-Xp                                                       | [link](<https://commons.wikimedia.org/wiki/File:Ballerinas_(Weiss).jpg>)                                                                                                                                 |
+| white-briefs.jpg                  | Briefs-flyfront-20070121.jpg                                                                                    | CC BY-SA 3.0    | Underwear Guy at en.wikipedia                                   | [link](https://commons.wikimedia.org/wiki/File:Briefs-flyfront-20070121.jpg)                                                                                                                             |
+| black-cycling-shorts.jpg          | Radlerhose.jpg                                                                                                  | CC BY-SA 3.0    | Ralf Roletschek                                                 | [link](https://commons.wikimedia.org/wiki/File:Radlerhose.jpg)                                                                                                                                           |
 
 ## Notes on this batch
 
@@ -306,3 +310,39 @@ same standard applied to the round-10 camisole's retail tag.
 Both new images (turtleneck sweater, peacoat) were already at or under the 1280px long-edge cap at
 their original Commons resolution, so no resizing was needed for this batch; the other two
 (cycling jersey, maxi dress) were likewise already under the cap.
+
+## Notes on the twelfth expansion batch
+
+Round 13 — targeted `bottoms`, `footwear`, and `underwear-sleepwear`, the three categories that
+hadn't been touched in the eleventh batch and so remained at 9 while the rest of the set moved to
+9+, plus one general-variety addition (`activewear`, already at 9, gets a garment type -- cycling
+shorts -- it didn't have yet). `bottoms`, `footwear`, `underwear-sleepwear`, and `activewear` now
+sit at 10; `tops`, `dresses`, and `outerwear` remain at 9 (the new thinnest, worth targeting next
+round); `accessories` leads at 11.
+
+Several rejections this round, more than usual:
+
+- `Ballet_flats.jpg` was skipped without downloading -- credited to David Ring, the same
+  contributor whose file-page candidates turned out to be fashion-thesaurus ink illustrations in
+  an earlier round (see the ninth batch's notes), and the twelfth batch independently confirmed
+  that pattern held for a different David Ring file (`Wrap_dress.jpg`). Replaced with
+  `Ballerinas_(Weiss).jpg`, a real product photo with the brand "Salamander" legible on the insole.
+- `Full_Cut_Fruit_of_the_Looms_Men's_Classic_Briefs_in_white.jpg` was a tight, blurry crop of a
+  person wearing the briefs (visible torso/thigh) -- the same body-focused framing issue prior
+  rounds have rejected for repeatedly (bike shorts, compression shorts). Replaced with
+  `Briefs-flyfront-20070121.jpg`, a flat-lay shot on a black background with the brand "Tiger"
+  legible on the waistband.
+- `Trousers,_overalls_(AM_1994.154-10).jpg` (an Auckland Museum candidate, despite the promising
+  source) turned out to be an extreme close-up of the garment's inside-out waistband lining, not a
+  recognizable full-garment shot.
+- `Steeler_overalls_(3804848617).jpg` was a crowded convention-hall photo of many people, one of
+  whom happened to be wearing a novelty striped-overalls football costume -- multi-person and not
+  a real garment anyone would scan. Both overalls rejects were replaced with `Bib-brace.jpg`, a
+  clean flat-lay of Carhartt denim bib overalls.
+- `Kimono-coat_1956.jpg` was a low-resolution sepia newspaper scan, split down the middle into two
+  side-by-side crowd photos -- not a usable photo by two separate measures (scan quality, multiple
+  people). No kimono-type entry was added this round as a result.
+
+One resize note: `denim-bib-overalls.jpg` was the only one of the four kept images over the
+1280px long-edge cap at its original resolution (1848px tall) and was scaled down via the same
+Python/Pillow profile as recent rounds; the other three were already under the cap.
