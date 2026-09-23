@@ -768,5 +768,49 @@
       "gender": "women",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "taupe-turtleneck-sweater.jpg",
+    "expected": {
+      "garmentType": "turtleneck sweater",
+      "category": "tops",
+      "color": "taupe",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "navy-peacoat.jpg",
+    "expected": {
+      "garmentType": "peacoat",
+      "category": "outerwear",
+      "color": "navy blue",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "red-black-cycling-jersey.jpg",
+    "expected": {
+      "garmentType": "cycling jersey",
+      "category": "activewear",
+      "color": "red, black, and teal",
+      "pattern": "color block",
+      "gender": "unisex",
+      "brandGuess": "Pearl Izumi"
+    }
+  },
+  {
+    "filename": "patchwork-maxi-dress.jpg",
+    "expected": {
+      "garmentType": "maxi dress",
+      "category": "dresses",
+      "color": "red, brown, and olive",
+      "pattern": "patchwork print",
+      "gender": "women",
+      "brandGuess": null
+    }
   }
 ]
