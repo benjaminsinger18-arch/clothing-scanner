@@ -856,5 +856,38 @@
       "gender": "unisex",
       "brandGuess": null
     }
+  },
+  {
+    "filename": "cream-dress-shirt.jpg",
+    "expected": {
+      "garmentType": "dress shirt",
+      "category": "tops",
+      "color": "cream",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "chevron-wrap-dress.jpg",
+    "expected": {
+      "garmentType": "wrap dress",
+      "category": "dresses",
+      "color": "red, teal, and yellow",
+      "pattern": "chevron print",
+      "gender": "women",
+      "brandGuess": null
+    }
+  },
+  {
+    "filename": "black-puffer-vest.jpg",
+    "expected": {
+      "garmentType": "puffer vest",
+      "category": "outerwear",
+      "color": "black",
+      "pattern": "solid",
+      "gender": "men",
+      "brandGuess": "adidas"
+    }
   }
 ]
