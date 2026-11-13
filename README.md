@@ -11,14 +11,7 @@
 
 **Live demo:** <https://clothing-scanner-server.vercel.app> (web build; the backend sleeps on Render's free tier, so the first scan can take 20 to 30 seconds to wake it)
 
-![Clothing Scanner: capture, results and closet screens](docs/images/hero.png)
-
-<details>
-<summary>Watch a scan: upload a photo, wait for the identification, browse the results</summary>
-
-![Uploading a photo, the identifying spinner, then the Results tabs](docs/images/demo.gif)
-
-</details>
+![Clothing Scanner: capture screen, photo confirmation and provider quotas](docs/images/hero.png)
 
 ## What it does
 
@@ -78,16 +71,25 @@ Phone setup, Render and Vercel deployment, EAS builds and the full key table are
 ## Screenshots
 
 <details>
-<summary>Results: the five tabs</summary>
+<summary>Confirm photo</summary>
 
-![Overview, Price Comparison, Reviews, Similar Items and Outfit Matches tabs](docs/images/results-tabs.png)
+![Confirm Photo screen with a trench coat](docs/images/preview.png)
 
 </details>
 
 <details>
-<summary>Closet and insights</summary>
+<summary>Settings with live provider quotas</summary>
 
-![Closet list and the Insights screen](docs/images/closet-insights.png)
+![Settings screen showing per-provider usage bars](docs/images/settings.png)
+
+</details>
+
+<details>
+<summary>Closet, outfits and insights</summary>
+
+![My Closet](docs/images/closet.png)
+![My Outfits](docs/images/outfits.png)
+![Wardrobe Insights](docs/images/insights.png)
 
 </details>
 
