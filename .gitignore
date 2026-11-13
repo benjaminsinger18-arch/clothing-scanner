@@ -10,3 +10,7 @@ build/
 .DS_Store
 coverage/
 server/data/
+Thumbs.db
+web-build/
+.vscode/
+.idea/
